@@ -1,0 +1,6 @@
+build
+.*.swp
+*~
+*.vtk
+*.dx
+StatisticsTimes.cvs

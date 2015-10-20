@@ -1,0 +1,46 @@
+go victoryprocess
+
+# == Cell mode ==
+# ===============
+
+Init material=oxide \
+     from="-0.20, -0.20" to="0.20, 0.20" depth=1.0 gasheight=3.5
+
+SpecifyMaskPoly mask=holes circle     npoints=44 center=" 0.,  0."   radius=0.175
+
+Deposit material=silicon max thickness=2.5
+Etch MAX material=silicon thickness=2.5 mask=holes invert
+
+Save name=holescell_350_2500
+Export structure=holescell_350_2500_ex.str
+
+
+# Half
+# ----
+
+Init material=oxide \
+     from="-0.20, 0.0" to="0.20, 0.20" depth=1.0 gasheight=3.5
+
+SpecifyMaskPoly mask=holes circle     npoints=44 center=" 0.,  0."   radius=0.175
+
+Deposit material=silicon max thickness=2.5
+Etch MAX material=silicon thickness=2.5 mask=holes invert
+
+Save name=holescell_350_2500_half
+Export structure=holescell_350_2500_half_ex.str
+
+# Quarter
+# -------
+
+Init material=oxide \
+     from="0.0, 0.0" to="0.20, 0.20" depth=1.0 gasheight=3.5
+
+SpecifyMaskPoly mask=holes circle     npoints=44 center=" 0.,  0."   radius=0.175
+
+Deposit material=silicon max thickness=2.5
+Etch MAX material=silicon thickness=2.5 mask=holes invert
+
+Save name=holescell_350_2500_quarter
+Export structure=holescell_350_2500_quarter_ex.str
+
+quit

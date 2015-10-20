@@ -1,0 +1,46 @@
+geometry_file =   "trench_2d_2mat.dx";
+output_path   = "./output/";
+
+cfl_condition = 0.1;
+
+omp_threads = 4;
+num_dimensions = 2;
+
+input_scale = 1e-6;
+grid_delta = 1e-6;		//cm
+
+open_boundary="+y";
+default_disk_orientation = {-1,1,0};
+print_statistics = false;
+
+boundary_conditions = {
+    {PERIODIC,PERIODIC},
+    {INFINITE,INFINITE}
+};
+
+
+processes = {
+
+    {
+  finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+        process_time= 0;                // seconds
+        model_name="SimpleDeposition";
+        add_layer=1;
+        parameters= {
+    direction = {0,-1,0};
+    reflection_model = DIFFUSIVE_SINGLE; // NONE, SPECULAR, DIFFUSIVE_SINGLE (default), DIFFUSIVE_MULTIPLE, TEST
+    reflection_materials = {1};
+    reflection_diffusive_upperbound = 2; // 4 is the default value
+    flux = 1e18;
+    sticking_probability = 0.02;
+    reference_start = 34;
+    start_angle_distribution = 1.;
+    reemitted_angle_distribution = 1.;
+    stop_criterion = 0.0005;
+    yield = 0.5e-24;
+    statistical_accuracy = 10000;
+        };
+  initial_output=true;
+  final_output=true;
+    }
+};

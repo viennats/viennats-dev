@@ -1,0 +1,47 @@
+geometry_file =   "./holescell_500_2500_quarter.str";
+output_path   = "./output/";
+
+cfl_condition = 0.5;
+
+omp_threads = 4;
+num_dimensions = 3;
+
+input_scale = 1e-4;
+grid_delta = 1e-6;		//cm
+
+open_boundary="-z";
+default_disk_orientation = {-1,1,0};
+ignore_materials = {1}; // material 1 is a top layer, which breaks level set surface generation, so we need to remove it
+material_mapping = {0,2,1}; //change the material IDs so that the bottom layer is id 1 and the vertical part is 2
+print_statistics = false;
+
+boundary_conditions = {
+  {REFLECTIVE,REFLECTIVE},
+  {REFLECTIVE,REFLECTIVE},
+  {INFINITE,INFINITE}
+};
+
+processes = {
+  {
+    finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+    process_time= 0;                // seconds
+    model_name="SimpleDeposition";
+    add_layer=1;
+    parameters=
+    {
+      direction = {0,0,1};
+      reflection_model = DIFFUSIVE_SINGLE; // NONE, SPECULAR, DIFFUSIVE_SINGLE (default), DIFFUSIVE_MULTIPLE
+      reflection_materials = {1}; // here the IDs got inverted, 1 is the vertical part, reflection should only happen there
+      reflection_diffusive_upperbound = 2; // 4 is the default value
+      flux = 1e18;
+      sticking_probability = 0.02;
+      start_angle_distribution = 1.;
+      reemitted_angle_distribution = 1.;
+      stop_criterion = 0.94;
+      yield = 0.5e-24;
+      statistical_accuracy = 1000000;
+    };
+  initial_output=false;
+  final_output=false;
+  }
+};

@@ -1,0 +1,43 @@
+geometry_file =   "./trench_3d_v2.dx";
+output_path   = "./output/";
+
+cfl_condition = 0.1;
+
+omp_threads = 1;
+num_dimensions = 3;
+
+input_scale = 1e-6;
+grid_delta = 1e-6;		//cm
+
+open_boundary="+y";
+default_disk_orientation = {-1,1,0};
+print_statistics = false;
+
+boundary_conditions = {
+    {REFLECTIVE,REFLECTIVE},
+    {INFINITE,INFINITE},
+    {REFLECTIVE,REFLECTIVE}
+};
+
+
+processes = {
+
+    {
+	finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+        process_time= 1;                // seconds
+        model_name="SimpleDeposition";
+        add_layer=1;
+        parameters= {
+		direction = {0,-1,0};
+		flux = 1e18;
+		sticking_probability = 0.1;
+		start_angle_distribution = 1.;
+		reemitted_angle_distribution = 1.;
+		stop_criterion = 0.001;
+		yield = 0.5e-24;
+		statistical_accuracy = 100000;
+        };
+	initial_output=true;
+	final_output=true;
+    }
+};
