@@ -48,6 +48,7 @@ Authors and Contact
 ------------------------
 
 Current contributors: Lado Filipovic, Paul Manstetten, and Josef Weinbub
+
 Contact us via: viennats AT iue DOT tuwien DOT ac DOT at
 
 Founder and initial author was Otmar Ertl; not active anymore.
