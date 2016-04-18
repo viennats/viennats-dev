@@ -140,7 +140,6 @@ namespace par {
                 initial_output=false;
                 final_output=false;
                 MaskLayer=false;
-                GrowNewOxide=false;
 
                 smoothing_max_curvature=std::numeric_limits<double>::max();
                 smoothing_min_curvature=-std::numeric_limits<double>::max();
@@ -171,8 +170,9 @@ namespace par {
 
 		//input geometry and output path
 		std::string InputFile;
+		std::vector<std::string> InputFiles;
 		std::string OutputPath;
-
+		bool surface_geometry;
 		//Outputtimes
 		//std::vector<double> OutputTimes;
 
@@ -292,6 +292,7 @@ namespace par {
 								rule_input_file,
 								rule_output_path,
 								//rule_output_times,
+								rule_surface_geometry,
 								rule_CFL_condition,
 								rule_grid_delta,
 								rule_input_scale,
@@ -369,9 +370,10 @@ namespace par {
 
 	        	Parameters& p=self.par;
 
-	            rule_input_file = (str_p("GeometryFile") | str_p("geometry_file")) >>'=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.InputFile)]) >> '\"' >> ';';
+	            rule_input_file = (str_p("GeometryFiles") | str_p("geometry_files") | str_p("GeometryFile") | str_p("geometry_file")) >>'=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.InputFile)]) >> '\"' >> ';';
 	            rule_output_path = (str_p("OutputPath") | str_p("output_path"))  >> '=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.OutputPath)]) >> '\"'  >> ';';
-				rule_CFL_condition   = (str_p("CFL-Condition") | str_p("cfl_condition"))  >> '='  >> real_p[assign_a(p.TimeStepRatio)]  >> ';';
+	            rule_surface_geometry = (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.surface_geometry)]) >> ';');
+	            rule_CFL_condition   = (str_p("CFL-Condition") | str_p("cfl_condition"))  >> '='  >> real_p[assign_a(p.TimeStepRatio)]  >> ';';
 				rule_grid_delta   = (str_p("GridDelta") | str_p("grid_delta"))  >> '='  >> real_p[assign_a(p.GridDelta)]  >> ';';
 				rule_input_scale   = (str_p("InputScale") | str_p("input_scale"))  >> '='  >> real_p[assign_a(p.InputScale)]  >> ';';
 				rule_input_transformation = (str_p("input_transformation") >> '=' >> '{' >> (('\"' >> (((ch_p('+') | '-') >> (ch_p('x') | 'y' | 'z'))[assign_input_transformation(p.InputTransformationDirections, p.InputTransformationSigns)]) >> '\"') % ',') >> '}' >> ';');
@@ -385,6 +387,8 @@ namespace par {
 				rule_Domain_Extension = (str_p("Domain_Extension") | str_p("domain_extension")) >> '=' >> real_p[assign_a(p.DomainExtension)] >> ';';
 				rule_ReceptorRadius = (str_p("ReceptorRadius") | str_p("receptor_radius")) >> '=' >> real_p[assign_a(p.ReceptorRadius)] >> ';';
 				rule_FurtherTrackingDistance = (str_p("FurtherTrackingDistance") | str_p("further_tracking_distance")) >> '=' >> real_p[assign_a(p.FurtherTrackingDistance)] >> ';';
+				rule_print_vtk = (str_p("print_vtk")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_vtk)]) >> ';');
+				rule_print_dx = (str_p("print_dx")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_dx)]) >> ';');
 				rule_print_velocities = (str_p("print_velocities")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_velocities)]) >> ';');
                 rule_print_coverages = (str_p("print_coverages")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_coverages)]) >> ';');
                 rule_print_rates = (str_p("print_rates")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_rates)]) >> ';');
@@ -393,7 +397,7 @@ namespace par {
                 rule_max_extended_starting_position = (str_p("max_extended_starting_position") >> '='  >>  int_p[assign_a(p.max_extended_starting_position)] >>  ';');
                 rule_open_boundary = (str_p("open_boundary") >> '=' >> '\"' >> (((ch_p('+') | '-') >> (ch_p('x') | 'y' | 'z'))[assign_dir(p.open_boundary_direction, p.is_open_boundary_negative)]) >> '\"' >> ';');
                 rule_remove_bottom = str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.remove_bottom)]) >> ';';
-                rule_separate_materials = str_p("separate_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.separate_materials)]) >> ';';
+//                rule_separate_materials = str_p("separate_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.separate_materials)]) >> ';';
                 rule_snap_to_boundary_eps  = str_p("rule_snap_to_boundary_eps")  >> '='  >> real_p[assign_a(p.snap_to_boundary_eps)]  >> ';';
                 rule_processing_cycles = str_p("process_cycles")  >> '='  >> int_p[assign_a(p.process_cycles)]  >> ';';
 
@@ -426,7 +430,6 @@ namespace par {
 				rule_process_distance = str_p("process_distance")  >> '='  >> real_p[assign_a(tmp_process.ProcessDistance)]  >> ';';
 				rule_process_startPosition = str_p("start_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMStartPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[2])] >> '}' >> ';';
 				rule_process_endPosition = str_p("end_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMEndPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[2])] >> '}' >> ';';
-
 
 				rule_process_top_mask = (str_p("mask_layer") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.MaskLayer)]) >> ';');
 				rule_process_grow_new_oxide = (str_p("grow_new_oxide") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.GrowNewOxide)]) >> ';');
@@ -529,13 +532,14 @@ namespace par {
                                 rule_comment                        |
                                 rule_input_file                     |
                                 rule_output_path                    |
+								rule_surface_geometry				|
                                 rule_CFL_condition                  |
                                 rule_grid_delta                     |
                                 rule_input_scale                    |
                                 rule_input_transformation           |
                                 rule_input_shift					|
                                 rule_default_disk_orientation		|
-                                rule_ignore_materials		|
+                                rule_ignore_materials				|
                                 rule_change_input_parity            |
                                 rule_random_seed                    |
                                 rule_dimensions                     |
@@ -546,6 +550,8 @@ namespace par {
                                 rule_processes                      |
                                 rule_ReceptorRadius                 |
                                 rule_FurtherTrackingDistance        |
+                                rule_print_vtk						|
+                                rule_print_dx						|
                                 rule_print_velocities               |
                                 rule_print_coverages                |
                                 rule_print_rates                    |
@@ -555,7 +561,6 @@ namespace par {
                                 rule_open_boundary                  |
                                 rule_snap_to_boundary_eps           |
                                 rule_remove_bottom                  |
-                                rule_separate_materials				|
                                 rule_processing_cycles				|
 //                                rule_crystal_orientation			|
                                 rule_add_layer
@@ -627,7 +632,6 @@ namespace par {
         print_dx=false;
         print_vtk=true;
 
-
         print_coverages=false;
         print_rates=false;
         print_velocities=false;
@@ -640,7 +644,6 @@ namespace par {
         is_open_boundary_negative=false;
 
         remove_bottom=true;
-        separate_materials=false;
         snap_to_boundary_eps=1e-6;
 
         process_cycles=1;
@@ -649,7 +652,7 @@ namespace par {
         max_extended_starting_position=1000;
         AddLayer=0;
 
-
+        surface_geometry=false;
 
 	    std::string str;
 	    ReadFile(FileName, str);
@@ -667,6 +670,27 @@ namespace par {
 				).full;
 
 		if (!b) msg::print_error("Failed reading parameter file!");
+
+//----- Section to parse through the file name(s) and determine input format ---
+		std::size_t start = str.find("ile=\"");
+		if (start>str.length()) {
+			start = str.find("iles=\"");
+			start++;
+		}
+		start+=4;
+		std::size_t end = str.find("\";",start);
+		std::string FNstr=str.substr(start+1,end-start-1);
+	    bool done=false;
+	    while (!done) {
+	        std::size_t found = FNstr.find(",");
+	        if (found!=std::string::npos) {
+	          InputFiles.push_back (FNstr.substr(0,found));
+	          FNstr=FNstr.substr(found+1);
+	        } else {
+	        	InputFiles.push_back(FNstr);
+	        	done=true;
+	        }
+	    }
 
 		//test boundary condtions for periodicity, and check conformity
 		for (unsigned int h=0;h<boundary_conditions.size();h++) {

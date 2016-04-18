@@ -19,9 +19,12 @@
 #include <fstream>
 #include <bitset>
 #include <set>
-#include "vector.hpp"
 #include "message.h"
 #include <stdexcept>
+
+#ifdef USE_HDF5
+#include "HDF.h"
+#endif
 
 namespace geometry {
 
@@ -49,7 +52,7 @@ namespace geometry {
       std::cout << "Reading STR file!";
 
 
-      std::ifstream reader(FileName.c_str(), ios::binary);
+      std::ifstream reader(FileName.c_str(), std::ios::binary);
 
       if (!reader)
         throw std::runtime_error("Cannot open file: "+FileName+" - Aborting!");
@@ -126,8 +129,6 @@ namespace geometry {
       // import elements (+materials), i.e., triangles (2D) or tetrahedrons (3D)
       //
       int region_id;
-//      int vertex_id;
-//      int cell_indices[D+1];
       lvlset::vec<unsigned int, D+1>  cell_indices;
       bool ignore;
       if(D == 3)
@@ -139,21 +140,11 @@ namespace geometry {
         for (int i=0;i<number_of_triangles+1;i++)
           std::getline(reader, line);
 
-//        Elements.resize(number_of_tetrahedrons);
-//        Materials.resize(number_of_tetrahedrons);
-
         for (int i=0;i<number_of_tetrahedrons;i++)
         {
-          // T - ignored
           reader >> dump;
-//          std::cout << "Type: " << dump << std::endl;
-          // tetrahedron-id - ignored
           reader >> dump;
-//          std::cout << "ID: " << dump << std::endl;
-          // region
-//          reader >> Materials[i];
           reader >> region_id;
-//          std::cout << "Region: " << Materials[i] << std::endl;
 
           if(std::find(ignore_materials.begin(), ignore_materials.end(), region_id) != ignore_materials.end())
           {
@@ -169,10 +160,6 @@ namespace geometry {
           {
             reader >> cell_indices[j];
 
-//            reader >> Elements[i][j];
-            // Silvaco uses 1-based indices, we use 0-based,
-            // so we need to manually decrease it by one to map the index spaces correctly
-//            Elements[i][j]--;
             cell_indices[j]--;
           }
 
@@ -205,26 +192,205 @@ namespace geometry {
       reader.close();
     }
 
-    // DX Reader
-                void ReadDX(std::string   const& FileName,
-                double               scale,//=1.,
-                std::vector<int>   & InputTransformationDirections,//=std::vector<int>(),
-                std::vector<bool>  & InputTransformationSigns,//=std::vector<bool>(),
-                bool                change_input_parity,//=false,
-                std::vector<double>& shift//=std::vector<double>()
-               )
-    {
-      std::cout << "Reading DX file!";
-                        std::ifstream f(FileName.c_str());
+#ifdef USE_HDF5
 
-                        if (!f) msg::print_error("Failed reading geometry file!");
+		void ReadTDR(	const std::string& FileName,
+						double scale,//=1.,
+						std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+						std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+						bool change_input_parity,//=false,
+						std::vector<double> shift//=std::vector<double>()
+				) {
 
-                        std::string c;
+			H5File* file = new H5File(FileName.c_str(), H5F_ACC_RDWR);
+
+			tdr_geometry geometry;
+            geometry.read_collection(file->openGroup("collection"));
+
+		if (D!=geometry.dim) msg::print_error("Dimension in parameters file does not match geometry!");
+            delete file;
+
+			Nodes.resize(geometry.nvertices);
+            for (unsigned int i=0;i<geometry.nvertices;i++){
+			    double coords[D];
+
+				for (int j=0;j<D;j++) coords[j]=geometry.vertex[geometry.dim*i+j];
+
+				for (int j=0;j<D;j++) {
+				    Nodes[i][j]=coords[InputTransformationDirections[j]];
+
+				    int shift_size=shift.size();
+				    if (shift_size>j) Nodes[i][j]+=shift[j];
+                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+                    Nodes[i][j]*=scale;
+				}
+            }
+
+            int num_elems=0;
+            for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) num_elems+=S->second.nelements;
+
+			Elements.resize(num_elems);
+			Materials.resize(num_elems);
+
+			int i=0;
+            for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) {
+
+          	  vector<vector<int> > &elements = S->second.elements;
+          	  for (vector<vector<int> >::iterator E=elements.begin(); E!=elements.end(); E++) {
+          		  std::vector<int> e=*E;
+          		  for (int j=0;j<D+1;j++) Elements[i][j]=e[j];
+          		  Materials[i]=2-S->second.regnr;
+          		  i++;
+          	  }
+            }
+		}
+#endif
+
+		void ReadGRD(	const std::string& FileName,
+							double scale,//=1.,
+							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+							bool change_input_parity,//=false,
+							std::vector<double> shift//=std::vector<double>()
+						) {
+			std::ifstream f(FileName.c_str());
+
+			if (!f) msg::print_error("Failed reading geometry file!");
+
+			std::string c;
 
 			//read nodes
 			std::getline(f,c);
 
-			int num_nodes=atoi(&c[63]);
+			int num_nodes;
+			int num_elems;
+			int num_mater;
+
+			std::vector<lvlset::vec<unsigned int, 2> > Edges;
+			std::vector<lvlset::vec<unsigned int, 3> > Faces;
+
+			unsigned int num_edges;
+			unsigned int num_faces;
+			while (c.find("nb_vertices")>=c.npos) std::getline(f,c);
+			num_nodes=atoi(&c[14+c.find("nb_vertices")]);
+			while (c.find("nb_edges")>=c.npos) std::getline(f,c);
+			num_edges=atoi(&c[14+c.find("nb_edges")]);
+			while (c.find("nb_faces")>=c.npos) std::getline(f,c);
+			num_faces=atoi(&c[14+c.find("nb_faces")]);
+			while (c.find("nb_elements")>=c.npos) std::getline(f,c);
+			num_elems=atoi(&c[14+c.find("nb_elements")]);
+			Elements.resize(num_elems);
+			Materials.resize(num_elems);
+			while (c.find("nb_regions")>=c.npos) std::getline(f,c);
+			num_mater=atoi(&c[14+c.find("nb_regions")]);
+
+			while (c.find("Vertices")>=c.npos) std::getline(f,c);
+			Nodes.resize(num_nodes);
+			for (int i=0;i<num_nodes;i++) {
+			    double coords[D];
+
+				for (int j=0;j<D;j++) f>>coords[j];
+
+				for (int j=0;j<D;j++) {
+				    Nodes[i][j]=coords[InputTransformationDirections[j]];
+
+				    int shift_size=shift.size();
+				    if (shift_size>j) Nodes[i][j]+=shift[j];
+                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+                    Nodes[i][j]*=scale;
+				}
+			}
+
+			while (c.find("Edges")>=c.npos) std::getline(f,c);
+			Edges.resize(num_edges);
+			for (unsigned int i=0;i<num_edges;i++) {
+				for (int j=0;j<2;j++) {
+					f>>Edges[i][j];
+				}
+			}
+
+			if (num_faces>0) while (c.find("Faces")>=c.npos) std::getline(f,c);
+			Faces.resize(num_faces);
+			unsigned int faces_tmp;
+			for (unsigned int i=0;i<num_faces;i++) {
+				for (int j=-1;j<D;j++) {
+					if (j==-1) f>>faces_tmp;
+					else {
+						f>>faces_tmp;
+						if (faces_tmp>num_edges) {
+							faces_tmp=UINT_MAX-faces_tmp;
+							Faces[i][j]=Edges[faces_tmp][1];
+						} else {
+							Faces[i][j]=Edges[faces_tmp][0];
+						}
+					}
+				}
+			}
+			while (c.find("Elements")>=c.npos) std::getline(f,c);
+
+			unsigned int compare=(D==2)?num_edges:num_faces;
+			unsigned int elem_tmp;
+
+			for (int i=0;i<num_elems;i++) {
+				for (int j=-1;j<D+1;j++) {
+					f>>elem_tmp;
+					int write=0;
+					if (elem_tmp>compare) {
+						elem_tmp=UINT_MAX-elem_tmp;
+						write=1;
+					}
+					//---------- 2D ----------
+					if ((D==2)&&(j!=-1)) {
+						Elements[i][j]=Edges[elem_tmp][write];
+					}
+					//---------- 3D ----------
+					if ((D==3)&&(j==0)) {
+						for (int k=0;k<D;k++) Elements[i][j+k]=Faces[elem_tmp][k];
+					} else if ((D==3)&&(j==1)) {
+						int k=0;
+						do {
+							Elements[i][3]=Faces[elem_tmp][k++];
+						} while( (Elements[i][3]==Elements[i][0]) || (Elements[i][3]==Elements[i][1]) || (Elements[i][3]==Elements[i][2]) );
+					}
+
+				}
+			}
+
+			unsigned int elem_in_mat;
+			int current;
+			for (int i=num_mater;i>0;i--){
+				while (c.find("Region")>=c.npos) std::getline(f,c);
+				while (c.find("Elements")>=c.npos) std::getline(f,c);
+				elem_in_mat=atoi(&c[10+c.find("Elements")]);
+				for (unsigned int j=0;j<elem_in_mat;j++) {
+					f>>current;
+					Materials[current]=i;
+				}
+			}
+			f.close();
+		}
+
+		void ReadDX(	const std::string& FileName,
+							double scale,//=1.,
+							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+							bool change_input_parity,//=false,
+							std::vector<double> shift//=std::vector<double>()
+						) {
+			std::ifstream f(FileName.c_str());
+
+			if (!f) msg::print_error("Failed reading geometry file!");
+
+			std::string c;
+
+			//read nodes
+			std::getline(f,c);
+
+			int num_nodes;
+			int num_elems;
+
+			std::cout << "DX\n";
+			num_nodes=atoi(&c[63]);
 
 			Nodes.resize(num_nodes);
 			for (int i=0;i<num_nodes;i++) {
@@ -237,8 +403,8 @@ namespace geometry {
 
 				    int shift_size=shift.size();
 				    if (shift_size>j) Nodes[i][j]+=shift[j];
-		    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
-		    Nodes[i][j]*=scale;
+                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+                    Nodes[i][j]*=scale;
 				}
 			}
 
@@ -246,14 +412,13 @@ namespace geometry {
 
 			//read elements
 			std::getline(f,c);
-			int num_elems=atoi(&c[63]);
+			num_elems=atoi(&c[63]);
 
 			Elements.resize(num_elems);
 			for (int i=0;i<num_elems;i++) {
 				for (int j=0;j<D+1;j++) f>>Elements[i][j];
 				if (change_input_parity) std::swap(Elements[i][0],Elements[i][1]);
 			}
-
 
 			std::getline(f,c);
 			std::getline(f,c);
@@ -265,9 +430,81 @@ namespace geometry {
 			for (int i=0;i<num_elems;i++) {
 				f>>Materials[i];
 			}
+			f.close();
 
-                        f.close();
-    }
+		}
+
+		void ReadVTK(	const std::string& FileName,
+							double scale,//=1.,
+							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+							bool change_input_parity,//=false,
+							std::vector<double> shift//=std::vector<double>()
+						) {
+			std::ifstream f(FileName.c_str());
+
+			if (!f) msg::print_error("Failed reading geometry file!");
+
+			std::string c;
+
+			//read nodes
+			std::getline(f,c);
+			std::getline(f,c);
+			std::getline(f,c);
+			std::getline(f,c);
+			std::getline(f,c);
+			int num_nodes=atoi(&c[c.find(" ")+1]);
+
+			Nodes.resize(num_nodes);
+
+			for (int i=0;i<num_nodes;i++) {
+				double coords[3];
+
+				for (int j=0;j<3;j++) f>>coords[j];
+				for (int j=0;j<D;j++) {
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+					Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+				}
+			}
+
+			std::getline(f,c);
+			std::getline(f,c);
+			int num_elems=atoi(&c[c.find(" ")+1]);
+
+			Elements.resize(num_elems);
+
+			double elems_fake;
+			for (int i=0;i<num_elems;i++) {
+
+				for (int j=-1;j<(D+1);j++) {
+					if (j!=-1) {
+						f>>Elements[i][j];
+					} else {
+						f>>elems_fake;
+					}
+				}
+			}
+
+			std::getline(f,c);
+			std::getline(f,c);
+			for (int i=0;i<num_elems;i++) {
+				std::getline(f,c);
+			}
+			std::getline(f,c);
+			std::getline(f,c);
+			std::getline(f,c);
+
+			Materials.resize(num_elems);
+			for (int i=0;i<num_elems;i++) {
+				f>>Materials[i];
+			}
+
+			f.close();
+
+		}
 
                 void Read(std::string  const& FileName,
               double              scale,//=1.,
@@ -293,12 +530,35 @@ namespace geometry {
       for (int i=0;i<D;++i)
         if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
       // determine whether we need the DX or the STR reader - call appropriate subroutine accordingly
-      if(FileName.substr(FileName.find_last_of(".") + 1) == "dx")
-        ReadDX(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-      else if(FileName.substr(FileName.find_last_of(".") + 1) == "str")
-        ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
-      else throw std::runtime_error("Input geometry file type \""+FileName.substr(FileName.find_last_of(".") + 1)+"\" not supported - Aborting!");
+//      if(FileName.substr(FileName.find_last_of(".") + 1) == "dx")
+//        ReadDX(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+//      else if(FileName.substr(FileName.find_last_of(".") + 1) == "str")
+//        ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
+//      else throw std::runtime_error("Input geometry file type \""+FileName.substr(FileName.find_last_of(".") + 1)+"\" not supported - Aborting!");
 
+            //Check if the file is of format .tdr, .grd, .dx, or .vtk
+            std::string GeometryFile=FileName.c_str();
+
+#ifdef USE_HDF5
+            if (GeometryFile.find(".tdr") == (GeometryFile.size()-4)) {
+            	ReadTDR(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+            } else
+#endif
+	    if (FileName.substr(FileName.find_last_of(".") + 1) == "str") {
+		ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
+	    } else if (GeometryFile.find(".grd") == (GeometryFile.size()-4)) {
+            	ReadGRD(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+            } else if (GeometryFile.find(".dx") == (GeometryFile.size()-3)) {
+            	ReadDX(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+            } else if (GeometryFile.find(".vtk") == (GeometryFile.size()-4)) {
+            	ReadVTK(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+            } else {
+#ifdef USE_HDF5
+            	msg::print_error("This software accepts only STR, TDR, GRD, DX and VTK geometry files!");
+#else
+            	msg::print_error("This software accepts only STR, GRD, DX and VTK geometry files!");
+#endif
+            }
 
       //map materials - this is the same regardless of the input file format
       if (!MapMaterials.empty())
@@ -309,7 +569,7 @@ namespace geometry {
         std::swap(oldElements, Elements);
         std::swap(oldMaterials, Materials);
 
-        for (int a=0;a<oldElements.size();++a)
+        for (unsigned int a=0;a<oldElements.size();++a)
         {
           bool add=true;
           int mat=oldMaterials[a];
@@ -336,7 +596,7 @@ namespace geometry {
 
                 }
 
-		void Write(const std::string& FileName) const {
+		void WriteVTK(const std::string& FileName) const {
 			std::ofstream f(FileName.c_str());
 
 			f << "# vtk DataFile Version 2.0" << std::endl;
@@ -369,18 +629,17 @@ namespace geometry {
 				f<< Materials[i] << std::endl;
 			}
 			f.close();
+		}
 
-
+		void Write(const std::string& FileName) const {
+			WriteVTK(FileName);
 		}
 
 		void CalculateExtensions() {
 			assert(!Elements.empty());
 			Min=Nodes[Elements[0][0]];
 			Max=Nodes[Elements[0][0]];
-			/*for (unsigned int i=1;i<Nodes.size();i++) {
-				Min=lvlset::Min(Min,Nodes[i]);
-				Max=lvlset::Max(Max,Nodes[i]);
-			}*/
+
 			for (unsigned int a=0;a<Elements.size();++a) {
 				for (unsigned int i=0;i<D+1;i++) {
 					Min=lvlset::Min(Min,Nodes[Elements[a][i]]);
@@ -402,6 +661,8 @@ namespace geometry {
 
 		std::vector<lvlset::vec<double, D> > Nodes;
 		std::vector<lvlset::vec<unsigned int, D> > Elements;
+
+		lvlset::vec<double, D> Min,Max; //for bounding box
 
 		unsigned int number_of_nodes() const {
 			return Nodes.size();
@@ -481,57 +742,94 @@ namespace geometry {
 			f.close();
 		}
 
-		void ReadVTK(std::string FileName)  {
+		void ReadVTK(	std::string FileName,
+						double scale,
+						std::vector<int> InputTransformationDirections,
+	                    std::vector<bool> InputTransformationSigns,
+	                    bool change_input_parity,
+	                    std::vector<double> shift
+	                    ) {
+			//Assign desired transformation:
+//-------------------------------------------------------------------------------------------------------------------------
+			while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());        //TODO test if directions are unique
+            while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
 
+            if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
+
+            for (int i=0;i<D;++i) {
+                if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
+            }
+//-------------------------------------------------------------------------------------------------------------------------
 			std::ifstream f(FileName.c_str());
 
 			std::string c;
 
 			std::getline(f,c);
-
 			std::getline(f,c);
-			assert(atoi(&c[0])==D);
-
 			std::getline(f,c);
-
 			std::getline(f,c);
-
 			std::getline(f,c);
-			int num_nodes=atoi(&c[7]);
-
-			std::cout << num_nodes << std::endl;
+			int num_nodes=atoi(&c[c.find(" ")+1]);
 
 			Nodes.resize(num_nodes);
 
 			for (int i=0;i<num_nodes;i++) {
-				for (int j=0;j<D;j++) f>>Nodes[i][j];
+				double coords[3];
+
+				for (int j=0;j<3;j++) f>>coords[j];
+
+				for (int j=0;j<D;j++) {
+						Nodes[i][j]=coords[InputTransformationDirections[j]];
+						int shift_size=shift.size();
+						if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
+						if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+					Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+				}
 			}
 
 			std::getline(f,c);
 			std::getline(f,c);
-			int num_elems=atoi(&c[6]);
-
-			std::cout << num_elems << std::endl;
+			int num_elems=atoi(&c[c.find(" ")+1]);
 
 			Elements.resize(num_elems);
-			int tmp;
 
-			for (unsigned int i=0;i<Elements.size();i++) {
-				f >> tmp;
-				for (int j=0;j<D;j++) f>> Elements[i][j];
+			double elems_fake;
+			for (int i=0;i<num_elems;i++) {
+
+				for (int j=0;j<(D+1);j++) {
+					if (j!=0) {
+						f>>Elements[i][j-1];
+					} else {
+						f>>elems_fake;
+					}
+				}
 			}
+
+			CalculateExtensions();
 			f.close();
 		}
 
+		void CalculateExtensions() {
+			assert(!Elements.empty());
+			Min=Nodes[Elements[0][0]];
+			Max=Nodes[Elements[0][0]];
+
+			for (unsigned int a=0;a<Elements.size();++a) {
+				for (unsigned int i=0;i<D;i++) {
+					Min=lvlset::Min(Min,Nodes[Elements[a][i]]);
+					Max=lvlset::Max(Max,Nodes[Elements[a][i]]);
+				}
+			}
+		}
 
 	};
 
 
 	template <int D, class SurfacesType> void TransformGeometryToSurfaces(
-		const geometry<D>& Geometry,
-		SurfacesType &Surfaces,
-		std::bitset<2*D> remove_flags,
-		double eps) {
+	        const geometry<D>& Geometry,
+	        SurfacesType &Surfaces,
+	        std::bitset<2*D> remove_flags,
+	        double eps) {
 
 
 		//determine maximum number of materials
@@ -561,8 +859,8 @@ namespace geometry {
 							flags.reset(l+D);
 						}
 						if (Geometry.Nodes[tmp[k]][l]>Geometry.Min[l]+eps) {
-			    flags.reset(l);
-			}
+                            flags.reset(l);
+                        }
 					}
 				}
 
@@ -639,10 +937,11 @@ namespace geometry {
 	}
 
 	template <int D, class SurfacesType> void TransformGeometryToSurfaces2(
-		const geometry<D>& Geometry,
-		SurfacesType &Surfaces,
-		std::bitset<2*D> remove_flags,
-		double eps) {
+	        const geometry<D>& Geometry,
+	        SurfacesType &Surfaces,
+	        std::bitset<2*D> remove_flags,
+	        std::vector<std::string> materials,
+	        double eps) {
 
 
 		//determine maximum number of materials
@@ -672,8 +971,8 @@ namespace geometry {
 							flags.reset(l+D);
 						}
 						if (Geometry.Nodes[tmp[k]][l]>Geometry.Min[l]+eps) {
-			    flags.reset(l);
-			}
+                            flags.reset(l);
+                        }
 					}
 				}
 

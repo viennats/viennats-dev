@@ -28,7 +28,7 @@ namespace msg {
         std::cout << "#                                                  #" << std::endl;
         std::cout << "#   Monte Carlo Deposition and Etching Simulator   #" << std::endl;
         std::cout << "#                                                  #" << std::endl;
-        std::cout << "#                    Otmar Ertl                    #" << std::endl;
+        std::cout << "#                                                  #" << std::endl;
         std::cout << "#      Institute for Microelectronics, TU Wien     #" << std::endl;
         std::cout << "#               www.iue.tuwien.ac.at               #" << std::endl;
         std::cout << "#                     2006-2009                    #" << std::endl;
@@ -61,6 +61,10 @@ namespace msg {
 
     void print_start(const std::string& s) {
         std::cout << std::setw(40) << std::left << s << std::flush;
+    }
+
+    void print_start(const std::string& s, int i) {
+        std::cout << std::setw(40) << std::left << s << " surface " << i << std::flush << std::endl;
     }
 
     void print_done() {

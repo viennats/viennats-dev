@@ -19,6 +19,7 @@
 
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
+#include <float.h>
 
 namespace lvlset {
 
@@ -31,11 +32,24 @@ namespace lvlset {
             std::vector< std::vector<float> > NodeDataValues;
             std::vector< std::string > NodeDataDescription;
 
-
             typedef unsigned int node_ref_type;
 
             template <class V> node_ref_type insert_node(const V& v) {
                 Nodes.push_back(vec<float, D>(v));
+                return Nodes.size()-1;
+            }
+
+            template <class V> node_ref_type insert_node(const V& v, unsigned int loc) {
+                Nodes.push_back(vec<float, D>(v));
+                std::vector<vec<float,D> > temp;
+                for (unsigned int i=0;i<Nodes.size();i++) temp.push_back(vec<float, D>(Nodes[i]));
+                Nodes.clear();
+                for (unsigned int i=0;i<temp.size()+1;i++) {
+                	if (i==loc) {
+                		Nodes.push_back(vec<float, D>(v));
+                	}
+                	Nodes.push_back(vec<float, D>(temp[i]));
+                }
                 return Nodes.size()-1;
             }
 
@@ -45,6 +59,19 @@ namespace lvlset {
 
         };
 
+    	template <int D> class SurfaceList {
+    	public:
+
+    		typedef Surface<D> Surfaces;
+
+    		int dim;
+    		int nsurfaces;
+    		int open_boundary_direction;
+    		float bottom;
+    		std::list<Surfaces > surfaces;
+
+    		SurfaceList(int nb_surf):dim(D), nsurfaces(nb_surf) {}
+    	};
     }
 
     namespace {

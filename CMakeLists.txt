@@ -1,6 +1,7 @@
 # Required CMake Version
 ###############
-cmake_minimum_required(VERSION 2.6)
+# cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required(VERSION 3.1.0)
 
 # Project setup
 ###############
@@ -30,7 +31,6 @@ SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 INCLUDE_DIRECTORIES(".")
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/viennats/)
 INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/viennats/LSlib/)
-INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/external/LambertW)
 
 # Specify that the output executable is placed in the root build directory
 ################
@@ -56,6 +56,15 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 FIND_PACKAGE(SPRNG REQUIRED)
 INCLUDE_DIRECTORIES(${SPRNG_INCLUDE_DIR})
 SET(LIBRARIES ${LIBRARIES} ${SPRNG_LIBRARY})
+
+# HDF5
+FIND_PACKAGE(HDF5 COMPONENTS CXX)
+INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+SET(LIBRARIES ${LIBRARIES} ${HDF5_LIBRARIES})
+IF(HDF5_FOUND)
+  add_definitions(-DUSE_HDF5)
+  add_definitions(${HDF5_DEFINITIONS})
+ENDIF(HDF5_FOUND)
 
 # Subdirectories
 ################

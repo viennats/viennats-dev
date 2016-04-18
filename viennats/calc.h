@@ -35,8 +35,6 @@
 #include <cassert>
 #include "../LSlib/math.hpp"
 
-//#include "Statistics.h"
-
 namespace calc {
 
     template <int Dimensions> class Make3DVector {
@@ -436,11 +434,9 @@ namespace calc {
             const int my_thread_num=0;
             #endif
 
-        const int NumStartingPlaces=(ModelType::SpatiallyEqualDistributedFlux)?
+		    const int NumStartingPlaces=(ModelType::SpatiallyEqualDistributedFlux)?
                                             static_cast<int>(Partition.AreaSize(Parameter.open_boundary_direction)):   //AXIS
-                                            (ModelType::DropletDistribution)?
-                                              Model.NumberOfDroplets:
-                        my_num_threads;
+												my_num_threads;
 
 
             //for each thread a vector is defined, where the rates are stored
@@ -456,14 +452,12 @@ namespace calc {
       //beginning of parallel section with dynamic scheduling
       #pragma omp for schedule(dynamic) //Chunks are dynamically assigned to threads on a first-come, first-serve basis as threads become available.
       for (int StartingPlace=0;StartingPlace<NumStartingPlaces;++StartingPlace) {  //for each starting place do
-//          std::cout << "StartingPlace: " << StartingPlace << std::endl;
 
           //used to store the partition subbox the particles starts from
           typename PartitionType::subbox starting_subbox;
 
           //the start position of the particle (in global coordinates)
           double StartPosition[3];
-          typename ModelType::DropletType d;
 
           //if spatially equal distributed flux, determine the start_box
           if (ModelType::SpatiallyEqualDistributedFlux) {
@@ -482,17 +476,11 @@ namespace calc {
           StartPosition[tmp_dim]=tmp_s;
 
           starting_subbox=Partition.Access(StartPosition, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
-//          std::cout << "starting_subbox: " << starting_subbox.Max() << std::endl;
-          } else if (ModelType::DropletDistribution) {
-//          std::cout << "\n Generate droplet!\n";
-            Model.DropletGeneration(d, StartPosition, Parameter, Partition);
-//          std::cout << "StartPosition1 " << "(" << StartPosition[0] << "," << StartPosition[1] << "," << StartPosition[2] << ")\n";
           }
 
 
            //for each involved particle type do
           for (unsigned int ParticleType=0;ParticleType<Model.NumberOfParticleTypes;++ParticleType) {
-//            std::cout << "ParticleType: " << ParticleType << std::endl;
 
               //determine the number of particles which have to be simulated
              const unsigned int NumOfParticles=(ModelType::SpatiallyEqualDistributedFlux)?
@@ -500,46 +488,25 @@ namespace calc {
                             Model.NumberOfParticleClusters[ParticleType]/my_num_threads
                                 +(my_thread_num < static_cast<int>(Model.NumberOfParticleClusters[ParticleType]%my_num_threads)?1:0);
 
-            //for each droplet do
-//            for (unsigned int DropletCounter=0;DropletCounter<NumOfDroplets;++DropletCounter) {
-
-            //Here need to go through droplet motion to find the start position for the particle distribution and other properties (size, v)
-//              Model.DropletGeneration();
             //for each particle do
             for (unsigned int ParticleCounter=0;ParticleCounter<NumOfParticles;++ParticleCounter) {
 
-              //std::cout << "ParticleCounter: " << ParticleCounter << std::endl;
             //generate cluster energy and direction
             typename ModelType::ParticleType p;
             //typename ModelType::TipHeightType dist;
 
-//            std::cout << "Generate particle!\n";
-//            std::cout << "NumOfParticles: " << NumOfParticles << "\n";
-            Model.ParticleGeneration(p,d,ParticleType,ProcessTime, StartPosition, Parameter, Partition);
-//            if (Model.GeometryDependent==true) {
-//              Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition, Parameter, Partition);
-//            } else {
-//              Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
-//            }
-            //Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
-//            std::cout << "StartPosition2 " << "(" << StartPosition[0] << "," << StartPosition[1] << "," << StartPosition[2] << ")\n";
+            Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
 
             //if particle is not moving downwards
             if (Parameter.is_open_boundary_negative) {
-              //std::cout << "1st\n";
                 if(p.Direction[Parameter.open_boundary_direction]<=0.) continue;
             } else {
-              //std::cout << "2nd\n";
                 if(p.Direction[Parameter.open_boundary_direction]>=0.) continue;
             }
-            //std::cout << "p.Direction " << "(" << p.Direction[0] << "," << p.Direction[1] << "," << p.Direction[2] << ")\n";
 
             //calculate represented flux by that particle
-            //std::cout<< "p.Flux: "<<p.Flux<< endl;
             p.Flux/=Model.NumberOfParticleClusters[ParticleType];
-            //std::cout<< "p.Flux/=numOfParticles: "<<p.Flux<< endl;
             p.Flux/=RecepterArea;
-            //std::cout<< "p.Flux/=RecArea: "<<p.Flux<< endl;
 
             //determine starting position and starting subbox
             ClusterPositionType cp;
@@ -642,7 +609,7 @@ namespace calc {
                     }
                 }
                 cp.Subbox=Partition.Access(cp.X, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
-                //cp.X is now position within subbox after removing the "global components"
+                            //cp.X is now position within subbox after removing the "global components"
             }
 
             //loop until particle stack is empty
@@ -654,9 +621,6 @@ namespace calc {
               int last_surface_cell_indices[D];
               for (int r=0;r<D;++r) last_surface_cell_indices[r]=Partition.Min(r)-2;   //initialize with invalid indices
 
-//              std::cout << "cp.Subbox.Extension(" << cp.Subbox.Extension(0) << ", " << cp.Subbox.Extension(1) << ", " << cp.Subbox.Extension(2) << ")\n";
-//              std::cout << "cp.Subbox.Max(" << cp.Subbox.Max(0) << ", " << cp.Subbox.Max(1) << ", " << cp.Subbox.Max(2) << ")\n";
-//              std::cout << "cp.Subbox.Min(" << cp.Subbox.Min(0) << ", " << cp.Subbox.Min(1) << ", " << cp.Subbox.Min(2) << ")\n";
 
               //Iterate through the cells between LS.Max() and LS.Min() until surface reached or particle exits environment
               while (true) {
@@ -796,13 +760,6 @@ namespace calc {
                           for (int kk=0;kk<D;kk++) new_cp.X[kk]+=relative_distance_to_intersection*p.Direction[kk];
                           //p.Direction[kk] is unchanged at this point
                           //new_cp.X contains the coordinates within the Subbox at the subbox exit point
-//                                                std::cout << "cp.X6: (" << cp.X[0] << ", " << cp.X[1] << ", " << cp.X[2] << ")\n";
-//                                                std::cout << "p.Direction: " << p.Direction[0] << ", " << p.Direction[1] << ", " << p.Direction[2] << std::endl;
-//                                                std::cout << "relative_distance_to_intersection: " << relative_distance_to_intersection << std::endl;
-//
-//                                                std::cout << "Part.min(): " << Partition.Min(0) << ", " << Partition.Min(1) << ", " << Partition.Min(2) << "\n";
-//                                                std::cout << "Part.max(): " << Partition.Max(0) << ", " << Partition.Max(1) << ", " << Partition.Max(2) << "\n";
-//                                                std::cout << "new_cp.X(): " << new_cp.X[0] << ", " << new_cp.X[1] << ", " << new_cp.X[2] << "\n";
 
                           //determine normal vector
                           double tmp_normalvec[3];
@@ -851,8 +808,6 @@ namespace calc {
 
                   if (PositionStatusPos.none() && PositionStatusNeg.none()) {
 
-//                    std::cout << "PositionStatusPos.none() && PositionStatusNeg.none()\n";
-
                     //#####################################################################
                     //# determine corners which have to be checked for disk intersections #
                     //#####################################################################
@@ -879,8 +834,6 @@ namespace calc {
 
                     for (int s=0;s<D;++s) last_surface_cell_indices[s]=Subbox.Min(s);
 
-//                                        std::cout << "last_surface_cell_indices: " << last_surface_cell_indices[0] << ", " << last_surface_cell_indices[1] << ", " << last_surface_cell_indices[2] << "\n";
-
                     //#######################################################
                     //# check for disk intersections                        #
                     //#######################################################
@@ -889,47 +842,33 @@ namespace calc {
 //[Josef] This is where the four corners of the box containing the particle are checked for intersection
                     //all 8 neighbors have to be checked if they are active and their disks are hit
                     for (int g=0;g<(1<<D);g++) {
-//                                          std::cout << "g: " << g;
 
                         if(corners.test(g)) {
 
                             unsigned int gp= SurfaceLevelSet.active_pt_id(Cell.Points[g]);
-
                             if (gp!=LevelSetType::INACTIVE) {
-
-//                                                    std::cout << ", gp: " << gp << "\n";
 
                                 unsigned int gpD=gp*D;
 
                                 double cos=-NormalVectors[gpD]*p.Direction[0];
                                 for (int kk=1;kk<D;kk++) cos-=NormalVectors[gpD+kk]*p.Direction[kk];
-//                                                    std::cout << "cos: " << cos << "\n";
 
                                 if (cos > 0.) {
 
                                     //calculate relative position to disk midpoint
                                     double rel_pos[D];
                                     for (int kk=0;kk<D;kk++) rel_pos[kk]=cp.X[kk]-((g>>kk) & 1)-NormalVectors[gpD+kk]*DistancesToReceiver[gp];
-//                                                        std::cout << "g2: " << g << "\n";
                                     //rel_pos holds cp.X not cp_new.X
-//                                                        std::cout << "rel_pos: " << rel_pos[0] << ", " << rel_pos[1] << ", " << rel_pos[2] << "\n";
 
                                     //calculate rel_pos*disk_normal
                                     double rel_pos_dot_normal=rel_pos[0]*NormalVectors[gpD];
-//                                                        std::cout << "rel_pos_dot_normal: " << rel_pos_dot_normal << "\n";
                                     for (int kk=1;kk<D;kk++) rel_pos_dot_normal+=rel_pos[kk]*NormalVectors[gpD+kk];
-//                                                        std::cout << "rel_pos_dot_normal: " << rel_pos_dot_normal << "\n";
-//                                                        std::cout << "further_tracking_distance: " << further_tracking_distance << "\n";
-//                                                        std::cout << "travelled_distance_from_intersection: " << travelled_distance_from_intersection << "\n";
+
 
                                     if ( rel_pos_dot_normal <= (further_tracking_distance-travelled_distance_from_intersection)*cos ) {
 
                                         double tmpx=my::math::pow2(rel_pos[0]*cos+p.Direction[0]*rel_pos_dot_normal);
-//                                                            std::cout << "tmpx: " << tmpx << "\n";
                                         for (int kk=1;kk<D;kk++) tmpx+=my::math::pow2(rel_pos[kk]*cos+p.Direction[kk]*rel_pos_dot_normal);
-//                                                            std::cout << "tmpx: " << tmpx << "\n";
-//                                                            std::cout << "ReceptorRadius2: " << ReceptorRadius2 << "\n";
-//                                                            std::cout << "cos*cos*ReceptorRadius2: " << cos*cos*ReceptorRadius2 << "\n";
 
                                         if (tmpx<=cos*cos*ReceptorRadius2) {
 
@@ -937,15 +876,7 @@ namespace calc {
                                             for (int kk=0;kk<D;kk++) {
                                                 if (kk!=Parameter.open_boundary_direction) {
                                                     if ((Parameter.boundary_conditions[kk].min==bnc::REFLECTIVE_BOUNDARY) || (Parameter.boundary_conditions[kk].min==bnc::EXTENDED_BOUNDARY)) {
-//                                                                          std::cout << "g: " << g << " - kk: " << kk << "\n";
-//                                                                          std::cout << "p.Direction: " << p.Direction[0] << ", " << p.Direction[1] << ", " << p.Direction[2] << std::endl;
-//                                                                          std::cout << "cp.X: " << cp.X[0] << ", " << cp.X[1] << ", " << cp.X[2] << "\n";
-//                                                                          std::cout << "Partition.Min: " << Partition.Min(0) << ", " << Partition.Min(1) << ", " << Partition.Min(2) << "\n";
-//                                                                          std::cout << "Subbox.Min: " << Subbox.Min(0) << ", " << Subbox.Min(1) << ", " << Subbox.Min(2) << "\n";
-//                                                                          std::cout << "Partition.Max: " << Partition.Max(0) << ", " << Partition.Max(1) << ", " << Partition.Max(2) << "\n";
-//                                                                          std::cout << "Subbox.Max: " << Subbox.Max(0) << ", " << Subbox.Max(1) << ", " << Subbox.Max(2) << "\n";
                                                         if ((g & (1<<kk))==0) {
-//                                                                              std::cout << "(g & (1<<kk))==0\n";
                                                             if (Partition.Min(kk)==Subbox.Min(kk)) {
                                                                 if (cp.X[kk]*cos+p.Direction[kk]*rel_pos_dot_normal>=0.) {
                                                                     Factor<<=1;
@@ -955,7 +886,6 @@ namespace calc {
                                                                 }
                                                             }
                                                         } else {
-//                                                                              std::cout << "(g & (1<<kk))!=0\n";
                                                             if (Partition.Max(kk)==Subbox.Max(kk)) {
                                                                 if (cp.X[kk]*cos+p.Direction[kk]*rel_pos_dot_normal<=cos) {
                                                                     Factor<<=1;
@@ -965,27 +895,25 @@ namespace calc {
                                                                 }
                                                             }
                                                         }
-//                                                                          std::cout << "Factor: " << Factor << "\n";
                                                     }
                                                 }
                                             }
 
                                             for (;Factor>0;--Factor) {
-//                                                                  std::cout << "ParticleCollision()\n";
 //[Josef] Here, the particle has collided with the surface so the model's function to deal with this is called.
 
 
-                                                int mat = 0;
-                                                if ((ModelType::CoverageStorageSize>0) || (ModelType::ReemissionIsMaterialDependent))
-                                                  mat = PointMaterials[gp];
+//                                                int mat = 0;
+//                                                if ((ModelType::CoverageStorageSize>0) || (ModelType::ReemissionIsMaterialDependent))
+//                                                  mat = PointMaterials[gp];
 
                                                 Model.ParticleCollision(  p,
                                                                             Make3DVector<D>(&NormalVectors[gpD]),
                                                                             //&NormalVectors[gpD],
                                                                             &(tmp_Rates[gp*Model.RatesStorageSize]),
                                                                             &(Coverages[gp*Model.CoverageStorageSize]),
-                                                                            ProcessTime,
-                                                                            mat
+                                                                            ProcessTime//,
+//                                                                            mat
                                                 );
                                             }
                                         }
@@ -1015,7 +943,6 @@ namespace calc {
                 for (int kk=0;kk<D;kk++) {
                   if (kk!=LeavingDirection) cp.X[kk]+=p.Direction[kk]*max_distance_in_box;
                 }
-//                std::cout << "cp.X5: " << cp.X[0] << ", " << cp.X[1] << ", " << cp.X[2] << "\n";
 
                 if (PositionStatusNeg.test(LeavingDirection)) {                     //particle enters regular simulation domain from negative side
                     cp.X[LeavingDirection]=0;
@@ -1078,7 +1005,6 @@ namespace calc {
 
             } // end while loop: until particle stack is empty
           }//end of particle loop
-//          }//end of droplet loop
         }//end of particle type loop
       }
 
@@ -1094,44 +1020,33 @@ namespace calc {
         }
       }
 
-      // [josef] now that all thead-exclusive thread rates have been merged, we can output them
-
-//      for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
-//      {
-//        if(it.active_pt_id() == gp)
-//        {
-//          std::cout << "particle collision at gp: " << gp << " coordinates: ";
-//          for (int j=0;j<D;j++) std::cout << (it.start_indices()[j]) << " ";
-//          std::cout << " rate: " << (tmp_Rates[gp*Model.RatesStorageSize]) <<  std::endl;
-//          break;
-//        }
-//      }
-
-      {
-      std::ofstream outputfile("rates.csv");
-      for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
-      {
-        if(it.active_pt_id() != LevelSetType::INACTIVE)
-        {
-          for (int j=0;j<D;j++) outputfile << (it.start_indices()[j]) << " ";
-          outputfile << Rates[it.active_pt_id()] << std::endl;
-        }
-      }
-      outputfile.close();
-      }
-      {
-      std::ofstream outputfile("rates_griddelta.csv");
-      for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
-      {
-        if(it.active_pt_id() != LevelSetType::INACTIVE)
-        {
-          for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.GridDelta << " ";
-          outputfile << Rates[it.active_pt_id()] << std::endl;
-        }
-      }
-      outputfile.close();
-      }
-
+			// [josef] now that all thead-exclusive thread rates have been merged, we can output them
+		if (Model.OutputFluxes) {
+			  {
+			  std::ofstream outputfile("rates.csv");
+			  for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
+			  {
+				if(it.active_pt_id() != LevelSetType::INACTIVE)
+				{
+				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j]) << " ";
+				  outputfile << Rates[it.active_pt_id()] << std::endl;
+				}
+			  }
+			  outputfile.close();
+			  }
+			  {
+			  std::ofstream outputfile("rates_griddelta.csv");
+			  for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
+			  {
+				if(it.active_pt_id() != LevelSetType::INACTIVE)
+				{
+				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.GridDelta << " ";
+				  outputfile << Rates[it.active_pt_id()] << std::endl;
+				}
+			  }
+			  outputfile.close();
+			  }
+		}
     }
 
     //local_time=my::time::GetTime()-StartTime;

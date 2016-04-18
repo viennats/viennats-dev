@@ -136,19 +136,19 @@ namespace lvlset {
     }
 
     template<class TriangulationType, class LevelSetType>
-    void init(			LevelSetType& l,                       //the level set function which should be initialized
-                        const TriangulationType& srf,           //the triangulated surface
-                        typename LevelSetType::value_type eps_sign=1e-6,        //"eps_sign" is used to determine
-                                                                                //the sign of the distance to the surface
-                        typename LevelSetType::value_type eps_boundary=1e-5,    //"eps_boundary" defines the range at grid boundaries
-                                                                                //within which all nodes snap exactly to the boundary coordinates
-                        typename LevelSetType::value_type eps_distance=1e-4,     //"eps_distance" ensures that all grid points are initialized which are
-                                                                                //are on a grid segment which is intersected by the surface element
+    void init(			LevelSetType& l,						//the level set function which should be initialized
+                        const TriangulationType& srf,		//the triangulated surface
+                        typename LevelSetType::value_type eps_sign=1e-6,		//"eps_sign" is used to determine
+                        														//the sign of the distance to the surface
+                        typename LevelSetType::value_type eps_boundary=1e-5,	//"eps_boundary" defines the range at grid boundaries
+                        														//within which all nodes snap exactly to the boundary coordinates
+                        typename LevelSetType::value_type eps_distance=1e-4,	//"eps_distance" ensures that all grid points are initialized which are
+                        														//are on a grid segment which is intersected by the surface element
                         typename LevelSetType::value_type eps_distance2=1e-7
 
         ) {
 
-        typedef typename TriangulationType::element_index_type element_index_type;
+		typedef typename TriangulationType::element_index_type element_index_type;
 //        typedef typename TriangulationType::node_index_type node_index_type;
         typedef typename LevelSetType::index_type index_type;
         typedef typename LevelSetType::value_type value_type;

@@ -39,18 +39,18 @@ namespace partition {
 			int SplitDirection;
 			IntLinkType Parent;
 			
-			union {
-				struct {
+			union SCUnion {
+				struct SC {
 					IntCoordType SplitCoordinate;
 					IntLinkType Childs[2];
-				};
-				struct {
+				} SC;
+				struct Cells2 {
 					CellRefType Cell;
 					IntCoordType Min_[D];
 					IntCoordType Ext_[D];
-				};
+				} Cells2;
 				
-			};
+			} SCUnion;
 			
 			node() : SplitDirection(-1) {}
 			
@@ -59,27 +59,27 @@ namespace partition {
 			}
 			
 			IntCoordType Extension(int dim) const {
-				return Ext_[dim];
+				return SCUnion.Cells2.Ext_[dim];
 			}
 			
 			IntCoordType Max(int dim) const {
-				return Min_[dim]+Ext_[dim];
+				return SCUnion.Cells2.Min_[dim]+SCUnion.Cells2.Ext_[dim];
 			}
 					
 			IntCoordType Min(int dim) const {
-				return Min_[dim];
+				return SCUnion.Cells2.Min_[dim];
 			}
 			
 			IntCoordType& Min(int i)  {
-				return Min_[i];
+				return SCUnion.Cells2.Min_[i];
 			}
 
 			IntCoordType& Extension(int i)  {
-				return Ext_[i];
+				return SCUnion.Cells2.Ext_[i];
 			}
 			
 			bool ContainsCell() const {
-				return (IsLeaf() && (Cell!=C::UndefinedCellRef()));
+				return (IsLeaf() && (SCUnion.Cells2.Cell!=C::UndefinedCellRef()));
 			}
 			
 			IntLinkType AreaSize(int Direction) const {
@@ -214,7 +214,7 @@ namespace partition {
 			}
 			
 			CellRefType Cell() const {
-				return NodeRef->Cell;
+				return NodeRef->SCUnion.Cells2.Cell;
 			}
 			
 			bool ContainsCell() const {
@@ -374,7 +374,7 @@ namespace partition {
 			tmp_node& cl_it=TempNodeList.top();
 			
 			if (cl_it.ParentNode!=C::UndefinedLink()) {
-				NodeList[cl_it.ParentNode].Childs[cl_it.ChildNumber]=NodeList.size();
+				NodeList[cl_it.ParentNode].SCUnion.SC.Childs[cl_it.ChildNumber]=NodeList.size();
 			}
 			
 			typename C::IntLinkType ParentNumber=NodeList.size();
@@ -387,9 +387,9 @@ namespace partition {
 			//if node is leaf
 			if ((cl_it.StartIndex==cl_it.EndIndex) || (cl_it.IsVoxel())) {
 				if (cl_it.StartIndex!=cl_it.EndIndex) {
-					cl.Cell=start+cell_lst[cl_it.StartIndex];
+					cl.SCUnion.Cells2.Cell=start+cell_lst[cl_it.StartIndex];
 				} else {
-					cl.Cell=C::UndefinedCellRef();
+					cl.SCUnion.Cells2.Cell=C::UndefinedCellRef();
 				}
 				for (int k=0;k<D;++k) {
 					cl.Min(k)=cl_it.Min(k);
@@ -403,7 +403,7 @@ namespace partition {
 			//calculate splitting plane
 
 			int& SplitDirection=cl.SplitDirection;
-			IntCoordType& SplitIndex=cl.SplitCoordinate;
+			IntCoordType& SplitIndex=cl.SCUnion.SC.SplitCoordinate;
 			
 			switch(splitting_type) {
                 case SPATIAL_MEDIAN: {
@@ -487,15 +487,15 @@ namespace partition {
 		while (!sb.NodeRef->IsLeaf()) {
 			if (sb.NodeRef->SplitDirection==Direction) {
 				if (DirectionSign) {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[0]];
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[0]];
 				} else {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[1]];
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[1]];
 				}
 			} else {	
-				if (pos[sb.NodeRef->SplitDirection]<sb.NodeRef->SplitCoordinate) {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[0]];
+				if (pos[sb.NodeRef->SplitDirection]<sb.NodeRef->SCUnion.SC.SplitCoordinate) {
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[0]];
 				} else {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[1]];
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[1]];
 				} 
 			}	
 		}
@@ -563,23 +563,23 @@ namespace partition {
 			sb.NodeRef=&NodeList[sb.NodeRef->Parent];
 			
 			if (sb.NodeRef->SplitDirection==Direction) {
-				if (sb.NodeRef->Childs[DirectionSign]!=tmp) break;
+				if (sb.NodeRef->SCUnion.SC.Childs[DirectionSign]!=tmp) break;
 			}
 		}
 		
 		//go to other child
-		sb.NodeRef=&NodeList[sb.NodeRef->Childs[DirectionSign]];
+		sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[DirectionSign]];
 		
 		//traverse down
 		while (!sb.NodeRef->IsLeaf()) {
 			
 			if (sb.NodeRef->SplitDirection==Direction) {
-				sb.NodeRef=&NodeList[sb.NodeRef->Childs[!DirectionSign]];
+				sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[!DirectionSign]];
 			} else {	
-				if (pos[sb.NodeRef->SplitDirection]<sb.NodeRef->SplitCoordinate) {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[0]];
+				if (pos[sb.NodeRef->SplitDirection]<sb.NodeRef->SCUnion.SC.SplitCoordinate) {
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[0]];
 				} else {
-					sb.NodeRef=&NodeList[sb.NodeRef->Childs[1]];
+					sb.NodeRef=&NodeList[sb.NodeRef->SCUnion.SC.Childs[1]];
 				} 
 			}	
 					

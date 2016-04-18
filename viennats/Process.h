@@ -27,32 +27,29 @@
 
 #include <boost/graph/adjacency_list.hpp>
 #include <boost/graph/connected_components.hpp>
-//#include </home/filipov/boost/boost_1_49_0/boost/graph/adjacency_list.hpp>
-//#include </home/filipov/boost/boost_1_49_0/boost/graph/connected_components.hpp>
 
 #include "message.h"
-//#include "Model/ModelPlanarization.h"
 
 #include "Partition/PartitionNeighborLinksArrays.h"
 #include "Partition/PartitionUpDownLinkTree.h"
 #include "Partition/PartitionFullGrid.h"
 
-#include "../LSlib/vector.hpp"
+#include "./LSlib/vector.hpp"
 #include "boundaries.h"
 
 namespace proc {
 
-        template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
+	template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
 
-            for (int i=0;i<num_layers;++i) {
+	    for (int i=0;i<num_layers;++i) {
             LS.push_back(LS.back());
         }
 
-            for (int i=0;i>num_layers;--i) {
+	    for (int i=0;i>num_layers;--i) {
             assert(LS.size()>=2);
             LS.erase((LS.end()--)--);
         }
-        }
+	}
 
 	template <class LevelSetsType> void DetermineTopMostLayer(
 			const LevelSetsType& LS,
@@ -67,7 +64,6 @@ namespace proc {
 
 		typename LevelSetType::points_type segmentation=LS.back().get_new_segmentation();
 
-//		std::cout << "segmentation.size(): " << segmentation.size() << std::endl;
 		#pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
 		for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
 
@@ -121,17 +117,17 @@ namespace proc {
         } */
         }
 
-        namespace {
+	namespace {
 
         template <class I1, class I2>
             bool connected(const I1& it1, const I2& it2) {
             return (it1.sign()==it2.sign());
         }
 
-        }
+	}
 
 
-        template <class LStype> std::pair<unsigned int, unsigned int> CalculateConnectivities(
+	template <class LStype> std::pair<unsigned int, unsigned int> CalculateConnectivities(
         const LStype& l,
         std::vector<bool>& Connectivities,
         bool is_open_boundary_negative) {
@@ -144,7 +140,13 @@ namespace proc {
         //unsigned int total_number_of_runs=0;
 
         //allocate memory for component list
-        std::vector<int> comp_lst[l.number_of_segments()][D+1];
+//        std::vector<int> comp_lst[l.number_of_segments()][D+1];
+//        std::vector<int> *comp_lst = new std::vector<int> [l.number_of_segments()][D+1];
+        std::vector<int>** comp_lst = new std::vector<int>* [l.number_of_segments()];
+        for (unsigned int i=0;i<l.number_of_segments();++i) {
+        	comp_lst[i] = new std::vector<int>[D+1];
+        }
+
         for (unsigned int sub=0;sub<l.number_of_segments();++sub) {
             for (int i = -1;i<D;++i) {
                 comp_lst[sub][i+1].resize(l.number_of_runs(i,sub),-1);
@@ -221,30 +223,35 @@ namespace proc {
             }
         }
 
-        return std::make_pair(num_components, num_components_after);
-
+        for(unsigned int i=0;i<l.number_of_segments();++i)
+        {
+            delete[] comp_lst[i];
         }
+        delete[] comp_lst;
 
-        template <class LStype> void CalculateVisibilities(
+        return std::make_pair(num_components, num_components_after);
+	}
+
+	template <class LStype> void CalculateVisibilities(
         const LStype& l,
         std::vector<bool>& Visibilities,
         int open_boundary_direction,
         bool is_open_boundary_negative) {
 
-            const int D=LStype::dimensions;
+	    const int D=LStype::dimensions;
 
-            const typename LStype::value_type max=std::numeric_limits<typename LStype::value_type>::max();
+	    const typename LStype::value_type max=std::numeric_limits<typename LStype::value_type>::max();
 
-            Visibilities.resize(l.num_active_pts());
+	    Visibilities.resize(l.num_active_pts());
 
-            std::vector<typename LStype::index_type> old_indices(D-1-open_boundary_direction, std::numeric_limits<typename LStype::index_type>::max());
+	    std::vector<typename LStype::index_type> old_indices(D-1-open_boundary_direction, std::numeric_limits<typename LStype::index_type>::max());
 
 	    unsigned int size=1;
 	    for (int i=0;i<open_boundary_direction;++i) {
-		assert(!l.grid().is_pos_boundary_infinite(i));
-		assert(!l.grid().is_neg_boundary_infinite(i));
+	        assert(!l.grid().is_pos_boundary_infinite(i));
+	        assert(!l.grid().is_neg_boundary_infinite(i));
 
-		size*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
+	        size*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
 	    }
 
 	    std::vector<typename LStype::value_type> min_values(size, max);
@@ -254,45 +261,45 @@ namespace proc {
 	    typename LStype::const_iterator_runs it(l,!is_open_boundary_negative);
 	    while (!it.is_finished()) {
 
-		for (int i=0;i<D-1-open_boundary_direction;++i) {
-		    bool b=false;
-		    if (old_indices[i]!=it.start_indices(i+open_boundary_direction+1)) {
-			old_indices[i]=it.start_indices(i+open_boundary_direction+1);
-			b=true;
-		    }
-		    if (b) min_values.assign(size,max);
-		}
+	        for (int i=0;i<D-1-open_boundary_direction;++i) {
+	            bool b=false;
+	            if (old_indices[i]!=it.start_indices(i+open_boundary_direction+1)) {
+	                old_indices[i]=it.start_indices(i+open_boundary_direction+1);
+	                b=true;
+	            }
+	            if (b) min_values.assign(size,max);
+	        }
 
-		unsigned int pos_begin=0;
-		unsigned int pos_end=0;
+	        unsigned int pos_begin=0;
+	        unsigned int pos_end=0;
 
-		for (int i=open_boundary_direction-1;i>=0;--i) {
-		    pos_begin*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
-		    pos_end*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
-		    pos_begin+=(it.start_indices(i)-l.grid().min_point_index(i));
-		    pos_end+=(it.end_indices(i)-l.grid().min_point_index(i));
-		}
+	        for (int i=open_boundary_direction-1;i>=0;--i) {
+	            pos_begin*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
+	            pos_end*=(l.grid().max_point_index(i)-l.grid().min_point_index(i)+1);
+	            pos_begin+=(it.start_indices(i)-l.grid().min_point_index(i));
+	            pos_end+=(it.end_indices(i)-l.grid().min_point_index(i));
+	        }
 
-		if (it.is_active()) {
-		    Visibilities[is_open_boundary_negative?id:(l.num_active_pts()-1-id)]=(it.value()<min_values.at(pos_begin));
-		    ++id;
-		}
+	        if (it.is_active()) {
+	            Visibilities[is_open_boundary_negative?id:(l.num_active_pts()-1-id)]=(it.value()<min_values.at(pos_begin));
+	            ++id;
+	        }
 
-		for (unsigned int i=pos_begin; i<=pos_end;++i) min_values.at(i)=std::min(min_values.at(i), it.value());
+	        for (unsigned int i=pos_begin; i<=pos_end;++i) min_values.at(i)=std::min(min_values.at(i), it.value());
 
-		if (is_open_boundary_negative) {
-		    it.next();
-		} else {
-		    it.previous();
-		}
-	}
+	        if (is_open_boundary_negative) {
+	            it.next();
+	        } else {
+	            it.previous();
+	        }
+        }
 
-            assert(id==l.num_active_pts());
+	    assert(id==l.num_active_pts());
     }
 
-        namespace {
+	namespace {
 
-                template <class ModelType, int Dimensions> class VelocityClass {
+		template <class ModelType, int Dimensions> class VelocityClass {
             const ModelType& Model;
             const double* NormalVector;
             const double* Coverages;
@@ -310,7 +317,7 @@ namespace proc {
 
                             ) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi)  {}
 
-                        double operator()(unsigned int active_pt,int matnum) const {
+			double operator()(unsigned int active_pt,int matnum) const {
                 double v;
                // double s=0.;
 
@@ -321,66 +328,11 @@ namespace proc {
                         Rates+active_pt*Model.RatesStorageSize,
                         matnum,
                         (Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-                        (Model.CalculateVisibilities)?Visibilities[active_pt]:true//,
-                        //s
+                        (Model.CalculateVisibilities)?Visibilities[active_pt]:true
                 );
                 return v;
             }
         };
-
-		template <class ModelType, int Dimensions> class VelocityClass1 {
-			const ModelType& Model;
-	    const double* NormalVector;
-	    const double* Coverages;
-	    const double* Rates;
-	    const std::vector<bool>& Connectivities;
-	    const std::vector<bool>& Visibilities;
-			double NextTime;
-			double RelTime;
-	    double *Thick;
-	    double *Vel;
-	    bool Top;
-	public:
-
-            VelocityClass1(	const ModelType& m,
-                            const double * n,
-                            const double * c,
-                            const double * r,
-                            const std::vector<bool>& co,
-                            const std::vector<bool>& vi,
-                                                        double t,
-                                                        double s,
-                            double *th,
-                            double *ve,
-                                                        bool tp
-
-                            ) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi), NextTime(t), RelTime(s), Thick(th), Vel(ve), Top(tp)  {}
-
-            double operator()(unsigned int active_pt,int matnum) const {
-                double v=0;
-                bool Mask=false;
-
-				Model.CalculateVelocity(
-						//v_top,
-						//v_bottom,
-						v,
-						calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
-						Coverages+active_pt*Model.CoverageStorageSize,
-						Rates+active_pt*Model.RatesStorageSize,
-						matnum,
-						(Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-						(Model.CalculateVisibilities)?Visibilities[active_pt]:true,
-						NextTime,
-						RelTime,
-						Thick,
-						Vel,
-						Top,
-						Mask
-				);
-		return v;
-	    }
-	};
-
 
 		template <class ModelType, int Dimensions> class VelocityClass2 {
 			const ModelType& Model;
@@ -398,7 +350,7 @@ namespace proc {
 							const std::vector<bool>& co,
 							const std::vector<bool>& vi
 
-							) : Model(m), NormalVector(n), Coverages(c), Rates(r), /*RelTime(s),*/ Connectivities(co), Visibilities(vi)  {}
+							) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi)  {}
 
 			void scalar_velocity(double & v, unsigned int active_pt,int matnum) const {
 
@@ -409,113 +361,18 @@ namespace proc {
 						Rates+active_pt*Model.RatesStorageSize,
 						matnum,
 						(Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-						(Model.CalculateVisibilities)?Visibilities[active_pt]:true//,
-				);
+						(Model.CalculateVisibilities)?Visibilities[active_pt]:true);
 			}
 
 			void vector_velocity(double* v, unsigned int active_pt, double location, int matnum) const {
 				Model.CalculateVectorVelocity(
 						v,
-						location,
 						calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
 						Coverages+active_pt*Model.CoverageStorageSize,
 						Rates+active_pt*Model.RatesStorageSize,
 						matnum,
 						(Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-						(Model.CalculateVisibilities)?Visibilities[active_pt]:true,
-						0.0,
-						false
-				);
-			}
-		};
-
-		template <class ModelType, int Dimensions> class VelocityClass3 {
-//			const model::Oxidation& Model;
-			const ModelType& Model;
-			const double* NormalVector;
-			const double* Coverages;
-			const double* Rates;
-			const std::vector<bool>& Connectivities;
-			const std::vector<bool>& Visibilities;
-			double NextTime;
-			double RelTime;
-			double *Thick;
-	    double *Vel;
-	    bool Top;
-	    bool Mask;
-		public:
-
-			VelocityClass3(	const ModelType& m,//const model::Oxidation& m,
-							const double * n,
-							const double * c,
-							const double * r,
-							const std::vector<bool>& co,
-							const std::vector<bool>& vi,
-							double t,
-							double s,
-			    double *th,
-			    double *ve,
-			    bool tp,
-			    bool msk
-
-							) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi), NextTime(t), RelTime(s), Thick(th), Vel(ve), Top(tp), Mask(msk) {
-
-//				if (tp){
-//					double velocity=*ve;
-//					velocity *=(-55./45.);
-//					*Vel=velocity;
-//				} else {
-//					Vel = ve;
-//				}
-
-			}
-
-//			if (Mask) std::cout << "Mask!\n";
-			void scalar_velocity(double & v, unsigned int active_pt, int matnum) const {
-//				double v_top=0;
-//				double v_bottom=0;
-				Model.CalculateVelocity(
-						//v_top,
-						//v_bottom,
-						v,
-						calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
-						Coverages+active_pt*Model.CoverageStorageSize,
-						Rates+active_pt*Model.RatesStorageSize,
-						matnum,
-						(Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-						(Model.CalculateVisibilities)?Visibilities[active_pt]:true,
-						NextTime,
-						RelTime,
-						Thick,
-						Vel,
-						Top,
-						Mask
-				);
-				//std::cout << "Vel: " << Vel << std::endl;
-//				if (Top) {
-//					v = v_top;
-//					std::cout << "v_top: " << v << std::endl;
-//				} else {
-//					v = v_bottom;
-//					std::cout << "v_bottom: " << v << std::endl;
-//				}
-//				if (Mask) std::cout << "Vel: " << *Vel << "\n";
-			}
-
-			void vector_velocity(double* v, unsigned int active_pt, double location, int matnum) const {
-				Model.CalculateVectorVelocity(
-						v,
-						location,
-						calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
-						Coverages+active_pt*Model.CoverageStorageSize,
-						Rates+active_pt*Model.RatesStorageSize,
-						matnum,
-						(Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-						(Model.CalculateVisibilities)?Visibilities[active_pt]:true,
-						*Vel,
-						Top,
-						Mask
-				);
+						(Model.CalculateVisibilities)?Visibilities[active_pt]:true);
 			}
 		};
 
@@ -559,7 +416,6 @@ namespace proc {
                 if (series==0) {
 
                     double v=0.;
-                   // double s=0.;
 
                     unsigned int mat=0;
                     bool connected=true;
@@ -569,16 +425,15 @@ namespace proc {
                     if (Connectivities.size()>0) connected=Connectivities[active_pt_id];
                     if (Visibilities.size()>0) visible=Visibilities[active_pt_id];
 
-                        Model.CalculateVelocity(
-                                        v,
-                                        calc::Make3DVector<Dimensions>(NormalVector+active_pt_id*Dimensions),
-                                        Coverages+active_pt_id*Model.CoverageStorageSize,
-                                        Rates+active_pt_id*Model.RatesStorageSize,
-                                        mat,
-                                        connected,
-                                        visible//,
-                                        //s
-                                                );
+                   	Model.CalculateVelocity(
+                   			v,
+                   			calc::Make3DVector<Dimensions>(NormalVector+active_pt_id*Dimensions),
+                   			Coverages+active_pt_id*Model.CoverageStorageSize,
+                   			Rates+active_pt_id*Model.RatesStorageSize,
+                   			mat,
+                   			connected,
+                   			visible
+						);
 
                     out << static_cast<float>(v);
 
@@ -592,8 +447,8 @@ namespace proc {
 
                 } else {
 
-                        unsigned int mat=0;
-                        if (Materials.size()>0) mat= Materials[active_pt_id];
+                	unsigned int mat=0;
+                	if (Materials.size()>0) mat= Materials[active_pt_id];
 
                     out << mat;
 
@@ -638,138 +493,194 @@ namespace proc {
             }
 
         };
-
-
-        template <class ModelType, int Dimensions>
-        class DataAccessClass2 {
-            const ModelType& Model;
-            const double* Coverages;
-            const double* Rates;
-            const double* NormalVector;
-            const std::vector<unsigned int>& Materials;
-            const std::vector<bool>& Connectivities;
-            const std::vector<bool>& Visibilities;
-            bool OutputVelocities;
-            bool OutputCoverages;
-            bool OutputRates;
-            bool OutputMaterials;
-         public:
-
-            DataAccessClass2(   const ModelType& m,// const model::Oxidation& m,
-                                const double * c,
-                                const double * r,
-                                const double * n,
-                                const std::vector<unsigned int>& ma,
-                                const std::vector<bool>& co,
-                                const std::vector<bool>& vi,
-                                bool out_v=false,
-                                bool out_c=false,
-                                bool out_r=false,
-                                bool out_m=false
-                                ) : Model(m), Coverages(c), Rates(r), NormalVector(n), Materials(ma), Connectivities(co), Visibilities(vi), OutputVelocities(out_v), OutputCoverages(out_c), OutputRates(out_r), OutputMaterials(out_m)/*, NextTime(t), TimeStep(s), Thick(th), Vel(ve)*/ {}
-
-             int number_of_series() const {
-                 return (1+ModelType::CoverageStorageSize+ModelType::RatesStorageSize+1);
-            }
-
-            template <class PT_ID_TYPE>
-            std::string get_series_data(PT_ID_TYPE active_pt_id, int series) const {
-
-                std::ostringstream out;
-
-                if (series==0) {
-
-                    double v;
-
-                    unsigned int mat=0;
-                    bool connected=true;
-                    bool visible=true;
-                    double NextTime=0;
-                    double TimeStep=0;
-                    double *Thick=0;
-                    double *Vel=0;
-
-                    if (Materials.size()>0) mat= Materials[active_pt_id];
-                    if (Connectivities.size()>0) connected=Connectivities[active_pt_id];
-                    if (Visibilities.size()>0) visible=Visibilities[active_pt_id];
-
-                    Model.CalculateVelocity(
-                                v,
-                                calc::Make3DVector<Dimensions>(NormalVector+active_pt_id*Dimensions),
-                                Coverages+active_pt_id*Model.CoverageStorageSize,
-                                Rates+active_pt_id*Model.RatesStorageSize,
-                                mat,
-                                connected,
-                                visible,
-                                                NextTime,
-                                                TimeStep,
-                                Thick,
-                                Vel,
-                                true
-                        );
-
-                    out << static_cast<float>(v);
-
-                } else if (series<=ModelType::CoverageStorageSize) {
-
-                   out <<  static_cast<float>(Coverages[active_pt_id*ModelType::CoverageStorageSize+series-1]);
-
-                } else if (series<=ModelType::CoverageStorageSize+ModelType::RatesStorageSize) {
-
-                    out << static_cast<float>(Rates[active_pt_id*ModelType::RatesStorageSize+series-ModelType::CoverageStorageSize-1]);
-
-                } else {
-
-                        unsigned int mat=0;
-                        if (Materials.size()>0) mat= Materials[active_pt_id];
-
-                    out << mat;
-
-                }
-                return out.str();
-            }
-
-            std::string get_series_label(int series) const {
-                if (series==0) {
-                    return std::string("Velocities");
-                } else if (series<=ModelType::CoverageStorageSize) {
-                    std::ostringstream out;
-                    out << "Coverage" << series-1;
-                    return out.str();
-                } else if (series<=ModelType::CoverageStorageSize+ModelType::RatesStorageSize) {
-                    std::ostringstream out;
-                    out << "Rate" << series-ModelType::CoverageStorageSize-1;
-                    return out.str();
-                } else {
-                    return std::string("Material");
-                }
-            }
-
-            std::string get_series_type(int series) const {
-                if (series<=ModelType::CoverageStorageSize+ModelType::RatesStorageSize) {
-                    return std::string("float");
-                } else {
-                    return std::string("int");
-                }
-            }
-
-            bool get_series_output(int series) const {
-               if (series==0) {
-                    return OutputVelocities;
-                } else if (series<=ModelType::CoverageStorageSize) {
-                    return OutputCoverages;
-                } else if (series<=ModelType::CoverageStorageSize+ModelType::RatesStorageSize) {
-                    return OutputRates;
-                } else {
-                    return OutputMaterials;
-                }
-            }
-
-	};
 	}
 
-	// Normal original ExecuteProcess2 from Ertl
-	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess2(
+	template <class LevelSetsType, class ParameterType, class ProcessParameterType , class OutputInfoType> void ExecuteProcess(
+                LevelSetsType& LevelSets,
+                const model::Planarization& Model,
+                const ParameterType& Parameter,
+                const ProcessParameterType& ProcessParameter,
+                OutputInfoType & output_info
+        ) {
+
+
+	    typedef typename LevelSetsType::value_type LevelSetType;
+
+	    LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.GridDelta, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative));
+
+	    for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
+            //*it = max(*it, LevelSets.back());
+	        it->max(LevelSets.back());         //adjust all level set functions below the plane
+            it->thin_out();                    //remove grid points which do not have at least one opposite signed neighbor
+        }
+
+	    if (!Model.fill_up()) LevelSets.pop_back();
+
+	    //TODO output and time
+
+	}
+
+	template <class LevelSetsType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
+                LevelSetsType& LevelSets,
+                const model::Mask& Model,
+                const ParameterType& Parameter,
+                const ProcessParameterType& ProcessParameter,
+                OutputInfoType & output_info
+        ) {
+
+        assert(LevelSets.size()>=2);
+
+	    typedef typename LevelSetsType::value_type LevelSetType;
+	    const int D=LevelSetType::dimensions;
+
+	    geometry::geometry<D> mask_geometry;
+
+	    mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+
+	    typedef std::list<geometry::surface<D> > SurfacesType;
+	    SurfacesType Surfaces;
+
+	    {
+            std::bitset<2*D> remove_flags;
+
+            for (int i=0;i<D;++i) {
+                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                    remove_flags.set(i);
+                } else {
+                    if (i==Parameter.open_boundary_direction && !Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+                }
+                if (Parameter.boundary_conditions[i].max==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::EXTENDED_BOUNDARY) {
+                    remove_flags.set(i+D);
+                } else {
+                    if (i==Parameter.open_boundary_direction && Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+                }
+            }
+
+            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps);
+        }
+
+	    /*geometry::TransformGeometryToSurfaces(     mask_geometry,
+                                                   Surfaces,
+                                                   Parameter.open_boundary_direction,
+                                                   Parameter.is_open_boundary_negative,
+                                                   Parameter.GridDelta*Parameter.snap_to_boundary_eps
+                                               );*/
+
+	    LevelSetType mask_ls(LevelSets.back().grid());
+
+	    init(mask_ls,Surfaces.back());
+
+	    LevelSetType & l1=LevelSets.back();
+	    const LevelSetType & l2 =*(++LevelSets.rbegin());
+
+	    //l1=min(max(l1,mask_ls),l2);
+
+	    l1.max(mask_ls);
+	    l1.min(l2);
+
+	    l1.thin_out();
+
+        //TODO output and time
+
+    }
+
+
+	template <class LevelSetsType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
+                LevelSetsType& LevelSets,
+                const model::BooleanOps& Model,
+                const ParameterType& Parameter,
+                const ProcessParameterType& ProcessParameter,
+                OutputInfoType & output_info
+        ) {
+
+	    if (Model.level()==0) return;
+
+        typedef typename LevelSetsType::value_type LevelSetType;
+        const int D=LevelSetType::dimensions;
+
+        geometry::geometry<D> boolop_geometry;
+
+        boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        typedef std::list<geometry::surface<D> > SurfacesType;
+        SurfacesType Surfaces;
+
+        {
+            std::bitset<2*D> remove_flags;
+
+            for (int i=0;i<D;++i) {
+                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                    remove_flags.set(i);
+                } else {
+                    if (i==Parameter.open_boundary_direction && !Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+                }
+                if (Parameter.boundary_conditions[i].max==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::EXTENDED_BOUNDARY) {
+                    remove_flags.set(i+D);
+                } else {
+                    if (i==Parameter.open_boundary_direction && Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+                }
+            }
+
+            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps);
+        }
+
+        LevelSetType boolop_ls(LevelSets.back().grid());
+
+        init(boolop_ls,Surfaces.back());
+
+        if (Model.level()>0) {
+
+            if (Model.invert()) boolop_ls.invert();
+
+            int j=0;
+            typename LevelSetsType::iterator ls_it      =   LevelSets.begin();
+
+            for (;j<static_cast<int>(LevelSets.size())-Model.level();++j) {
+                ++ls_it;
+            }
+
+            while (ls_it!=LevelSets.end()) {
+                ls_it->min(boolop_ls);
+                ls_it->thin_out();
+                ++ls_it;
+            }
+        } else {                        //Model.level()<0
+
+            if (!Model.invert()) boolop_ls.invert();
+
+            int j=0;
+            typename LevelSetsType::iterator ls_it_old  =   LevelSets.begin();
+            typename LevelSetsType::iterator ls_it      =   LevelSets.begin();
+
+            for (;j<static_cast<int>(LevelSets.size())+Model.level();++j) {
+
+                ls_it_old=ls_it;
+                ++ls_it;
+            }
+
+            while (ls_it!=LevelSets.end()) {
+                ls_it->max(boolop_ls);
+                if (j>0) ls_it->min(*ls_it_old);
+                ls_it->thin_out();
+                ++ls_it;
+            }
+        }
+
+
+
+/*
+
+        LevelSetType & l1=LevelSets.back();
+        const LevelSetType & l2 =*(++LevelSets.rbegin());
+
+        l1.max(mask_ls);
+        l1.min(l2);
+
+        l1.thin_out();
+*/
+    }
+
+	//Topography simulation - execute a topography changing process according to required model and parameters
+	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
 				LevelSetsType& LevelSets,
 				const ModelType& Model,
 				const ParameterType& Parameter,
@@ -780,23 +691,23 @@ namespace proc {
 		const int D=LevelSetsType::value_type::dimensions;
 
 
-	    const std::vector<double> & OutputTimes=ProcessParameter.output_times;
-	    //int OutputTimesSize = OutputTimes.size();
-	    //msg::print_message("OutputTimes.size(): ", OutputTimesSize);
-	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();//std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
+	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
 
 
+	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
 
+	    //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
 
+	    //----------------------------------------------------------------------------------------------------------------------------------------
+//	    while (LevelSets.size()>1) {
+//	    	LevelSets.pop_back();
+//	    }
+//	    typedef typename LevelSetsType::value_type LevelSetType;
+//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary_direction, !Parameter.is_open_boundary_negative));
+	    //----------------------------------------------------------------------------------------------------------------------------------------
 
-
-
-
-
-
-
-		int init_cycles=ProcessParameter.StartIterationCycles;
-		int rec_cycles=ProcessParameter.IterationCycles;
+		int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
+		int rec_cycles=ProcessParameter.IterationCycles;		//number of subsequent iteration cycles
 
 
 		geom::cells<ParameterType::Dimension> Cells;
@@ -856,9 +767,9 @@ namespace proc {
 #endif
 
 
-                while(true) {
+		while(true) {
 
-                    double TimeTotalExclOutput=-my::time::GetTime();
+		    double TimeTotalExclOutput=-my::time::GetTime();
             double TimeTotalInclOutput=-my::time::GetTime();
             double TimeExpansion=0;
             double TimeNormals=0;
@@ -878,35 +789,36 @@ namespace proc {
 
 		    bool MakeOutput=false;
 		    if (OutputTimesIter!=OutputTimes.end()) {
-			assert(RelativeTime<=*OutputTimesIter);
-			if (RelativeTime==*OutputTimesIter) {
-			    MakeOutput=true;
-			    OutputTimesIter++;
-			}
+		        assert(RelativeTime<=*OutputTimesIter);
+		        if (RelativeTime==*OutputTimesIter) {
+		            MakeOutput=true;
+		            OutputTimesIter++;
+		        }
 		    }
 
 		    //if ((RelativeTime==EndTime) && (ProcessParameter.final_output)) MakeOutput=true;
 		    //if ((RelativeTime==StartTime) && (ProcessParameter.initial_output)) MakeOutput=true;
-		    if (!MakeOutput) if (RelativeTime==ProcessTime) break; // Reached the end of processing time
 
-                    //###########################
+		    if (!MakeOutput) if (RelativeTime==ProcessTime) break;
+
+		    //###########################
             // smooth surface level set
             //###########################
 
-                    if (ProcessParameter.smoothing_material_level>0) {
+		    if (ProcessParameter.smoothing_material_level>0) {
 #ifdef VERBOSE
-                                msg::print_message("smoothing");
+				msg::print_message("smoothing");
 #endif
 
-			TimeSmoothing-=my::time::GetTime();
+		        TimeSmoothing-=my::time::GetTime();
 
-			double time_step;
+		        double time_step;
 
-			int dummy;
+		        int dummy;
 
-			int counter=0;
+		        int counter=0;
 
-                        do {
+		        do {
                     time_step=lvlset::time_integrate(
                                 LevelSets,
                                 dummy,
@@ -915,15 +827,15 @@ namespace proc {
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
-                                        counter++;
-                        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
+					counter++;
+		        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
 
-			if (time_step!=std::numeric_limits<double>::max()) {
-				msg::print_message("maximum number of iterations reached during smoothing operation");
-			}
+		        if (time_step!=std::numeric_limits<double>::max()) {
+		        	msg::print_message("maximum number of iterations reached during smoothing operation");
+		        }
 
 
-			TimeSmoothing+=my::time::GetTime();
+		        TimeSmoothing+=my::time::GetTime();
 		    }
 
 			/*
@@ -939,9 +851,9 @@ namespace proc {
 				}
 				TimeTotalExclOutput-=my::time::GetTime();
 			}
-	    */
+            */
 
-	    if (Model.ReemissionIsMaterialDependent) {
+            if (Model.ReemissionIsMaterialDependent) {
 #ifdef VERBOSE
 				msg::print_message("determine top most layer");
 #endif
@@ -952,7 +864,7 @@ namespace proc {
 
             if (Model.CalculateConnectivities) {
 #ifdef VERBOSE
-                                msg::print_message("calculate connectivities");
+				msg::print_message("calculate connectivities");
 #endif
                 TimeConnectivities-=my::time::GetTime();
                 std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.is_open_boundary_negative);
@@ -962,7 +874,7 @@ namespace proc {
             }
             if (Model.CalculateVisibilities) {
 #ifdef VERBOSE
-                                msg::print_message("calculate visibilities");
+				msg::print_message("calculate visibilities");
 #endif
                 TimeVisibilities-=my::time::GetTime();
                 CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
@@ -971,17 +883,17 @@ namespace proc {
 
             if ((Model.CalculateNormalVectors) || (Model.NumberOfParticleTypes>0)){
 #ifdef VERBOSE
-                                msg::print_message("calculate normal vectors");
+				msg::print_message("calculate normal vectors");
 #endif
 
 #ifdef VERBOSE
-                                msg::print_message("expansion");
+				msg::print_message("expansion");
 #endif
-                                TimeExpansion-=my::time::GetTime();
+				TimeExpansion-=my::time::GetTime();
                 LevelSets.back().expand(3);
                 TimeExpansion+=my::time::GetTime();
 #ifdef VERBOSE
-                                msg::print_message("normal vector calculation");
+				msg::print_message("normal vector calculation");
 #endif
                 TimeNormals-=my::time::GetTime();
                 calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative, Parameter.ReceptorRadius, lvlset::vec<double,D>(Parameter.DefaultDiskOrientation));
@@ -991,10 +903,10 @@ namespace proc {
             if (Model.NumberOfParticleTypes>0) {
 
 #ifdef VERBOSE
-                                msg::print_message("start monte carlo");
+				msg::print_message("start monte carlo");
 #endif
 
-                std::vector<lvlset::vec<int,ParameterType::Dimension > > CellCoordinates; //Vector of vec types to set up the cell coordinates
+                std::vector<lvlset::vec<int,ParameterType::Dimension > > CellCoordinates;
 
                 TimeExpansion-=my::time::GetTime();
                 LevelSets.back().add_voxel_corners();
@@ -1021,7 +933,6 @@ namespace proc {
 
                     TimeRates-=my::time::GetTime();
                     do {
-                        //[Josef] This is where the CalculateRates function found in calc.h is called.
                         calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
                         calc::UpdateCoverages(Rates, Coverages, Model);
                         init_cycles--;
@@ -1033,7 +944,7 @@ namespace proc {
 #endif
 #ifdef COMPILE_PARTITION_FULL_GRID
                 if (ProcessParameter.partition_data_structure==partition::FULL_GRID) {
-                        msg::print_message("FULL_GRID");
+
                     partition::FullGrid<tmp_type> Partition;
 
                     TimePartition-=my::time::GetTime();
@@ -1059,7 +970,7 @@ namespace proc {
 #endif
 #ifdef COMPILE_UP_DOWN_LINKED_TREE
                 if (ProcessParameter.partition_data_structure==partition::UP_DOWN_LINKED_TREE) {
-                        msg::print_message("UP_DOWN_LINKED_TREE");
+
                     partition::UpDownLinkTree<tmp_type> Partition;
 
                     TimePartition-=my::time::GetTime();
@@ -1084,7 +995,7 @@ namespace proc {
                 }
 #endif
 
-                        }
+			}
 
             //#######################################
             // output
@@ -1096,7 +1007,7 @@ namespace proc {
             if (MakeOutput) {
 
 #ifdef VERBOSE
-                                msg::print_message("make output");
+				msg::print_message("make output");
 #endif
 
 
@@ -1143,7 +1054,7 @@ namespace proc {
 #endif
 
                         if (i!=LevelSets.size()-1) {
-                                write_explicit_surface_vtk(*it,oss.str());
+                            write_explicit_surface_vtk(*it,oss.str());
                         } else {
                             write_explicit_surface_vtk(*it,oss.str(), Data);
                         }
@@ -1159,15 +1070,15 @@ namespace proc {
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
 
-
+//            std::cout << "Relative Time: " << RelativeTime << "\n";
             bool is_finished=(RelativeTime==ProcessTime);
 
-//            std::cout << "RelativeTime: " << RelativeTime << std::endl;
+
             //#######################################
             // time integration
             //#######################################
 #ifdef VERBOSE
-                        msg::print_message("time integration");
+			msg::print_message("time integration");
 #endif
 
             double time_step=0;
@@ -1181,39 +1092,28 @@ namespace proc {
 
                 if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_1ST_ORDER) {
 
-                        VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
-                        TimeExpansion-=my::time::GetTime();
-                        LevelSets.back().expand(3);
-                        TimeExpansion+=my::time::GetTime();
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(3);
+                    TimeExpansion+=my::time::GetTime();
 
-                        TimeTimeIntegration-=my::time::GetTime();
-//                		if (Parameter.separate_materials) {
-//                            for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();it++) {
-//                            	time_step=lvlset::time_integrate(
-//                            			*it,
-//                            			Velocities,
-//                            			lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
-//                            			Parameter.TimeStepRatio,
-//                            			MaxTimeStep,
-//                            			Coverages,
-//                            			Model.CoverageStorageSize);
-//                            }
-//                		} else {
-					time_step=lvlset::time_integrate(
-							LevelSets,
-							Velocities,
-							lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
-							Parameter.TimeStepRatio,
-							MaxTimeStep,
-							Coverages,
-							Model.CoverageStorageSize);
-//                		}
-			TimeTimeIntegration+=my::time::GetTime();
+                    TimeTimeIntegration-=my::time::GetTime();
 
-		} else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
+                            Parameter.TimeStepRatio,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
 
-			VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
+
+                	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
                     TimeExpansion-=my::time::GetTime();
                     LevelSets.back().expand(5);
@@ -1232,7 +1132,7 @@ namespace proc {
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
 
-                        VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                	VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
                     TimeExpansion-=my::time::GetTime();
                     LevelSets.back().expand(3);
@@ -1268,9 +1168,9 @@ namespace proc {
             //#######################################
             // print statistics
             //#######################################
-                        if (Parameter.PrintStatistics) {
+			if (Parameter.PrintStatistics) {
 #ifdef VERBOSE
-                                msg::print_message("print statistics");
+				msg::print_message("print statistics");
 #endif
 
 				f.open(TimeStatFileName.c_str(),std::ios_base::app);
