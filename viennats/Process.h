@@ -556,7 +556,7 @@ namespace proc {
                 }
             }
 
-            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps);
+            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
 	    /*geometry::TransformGeometryToSurfaces(     mask_geometry,
@@ -568,7 +568,7 @@ namespace proc {
 
 	    LevelSetType mask_ls(LevelSets.back().grid());
 
-	    init(mask_ls,Surfaces.back());
+	    init(mask_ls,Surfaces.back(),Parameter.report_import_errors);
 
 	    LevelSetType & l1=LevelSets.back();
 	    const LevelSetType & l2 =*(++LevelSets.rbegin());
@@ -600,7 +600,8 @@ namespace proc {
 
         geometry::geometry<D> boolop_geometry;
 
-        boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
+        		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
         typedef std::list<geometry::surface<D> > SurfacesType;
         SurfacesType Surfaces;
 
@@ -620,12 +621,12 @@ namespace proc {
                 }
             }
 
-            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps);
+            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
         LevelSetType boolop_ls(LevelSets.back().grid());
 
-        init(boolop_ls,Surfaces.back());
+        init(boolop_ls,Surfaces.back(),Parameter.report_import_errors);
 
         if (Model.level()>0) {
 

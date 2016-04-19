@@ -1,0 +1,36 @@
+geometry_files  =   "mask_boundary.vtk,wafer_boundary.vtk";
+surface_geometry = true;
+report_import_errors = false;
+
+output_path = "./output_constant/";
+
+cfl_condition = 0.1;
+
+
+grid_delta = 0.001;
+
+remove_bottom=true;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{PERIODIC,PERIODIC},
+	{PERIODIC,PERIODIC},
+	{INFINITE,INFINITE}
+};
+
+omp_threads=3;
+
+open_boundary="+z";
+default_disk_orientation={0,0,0};
+
+processes = {
+    {
+	process_time= 10;
+        model_name="ConstantRates";
+        parameters= {
+		constant_rates={-0.005,0.};
+	};
+	output_times={0,1,2,3,4,5,6,7,8,9,10};
+    }
+};

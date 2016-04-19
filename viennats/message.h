@@ -24,16 +24,17 @@ namespace msg {
     void print_welcome() {
         std::cout << std::endl;
         std::cout << std::endl;
-        std::cout << "####################################################" << std::endl;
-        std::cout << "#                                                  #" << std::endl;
-        std::cout << "#   Monte Carlo Deposition and Etching Simulator   #" << std::endl;
-        std::cout << "#                                                  #" << std::endl;
-        std::cout << "#                                                  #" << std::endl;
-        std::cout << "#      Institute for Microelectronics, TU Wien     #" << std::endl;
-        std::cout << "#               www.iue.tuwien.ac.at               #" << std::endl;
-        std::cout << "#                     2006-2009                    #" << std::endl;
-        std::cout << "#                                                  #" << std::endl;
-        std::cout << "####################################################" << std::endl;
+        std::cout << "#==========================================================================#" << std::endl;
+        std::cout << "#   Copyright (c)    2008-2015, Institute for Microelectronics, TU Wien.   #" << std::endl;
+        std::cout << "#                                                                          #" << std::endl;
+        std::cout << "#                            -----------------                             #" << std::endl;
+        std::cout << "#                ViennaTS - The Vienna Topography Simulator                #" << std::endl;
+        std::cout << "#                            -----------------                             #" << std::endl;
+        std::cout << "#                                                                          #" << std::endl;
+        std::cout << "#    Contact:         viennats@iue.tuwien.ac.at                            #" << std::endl;
+        std::cout << "#                                                                          #" << std::endl;
+        std::cout << "#    License:         MIT (X11), see file LICENSE in the base directory    #" << std::endl;
+        std::cout << "#==========================================================================#" << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;
         std::cout << std::endl;

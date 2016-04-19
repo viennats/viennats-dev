@@ -529,16 +529,9 @@ namespace geometry {
 
       for (int i=0;i<D;++i)
         if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
-      // determine whether we need the DX or the STR reader - call appropriate subroutine accordingly
-//      if(FileName.substr(FileName.find_last_of(".") + 1) == "dx")
-//        ReadDX(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-//      else if(FileName.substr(FileName.find_last_of(".") + 1) == "str")
-//        ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
-//      else throw std::runtime_error("Input geometry file type \""+FileName.substr(FileName.find_last_of(".") + 1)+"\" not supported - Aborting!");
 
             //Check if the file is of format .tdr, .grd, .dx, or .vtk
             std::string GeometryFile=FileName.c_str();
-
 #ifdef USE_HDF5
             if (GeometryFile.find(".tdr") == (GeometryFile.size()-4)) {
             	ReadTDR(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
@@ -821,7 +814,6 @@ namespace geometry {
 				}
 			}
 		}
-
 	};
 
 
@@ -829,7 +821,8 @@ namespace geometry {
 	        const geometry<D>& Geometry,
 	        SurfacesType &Surfaces,
 	        std::bitset<2*D> remove_flags,
-	        double eps) {
+	        double eps,
+	        bool report_import_errors) {
 
 
 		//determine maximum number of materials
@@ -874,15 +867,16 @@ namespace geometry {
 
 				lvlset::vec<double,D> pts[D+1];
 				for (int k=0;k<D;k++) pts[k]=Geometry.Nodes[tmp[k]];
+
 				pts[D]=Geometry.Nodes[Geometry.Elements[i][(j+D)%(D+1)]];
 
 				typename triangle_map::iterator it=Triangles.lower_bound(tmp);
 				if ((it!=Triangles.end()) && (it->first==tmp)) {
 					if (lvlset::Orientation(pts)) {
-						assert(it->second.second==max_mat+1);
+						if (report_import_errors) assert(it->second.second==max_mat+1);
 						it->second.second=Geometry.Materials[i];
 					} else {
-						assert(it->second.first==max_mat+1);
+						if (report_import_errors) assert(it->second.first==max_mat+1);
 						it->second.first=Geometry.Materials[i];
 					}
 
@@ -935,131 +929,6 @@ namespace geometry {
 			++srf_it;
 		}
 	}
-
-	template <int D, class SurfacesType> void TransformGeometryToSurfaces2(
-	        const geometry<D>& Geometry,
-	        SurfacesType &Surfaces,
-	        std::bitset<2*D> remove_flags,
-	        std::vector<std::string> materials,
-	        double eps) {
-
-
-		//determine maximum number of materials
-		unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
-		assert(max_mat>=1);
-
-
-		typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;
-		triangle_map Triangles;
-
-		for (unsigned int i=0;i<Geometry.Elements.size();++i) {
-
-			lvlset::vec<unsigned int,D> tmp;
-
-			for (int j=0;j<D+1;j++) {
-
-				for (int k=0;k<D;k++) tmp[k]=Geometry.Elements[i][(j+k)%(D+1)];
-
-				std::bitset<2*D> flags;
-				flags.set();
-
-				//if triangle at border skip
-
-				for (int k=0;k<D;k++) {
-					for (int l=0;l<D;l++) {
-						if (Geometry.Nodes[tmp[k]][l]<Geometry.Max[l]-eps) {
-							flags.reset(l+D);
-						}
-						if (Geometry.Nodes[tmp[k]][l]>Geometry.Min[l]+eps) {
-                            flags.reset(l);
-                        }
-					}
-				}
-
-				flags &=remove_flags;
-
-				//if (is_open_boundary_negative) flags.reset(open_boundary_direction); else flags.reset(open_boundary_direction+D);
-
-				if (flags.any()) continue;
-
-				tmp.sort();
-
-				lvlset::vec<double,D> pts[D+1];
-				for (int k=0;k<D;k++) pts[k]=Geometry.Nodes[tmp[k]];
-				pts[D]=Geometry.Nodes[Geometry.Elements[i][(j+D)%(D+1)]];
-
-				typename triangle_map::iterator it=Triangles.lower_bound(tmp);
-				if ((it!=Triangles.end()) && (it->first==tmp)) {
-					if (lvlset::Orientation(pts)) {
-						assert(it->second.second==max_mat+1);
-						it->second.second=Geometry.Materials[i];
-					} else {
-						assert(it->second.first==max_mat+1);
-						it->second.first=Geometry.Materials[i];
-					}
-
-					if (it->second.first==it->second.second) Triangles.erase(it);
-
-				} else {
-					if (lvlset::Orientation(pts)) {
-						Triangles.insert(it,std::make_pair(tmp,std::make_pair(max_mat+1,Geometry.Materials[i])));
-					} else {
-						Triangles.insert(it,std::make_pair(tmp,std::make_pair(Geometry.Materials[i],max_mat+1)));
-					}
-				}
-			}
-		}
-
-
-		Surfaces.resize(max_mat);
-
-		//for all materials/for each surface
-		typename SurfacesType::iterator srf_it=Surfaces.begin();
-		for (unsigned int m=0;m<max_mat;++m) {
-//			std::cout << "m: " << m << std::endl;
-			for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-//				std::cout << "second.first-1: " << it->second.first-1 << std::endl;
-//				std::cout << "second.second-1: " << it->second.second-1 << std::endl;
-				if ((m==it->second.first-1) && (m<it->second.second-1)) {
-//					std::cout << "FIRST!\n";
-					srf_it->Elements.push_back(it->first);
-				} else if ((m==it->second.second-1) && (m<it->second.first-1)) {
-//					std::cout << "SECOND!\n";
-					srf_it->Elements.push_back(it->first);
-					std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
-				}
-/*				if ((m>=it->second.first-1) && (m<it->second.second-1)) {
-					std::cout << "FIRST!\n";
-					srf_it->Elements.push_back(it->first);
-				} else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
-					std::cout << "SECOND!\n";
-					srf_it->Elements.push_back(it->first);
-					std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
-				} */
-			}
-
-			//replace Nodes of Geometry by Nodes of individual surface
-
-			const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
-			std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
-			unsigned int NodeCounter=0;
-
-			for (unsigned int k=0;k<srf_it->Elements.size();++k) {
-
-				for (int h=0;h<D;h++) {
-					unsigned int origin_node=srf_it->Elements[k][h];
-					if (NodeReplacements[origin_node]==undefined_node) {
-						NodeReplacements[origin_node]=NodeCounter++;
-						srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
-
-					}
-					srf_it->Elements[k][h]=NodeReplacements[origin_node];
-				}
-			}
-			++srf_it;
-		}
-	}
-
 }
 
 

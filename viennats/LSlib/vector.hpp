@@ -400,11 +400,11 @@ namespace lvlset {
 
 
     template <class T> inline bool Orientation(const vec<T,3>* v) {
-        return (dot(cross(v[1]-v[0],v[2]-v[0]),v[3]-v[0])>=0.);
+        return (dot(cross(v[1]-v[0],v[2]-v[0]),v[3]-v[0])>=-0.);
     }
 
     template <class T> inline bool Orientation(const vec<T,2>* v) {
-        return (dot(RotateLeft(v[1]-v[0]),v[2]-v[0])>=0.);
+        return (dot(RotateLeft(v[1]-v[0]),v[2]-v[0])>=-0.);
     }
 
     template <class S, class T, int D> S& operator<<(S& s, const vec<T,D> & v) {

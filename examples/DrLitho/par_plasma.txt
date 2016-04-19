@@ -1,0 +1,57 @@
+geometry_files  =   "mask_boundary.vtk,wafer_boundary.vtk";
+surface_geometry = true;
+report_import_errors = false;
+
+output_path = "./output_plasma/";
+
+cfl_condition = 0.1;
+
+input_scale=1e-4;
+grid_delta = 1e-7;
+
+remove_bottom=true;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{PERIODIC,PERIODIC},
+	{PERIODIC,PERIODIC},
+	{INFINITE,INFINITE}
+};
+
+omp_threads=3;
+
+open_boundary="+z";
+default_disk_orientation={0,0,0};
+
+processes = {
+    {
+	print_coverages=true;
+        print_rates=true;
+        print_velocities=true;
+        print_materials=true;
+
+	output_times = {0};
+	output_times_period_length = 0.05;
+	output_times_periodicity=40;
+	final_output=true;
+
+        process_time= 2;
+        model_name="SF6_O2PlasmaEtching";
+        add_layer=0;
+        parameters= {
+
+            direction={0,0,-1};
+
+	    statistical_accuracy=500;
+            min_ion_energy=100;
+            delta_ion_energy=40;
+          flux_ion=1e16;
+          flux_oxygen=3e17;
+          flux_fluorine=5.5e18;
+          a_oxygen=1.;
+        };
+        start_iteration_cycles=10;
+        iteration_cycles=0;
+    }
+};

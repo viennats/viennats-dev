@@ -275,8 +275,9 @@ void main_(const ParameterType2& p2) {
 		if (p.surface_geometry) {
 			for(int cs=num_surfaces-1;cs>=0;cs--) Surfaces.push_back(s[cs]);
 		} else {
+			std::cout << "transform to surface\n";
 			geometry::TransformGeometryToSurfaces(g, Surfaces, remove_flags,
-												  p.GridDelta * p.snap_to_boundary_eps);
+												  p.GridDelta * p.snap_to_boundary_eps, p.report_import_errors);
 		}
 	}
 	msg::print_done();
@@ -302,7 +303,7 @@ void main_(const ParameterType2& p2) {
 
 	for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
 		LevelSets.push_back(lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid));
-		lvlset::init(LevelSets.back(), *it);
+		lvlset::init(LevelSets.back(), *it, p.report_import_errors);
 	}
 
 	msg::print_done();

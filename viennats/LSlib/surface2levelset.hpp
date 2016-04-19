@@ -138,6 +138,7 @@ namespace lvlset {
     template<class TriangulationType, class LevelSetType>
     void init(			LevelSetType& l,						//the level set function which should be initialized
                         const TriangulationType& srf,		//the triangulated surface
+                        bool report_import_errors,				//to ignore errors in the imported geometry mesh
                         typename LevelSetType::value_type eps_sign=1e-6,		//"eps_sign" is used to determine
                         														//the sign of the distance to the surface
                         typename LevelSetType::value_type eps_boundary=1e-5,	//"eps_boundary" defines the range at grid boundaries
@@ -364,11 +365,13 @@ namespace lvlset {
 
         l.insert_points(points2);    //initialize level set function
 
-        std::string err= misc::test(l);     //check level set function
-        if (err.size()) {                   //if inconsistent print out error message
-            std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
-            std::cout << err << std::endl;
-            assert(0);
+        if (report_import_errors) {
+			std::string err= misc::test(l);     //check level set function
+			if (err.size()) {                   //if inconsistent print out error message
+				std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
+				std::cout << err << std::endl;
+				assert(0);
+			}
         }
 
         l.thin_out();       //remove active grid point which have no opposite signed neighbor grid point

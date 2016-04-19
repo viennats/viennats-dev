@@ -173,6 +173,7 @@ namespace par {
 		std::vector<std::string> InputFiles;
 		std::string OutputPath;
 		bool surface_geometry;
+		bool report_import_errors;
 		//Outputtimes
 		//std::vector<double> OutputTimes;
 
@@ -192,7 +193,7 @@ namespace par {
 		std::vector<int> IgnoreMaterials;
 
 		bool remove_bottom;
-		bool separate_materials;
+//		bool separate_materials;
 
 		double snap_to_boundary_eps;
 
@@ -293,6 +294,7 @@ namespace par {
 								rule_output_path,
 								//rule_output_times,
 								rule_surface_geometry,
+								rule_report_import_errors,
 								rule_CFL_condition,
 								rule_grid_delta,
 								rule_input_scale,
@@ -322,7 +324,7 @@ namespace par {
                                 rule_open_boundary,
                                 rule_max_extended_starting_position,
                                 rule_remove_bottom,
-                                rule_separate_materials,
+//                                rule_separate_materials,
                                 rule_snap_to_boundary_eps,
                                 rule_processing_cycles,
 //                                rule_crystal_orientation,
@@ -373,6 +375,7 @@ namespace par {
 	            rule_input_file = (str_p("GeometryFiles") | str_p("geometry_files") | str_p("GeometryFile") | str_p("geometry_file")) >>'=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.InputFile)]) >> '\"' >> ';';
 	            rule_output_path = (str_p("OutputPath") | str_p("output_path"))  >> '=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.OutputPath)]) >> '\"'  >> ';';
 	            rule_surface_geometry = (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.surface_geometry)]) >> ';');
+	            rule_report_import_errors = (str_p("report_import_errors")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.report_import_errors)]) >> ';');
 	            rule_CFL_condition   = (str_p("CFL-Condition") | str_p("cfl_condition"))  >> '='  >> real_p[assign_a(p.TimeStepRatio)]  >> ';';
 				rule_grid_delta   = (str_p("GridDelta") | str_p("grid_delta"))  >> '='  >> real_p[assign_a(p.GridDelta)]  >> ';';
 				rule_input_scale   = (str_p("InputScale") | str_p("input_scale"))  >> '='  >> real_p[assign_a(p.InputScale)]  >> ';';
@@ -398,7 +401,7 @@ namespace par {
                 rule_open_boundary = (str_p("open_boundary") >> '=' >> '\"' >> (((ch_p('+') | '-') >> (ch_p('x') | 'y' | 'z'))[assign_dir(p.open_boundary_direction, p.is_open_boundary_negative)]) >> '\"' >> ';');
                 rule_remove_bottom = str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.remove_bottom)]) >> ';';
 //                rule_separate_materials = str_p("separate_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.separate_materials)]) >> ';';
-                rule_snap_to_boundary_eps  = str_p("rule_snap_to_boundary_eps")  >> '='  >> real_p[assign_a(p.snap_to_boundary_eps)]  >> ';';
+                rule_snap_to_boundary_eps  = str_p("snap_to_boundary_eps")  >> '='  >> real_p[assign_a(p.snap_to_boundary_eps)]  >> ';';
                 rule_processing_cycles = str_p("process_cycles")  >> '='  >> int_p[assign_a(p.process_cycles)]  >> ';';
 
 				rule_boundary_condition2A = (   (str_p("REFLECTIVE")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::REFLECTIVE_BOUNDARY)]) |
@@ -533,6 +536,7 @@ namespace par {
                                 rule_input_file                     |
                                 rule_output_path                    |
 								rule_surface_geometry				|
+								rule_report_import_errors			|
                                 rule_CFL_condition                  |
                                 rule_grid_delta                     |
                                 rule_input_scale                    |
@@ -653,6 +657,7 @@ namespace par {
         AddLayer=0;
 
         surface_geometry=false;
+        report_import_errors=true;
 
 	    std::string str;
 	    ReadFile(FileName, str);

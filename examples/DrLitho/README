@@ -1,0 +1,26 @@
+----------------------
+Executing Scripts
+----------------------
+
+Executing scripts "run_ViennaTS_Constant.sh" and "run_ViennaTS_Plasma.sh" runs the simulation for a masked etch using constant rates and SF6/O2 plasma models, respectively.
+
+	./run_ViennaTS_Constant.sh
+
+	./run_ViennaTS_Plasma.sh
+
+----------------------
+Command Line Execution
+----------------------
+
+#-- Constant rates:
+#-- output is in the output_constant folder
+
+	mkdir output_constant
+	../../build/viennats par_constant.txt
+
+#-- SF6/O2 plasma rates:
+#-- output is in the output_plasma folder
+
+	mkdir output_plasma
+	../../build/viennats par_plasma.txt
+
