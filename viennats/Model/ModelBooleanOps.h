@@ -26,6 +26,8 @@ namespace model {
 
         bool remove;
 
+        bool surf;
+
     public:
 
         const std::string & file_name() const {
@@ -44,11 +46,16 @@ namespace model {
             return remove;
         }
 
+        const bool surface() const {
+        	return surf;
+        }
+
         BooleanOps(const std::string & Parameters):lvl(0),inv(false)  {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
             remove=true;
+            surf=false;
 
             bool b = parse(
                     Parameters.begin(),
@@ -57,6 +64,7 @@ namespace model {
                             (str_p("geometry_file") >> '='  >>  '\"' >> *((~ch_p('\"'))[push_back_a(fn)]) >> '\"' >> ';') |
                             (str_p("level")  >> '='  >> int_p[assign_a(lvl)]  >> ';') |
                             (str_p("invert")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(inv)]) >> ';') |
+                            (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(surf)]) >> ';') |
                             (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;

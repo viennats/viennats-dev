@@ -1,4 +1,10 @@
 ----------------------
+WARNING
+----------------------
+
+Make sure to first execute the script "generate_wafer.sh" in /tools/mask2wafer
+
+----------------------
 Executing Scripts
 ----------------------
 

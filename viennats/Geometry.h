@@ -827,7 +827,7 @@ namespace geometry {
 
 		//determine maximum number of materials
 		unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
-		assert(max_mat>=1);
+		if (report_import_errors) assert(max_mat>=1);
 
 
 		typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;

@@ -15,7 +15,6 @@
 //!COMPILE OPTIONS#####################################
 //#define TEST_MODE
 //#define VERBOSE
-//#define USE_HDF5
 
 //Dimensions
 #define DIMENSION_3

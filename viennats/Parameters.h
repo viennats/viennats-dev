@@ -172,6 +172,7 @@ namespace par {
 		std::string InputFile;
 		std::vector<std::string> InputFiles;
 		std::string OutputPath;
+
 		bool surface_geometry;
 		bool report_import_errors;
 		//Outputtimes
@@ -696,6 +697,10 @@ namespace par {
 	        	done=true;
 	        }
 	    }
+
+//----- Generate the output folder ---
+	    mode_t mask = umask(002);
+        if (mkdir(OutputPath.c_str(),mask) == -1) {}
 
 		//test boundary condtions for periodicity, and check conformity
 		for (unsigned int h=0;h<boundary_conditions.size();h++) {

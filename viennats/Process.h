@@ -528,14 +528,23 @@ namespace proc {
                 OutputInfoType & output_info
         ) {
 
-        assert(LevelSets.size()>=2);
+//        assert(LevelSets.size()>=2);
 
 	    typedef typename LevelSetsType::value_type LevelSetType;
 	    const int D=LevelSetType::dimensions;
 
-	    geometry::geometry<D> mask_geometry;
+        geometry::geometry<D> mask_geometry;
+        geometry::surface<D> mask_surface;
 
-	    mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        if (Model.surface()) {
+        	mask_surface.ReadVTK(Model.file_name(), Parameter.InputScale, Parameter.InputTransformationDirections,
+					Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.InputShift);
+        } else {
+            mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
+            		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        }
+
+//	    mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
 
 	    typedef std::list<geometry::surface<D> > SurfacesType;
 	    SurfacesType Surfaces;
@@ -556,7 +565,13 @@ namespace proc {
                 }
             }
 
-            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+    		if (Model.surface()) {
+    			Surfaces.push_back(mask_surface);
+    		} else {
+                geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+    		}
+
+//            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
 	    /*geometry::TransformGeometryToSurfaces(     mask_geometry,
@@ -570,16 +585,21 @@ namespace proc {
 
 	    init(mask_ls,Surfaces.back(),Parameter.report_import_errors);
 
-	    LevelSetType & l1=LevelSets.back();
-	    const LevelSetType & l2 =*(++LevelSets.rbegin());
+	    if (LevelSets.size()<2) {
+			LevelSets.push_front(mask_ls);
+			LevelSets.back().thin_out();
+	    } else {
+		    LevelSets.push_back(mask_ls);
+		    LevelSetType & l1=LevelSets.back();
+		    const LevelSetType & l2 =*(++LevelSets.rbegin());
 
-	    //l1=min(max(l1,mask_ls),l2);
+		    //l1=min(max(l1,mask_ls),l2);
 
-	    l1.max(mask_ls);
-	    l1.min(l2);
+		    l1.max(mask_ls);
+		    l1.min(l2);
 
-	    l1.thin_out();
-
+		    l1.thin_out();
+	    }
         //TODO output and time
 
     }
@@ -599,9 +619,16 @@ namespace proc {
         const int D=LevelSetType::dimensions;
 
         geometry::geometry<D> boolop_geometry;
+        geometry::surface<D> boolop_surface;// = new geometry::surface<D>;
 
-        boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
-        		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        if (Model.surface()) {
+        	boolop_surface.ReadVTK(Model.file_name(), Parameter.InputScale, Parameter.InputTransformationDirections,
+					Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.InputShift);
+        } else {
+            boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
+            		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+        }
+
         typedef std::list<geometry::surface<D> > SurfacesType;
         SurfacesType Surfaces;
 
@@ -621,7 +648,14 @@ namespace proc {
                 }
             }
 
-            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+    		if (Model.surface()) {
+    			Surfaces.push_back(boolop_surface);
+    		} else {
+    			std::cout << "transform to surface\n";
+                geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+    		}
+
+//            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
         LevelSetType boolop_ls(LevelSets.back().grid());

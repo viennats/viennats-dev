@@ -17,7 +17,7 @@ int main(int argc, char * argv[])
 	DrL::DrLithoVTK mask(argv[1]);
 
 	// Print ViennaTS-readable mask VTK
-	mask.PrintMaskVTK(argv[1]);
+//	mask.PrintMaskVTK(argv[1]);
 
 	// Pass mask data to generate wafer
 	DrL::DrLithoWafer wafer(mask);
