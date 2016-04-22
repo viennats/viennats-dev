@@ -3,13 +3,10 @@
 
 /* =========================================================================
    Copyright (c)    2008-2015, Institute for Microelectronics, TU Wien.
-
                             -----------------
                  ViennaTS - The Vienna Topography Simulator
                             -----------------
-
    Contact:         viennats@iue.tuwien.ac.at
-
    License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
@@ -699,8 +696,10 @@ namespace par {
 	    }
 
 //----- Generate the output folder ---
-	    mode_t mask = umask(002);
-        if (mkdir(OutputPath.c_str(),mask) == -1) {}
+
+	    struct stat st;
+	    if(stat(OutputPath.c_str(),&st) == -1)
+        	mkdir(OutputPath.c_str(),mode_t(0777));
 
 		//test boundary condtions for periodicity, and check conformity
 		for (unsigned int h=0;h<boundary_conditions.size();h++) {
