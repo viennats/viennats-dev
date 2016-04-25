@@ -247,7 +247,7 @@ namespace lvlset {
                 for (int q=0;q<D;q++) {
                     min[q]=l.grid().local_coordinate_2_local_index(q, min_c[q]);
                     max[q]=l.grid().local_coordinate_2_local_index(q, max_c[q]);
-                    if (l.grid().parity(q)) std::swap(min[q], max[q]);
+//                    if (l.grid().parity(q)) std::swap(min[q], max[q]);
                     assert(min[q]<=max[q]);
                     assert(min[q]>=l.grid().min_grid_index(q));
                     assert(max[q]<=l.grid().max_grid_index(q));

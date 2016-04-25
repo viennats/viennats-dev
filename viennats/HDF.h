@@ -169,7 +169,7 @@ struct tdr_geometry
 	{
 		string name0=read_string(reg,"name");
 		string name;
-		int i;
+		unsigned int i;
 		while ((i=name0.find_first_of("_."))!=name0.npos)
 		{
 			name=name+name0.substr(0,i);

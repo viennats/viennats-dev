@@ -45,6 +45,7 @@ echo "open_boundary=\"+z\";" >> par_plasma.txt
 echo "default_disk_orientation={0,0,0};" >> par_plasma.txt
 echo "" >> par_plasma.txt
 echo "processes = {" >> par_plasma.txt
+IFS=''
 while read -r line
 do
    echo $line >> par_plasma.txt

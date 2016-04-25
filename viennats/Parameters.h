@@ -111,9 +111,9 @@ namespace par {
             void clear() {
 
             	//AFM wire only!
-    	        ProcessDistance=0;
-    	        AFMStartPosition[0]=0;AFMStartPosition[1]=0;AFMStartPosition[1]=0;
-    	        AFMEndPosition[0]=0;AFMEndPosition[1]=0;AFMEndPosition[1]=0;
+//    	        ProcessDistance=0;
+//    	        AFMStartPosition[0]=0;AFMStartPosition[1]=0;AFMStartPosition[1]=0;
+//    	        AFMEndPosition[0]=0;AFMEndPosition[1]=0;AFMEndPosition[1]=0;
 
                 //default values
                 AddLayer=0;
@@ -428,12 +428,12 @@ namespace par {
 				rule_process_time = str_p("process_time")  >> '='  >> real_p[assign_a(tmp_process.ProcessTime)]  >> ';';
 
 				//AFM wire only
-				rule_process_distance = str_p("process_distance")  >> '='  >> real_p[assign_a(tmp_process.ProcessDistance)]  >> ';';
-				rule_process_startPosition = str_p("start_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMStartPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[2])] >> '}' >> ';';
-				rule_process_endPosition = str_p("end_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMEndPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[2])] >> '}' >> ';';
+//				rule_process_distance = str_p("process_distance")  >> '='  >> real_p[assign_a(tmp_process.ProcessDistance)]  >> ';';
+//				rule_process_startPosition = str_p("start_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMStartPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[2])] >> '}' >> ';';
+//				rule_process_endPosition = str_p("end_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMEndPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[2])] >> '}' >> ';';
 
-				rule_process_top_mask = (str_p("mask_layer") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.MaskLayer)]) >> ';');
-				rule_process_grow_new_oxide = (str_p("grow_new_oxide") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.GrowNewOxide)]) >> ';');
+//				rule_process_top_mask = (str_p("mask_layer") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.MaskLayer)]) >> ';');
+//				rule_process_grow_new_oxide = (str_p("grow_new_oxide") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.GrowNewOxide)]) >> ';');
 				rule_process_smoothing_max_curvature = str_p("smoothing_max_curvature")  >> '='  >>real_p[assign_a(tmp_process.smoothing_max_curvature)]  >> ';';
 				rule_process_smoothing_min_curvature = str_p("smoothing_min_curvature")  >> '='  >>real_p[assign_a(tmp_process.smoothing_min_curvature)]  >> ';';
 				rule_process_smoothing_material_level = str_p("smoothing_material_level")  >> '='  >> int_p[assign_a(tmp_process.smoothing_material_level)]  >> ';';
@@ -698,8 +698,10 @@ namespace par {
 //----- Generate the output folder ---
 
 	    struct stat st;
-	    if(stat(OutputPath.c_str(),&st) == -1)
-        	mkdir(OutputPath.c_str(),mode_t(0777));
+	    if(stat(OutputPath.c_str(),&st) == -1) {
+		msg::print_message("Output directory not found! Creating new directory!\n");
+		mkdir(OutputPath.c_str(),mode_t(0777));
+	    }
 
 		//test boundary condtions for periodicity, and check conformity
 		for (unsigned int h=0;h<boundary_conditions.size();h++) {

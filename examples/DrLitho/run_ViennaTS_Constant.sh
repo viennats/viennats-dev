@@ -17,7 +17,7 @@ viennaTS="../../build/viennats"
 #-- Generate par_constant.txt file
 echo "Generate par_constant.txt file"
 rm -f par_constant.txt
-cp par.txt par_constant.txt
+
 echo "geometry_file  =   \"wafer_volume.vtk\";" >> par_constant.txt
 echo "output_path = \"./output_constant/\";" >> par_constant.txt
 echo "" >> par_constant.txt
@@ -43,6 +43,7 @@ echo "open_boundary=\"+z\";" >> par_constant.txt
 echo "default_disk_orientation={0,0,0};" >> par_constant.txt
 echo "" >> par_constant.txt
 echo "processes = {" >> par_constant.txt
+IFS=''
 while read -r line
 do
    echo $line >> par_constant.txt

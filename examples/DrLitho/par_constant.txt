@@ -23,32 +23,32 @@ open_boundary="+z";
 default_disk_orientation={0,0,0};
 
 processes = {
-{
-model_name="BooleanOperation";
-parameters= {
-geometry_file="resist_profile.vtk";
-surface_geometry=true;
-remove_bottom=false;
-level=-1;
-};
-},
-{
-model_name="BooleanOperation";
-parameters= {
-geometry_file="resist_profile.vtk";
-surface_geometry=true;
-remove_bottom=true;
-level=+1;
-};
-},
-{
-model_name="Mask";
-parameters= {
-mask_file="resist_profile.vtk";
-surface_geometry=true;
-remove_bottom=false;
-};
-},
+   {
+	model_name="BooleanOperation";
+	parameters= {
+		geometry_file="resist_profile.vtk";
+		surface_geometry=true;
+		remove_bottom=false;
+		level=-1;
+	};
+   },
+   {
+	model_name="BooleanOperation";
+	parameters= {
+		geometry_file="resist_profile.vtk";
+		surface_geometry=true;
+		remove_bottom=true;
+		level=+1;
+	};
+   },
+   {
+	model_name="Mask";
+	parameters= {
+		mask_file="resist_profile.vtk";
+		surface_geometry=true;
+		remove_bottom=false;
+	};
+   },
    {
 	print_velocities=true;
 	print_materials=true;
