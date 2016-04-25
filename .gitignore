@@ -1,6 +1,5 @@
 build
 .*.swp
 *~
-*.vtk
-*.dx
-StatisticsTimes.cvs
+/output
+*.cvs

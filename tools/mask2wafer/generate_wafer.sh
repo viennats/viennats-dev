@@ -19,12 +19,10 @@ echo "Generate executable: mask2wafer"
 echo ""
 g++ -o mask2wafer litho.cpp
 
-mv ${mask} ${mask}.vtk
-
 #-- Generate wafer_volume.vtk (for ViennaTS import)
 echo "Generate wafer_volume.vtk (volume)"
 echo ""
-./mask2wafer ${mask}.vtk
+./mask2wafer ${mask}
 
 #-- Generate ViennaTS parameters file
 echo "Generate ViennaTS parameters file (generate_LS)"
@@ -33,7 +31,7 @@ rm -f generate_LS
 echo "   {" >> generate_LS
 echo "	model_name=\"BooleanOperation\";" >> generate_LS
 echo "	parameters= {" >> generate_LS
-echo "		geometry_file=\"${mask}.vtk\";" >> generate_LS
+echo "		geometry_file=\"${mask}\";" >> generate_LS
 echo "		surface_geometry=true;" >> generate_LS
 echo "		remove_bottom=false;" >> generate_LS
 echo "		level=-1;" >> generate_LS
@@ -42,7 +40,7 @@ echo "   }," >> generate_LS
 echo "   {" >> generate_LS
 echo "	model_name=\"BooleanOperation\";" >> generate_LS
 echo "	parameters= {" >> generate_LS
-echo "		geometry_file=\"${mask}.vtk\";" >> generate_LS
+echo "		geometry_file=\"${mask}\";" >> generate_LS
 echo "		surface_geometry=true;" >> generate_LS
 echo "		remove_bottom=true;" >> generate_LS
 echo "		level=+1;" >> generate_LS
@@ -58,9 +56,8 @@ echo "	};" >> generate_LS
 echo "   }," >> generate_LS
 
 #-- Move the wafer_volume.vtk, ${mask}.vtk, and generate_LS
-echo "Move the wafer_volume.vtk, ${mask}.vtk, and generate_LS to examples"
+echo "Move the wafer_volume.vtk, ${mask}, and generate_LS to examples"
 echo ""
 cp wafer_volume.vtk ../../examples/DrLitho/wafer_volume.vtk
-cp ${mask}.vtk ../../examples/DrLitho/${mask}.vtk
+cp ${mask} ../../examples/DrLitho/${mask}
 cp generate_LS ../../examples/DrLitho/generate_LS
-mv ${mask}.vtk ${mask}

@@ -24,7 +24,7 @@ processes = {
   {
     finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
     process_time= 1e-10;                // seconds
-    model_name="SimpleDeposition";
+    model_name="CalculateFlux";
     add_layer=1;
     parameters=
     {

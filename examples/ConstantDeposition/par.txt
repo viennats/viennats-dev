@@ -1,0 +1,31 @@
+omp_threads=100;
+
+geometry_file  =   "geometry2.dx";
+
+output_path = "./output/";
+
+cfl_condition = 0.1;
+
+grid_delta = 2;
+
+num_dimensions = 2;
+
+boundary_conditions = {
+	{INFINITE,INFINITE},    
+	{REFLECTIVE,REFLECTIVE}
+};
+
+open_boundary="-x";
+
+processes = {
+    {
+	process_time= 30;                	
+        model_name="ConstantRates";
+        add_layer=1;
+        parameters= {
+		constant_rates={1};
+
+	};
+	output_times={0, 30};
+    }
+};

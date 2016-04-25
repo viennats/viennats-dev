@@ -91,7 +91,6 @@ private:
 	coord_type GridDelta;
 public:
 	const static int dimensions = D;
-	std::vector<std::string> Materials;
 
 	template<class A, class B, class C>
 	GridTraitsType(const A& min, const A& max, const B& b, C grid_delta) ://, int open_boundary) :
@@ -462,4 +461,5 @@ int main(int argc, char *argv[]) {
 	return 0;
 
 }
+
 

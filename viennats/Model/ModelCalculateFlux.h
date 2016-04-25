@@ -44,7 +44,7 @@ namespace model {
     std::set<int> reflection_materials;
 
     int reflection_diffusive_upper_bound;
-    int reference_start;
+//    int reference_start;
 
 
   public:
@@ -92,7 +92,7 @@ namespace model {
                                 )  >> ';') |
                             (str_p("reflection_materials")  >> '='  >>  '{' >> (int_p[push_back_a(reflection_materials_temp)] % ',') >> '}'  >> ';') |
                             (str_p("reflection_diffusive_upperbound")  >> '='  >> int_p[assign_a(reflection_diffusive_upper_bound)]  >> ';') |
-                            (str_p("reference_start")  >> '='  >> real_p[assign_a(reference_start)]  >> ';') |
+//                            (str_p("reference_start")  >> '='  >> real_p[assign_a(reference_start)]  >> ';') |
                             (str_p("flux")  >> '='  >> real_p[assign_a(TotalFlux)]  >> ';') |
                             (str_p("sticking_probability")  >> '='  >> real_p[assign_a(StickingProbability)]  >> ';') |
                             (str_p("start_angle_distribution")  >> '='  >> real_p[assign_a(StartAngleDistribution)]  >> ';') |
