@@ -13,6 +13,7 @@
 #include <string>
 
 namespace model {
+///Add a layer to act as a mask
 
     class Mask {
 

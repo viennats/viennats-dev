@@ -10,9 +10,7 @@
 
 namespace model {
 
-	///------------------------------------------------------------
-	///ETCHING MODEL
-	///------------------------------------------------------------
+///SiO2 plasma etching model
 
 	class SiO2_PlasmaEtching {
 

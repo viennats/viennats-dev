@@ -21,6 +21,8 @@
 
 namespace model {
 
+///Anisotropic wet etching model
+
     class WetEtching {
 
         lvlset::vec<double,3> directions[3];

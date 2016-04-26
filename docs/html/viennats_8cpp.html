@@ -140,20 +140,21 @@ $(document).ready(function(){initNavTree('viennats_8cpp.html','');});
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="nested-classes"></a>
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classGridTraitsType.html">GridTraitsType&lt; D &gt;</a></td></tr>
-<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><h6></h6>
- <a href="classGridTraitsType.html#details">More...</a><br /></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classGridTraitsType.html" title="GridTraitsType Contains minimum and maximum indexes in each dimensional direction, boundary conditions, and the grid spacing. ">GridTraitsType</a> Contains minimum and maximum indexes in each dimensional direction, boundary conditions, and the grid spacing.  <a href="classGridTraitsType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classLevelSetTraitsType.html">LevelSetTraitsType</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Defines the zise_type (unsigned int) and value_type (double) for the level set function.  <a href="classLevelSetTraitsType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classParameterDimType.html">ParameterDimType&lt; ParameterType, D &gt;</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">ParameterType is the initial parameter type, which is inherited by a dimension-dependent <a class="el" href="classParameterDimType.html" title="ParameterType is the initial parameter type, which is inherited by a dimension-dependent ParameterDim...">ParameterDimType</a>.  <a href="classParameterDimType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classOutputInfoType.html">OutputInfoType</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classOutputInfoType.html" title="OutputInfoType stores the information necessary to output a geometry. ">OutputInfoType</a> stores the information necessary to output a geometry.  <a href="classOutputInfoType.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a name="define-members"></a>
 Macros</h2></td></tr>
 <tr class="memitem:a3b61a01569a7df6657927527997cb3af"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="viennats_8cpp.html#a3b61a01569a7df6657927527997cb3af">DIMENSION_3</a></td></tr>
-<tr class="memdesc:a3b61a01569a7df6657927527997cb3af"><td class="mdescLeft">&#160;</td><td class="mdescRight">COMPILE OPTIONS#####################################.  <a href="#a3b61a01569a7df6657927527997cb3af">More...</a><br /></td></tr>
 <tr class="separator:a3b61a01569a7df6657927527997cb3af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a324127b2bf58d9b0225dcfb18e3e60cf"><td class="memItemLeft" align="right" valign="top">#define&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="viennats_8cpp.html#a324127b2bf58d9b0225dcfb18e3e60cf">DIMENSION_2</a></td></tr>
 <tr class="separator:a324127b2bf58d9b0225dcfb18e3e60cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -256,8 +257,6 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
-<p>COMPILE OPTIONS#####################################. </p>
 
 </div>
 </div>
@@ -441,9 +440,10 @@ Functions</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Read Parameters-File</p>
-<p>set maximum number of threads</p>
+<p>Read Parameters-File and populate Parameters class</p>
+<p>Set maximum number of threads</p>
 <p>Initialize Random-Generators</p>
+<p>Initialize number of dimensions and execute main_(const ParameterType2) accordingly</p>
 <p>Finalize Random-Generators </p>
 
 </div>
@@ -463,9 +463,16 @@ template&lt;int D, class ParameterType2 &gt; </div>
         </tr>
       </table>
 </div><div class="memdoc">
-<p>Read Geometry</p>
-<p>Read .vtk surface geometries</p>
-<p>Read Geometry </p>
+<p>Read Geometry and populate geometry class</p>
+<p>If surface geometries are passed, read .vtk surface geometries surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters</p>
+<p>If volume geometry is passed, read the volume geometry. surface.Read(...) reads a geometry file and modifies it according to the user-set parameters</p>
+<p>Determine boundary conditions for level set domain</p>
+<p>Set the level set grid "GridTraitsType&lt;D&gt; GridProperties(grid_min, grid_max, boundary conditions, GridDelta)"</p>
+<p>Generate the grid_type with the set GridProperties</p>
+<p>Transform the input volume geometry to surfaces and interfaces "geometry::TransformGeometryToSurfaces(...)"</p>
+<p>Create the LevelSets - a list of all level set functions</p>
+<p>Initialize each level set with "lvlset::init(...)"</p>
+<p>Initialize the required models and call "proc::ExecuteProcess(...)" Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching, HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask, and BooleanOperation </p>
 
 </div>
 </div>

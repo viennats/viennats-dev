@@ -13,7 +13,7 @@
    License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
-//!IF PARALLEL_MODE IS ACTIVE
+//IF PARALLEL_MODE IS ACTIVE
 
 #include "Cells.h"
 #include "Time.h"

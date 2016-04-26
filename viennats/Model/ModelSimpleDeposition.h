@@ -9,6 +9,7 @@
 
 namespace model {
 
+///Simple deposition model
 	class SimpleDeposition {
 
 		double TotalFlux;

@@ -12,7 +12,7 @@
 
 
 
-//!COMPILE OPTIONS#####################################
+//COMPILE OPTIONS#####################################
 //#define TEST_MODE
 //#define VERBOSE
 
@@ -44,7 +44,7 @@
 
 #define MAX_NUM_THREADS 110
 
-//!##################################################
+//##################################################
 
 #include "Time.h"
 
@@ -80,6 +80,8 @@
 #include "message.h"
 #include "boundaries.h"
 
+
+///GridTraitsType Contains minimum and maximum indexes in each dimensional direction, boundary conditions, and the grid spacing
 template<int D>
 class GridTraitsType {
 public:
@@ -90,8 +92,10 @@ private:
 	lvlset::boundary_type BoundaryConditions_[D];
 	coord_type GridDelta;
 public:
+	///Can be 2 or 3-dimensional
 	const static int dimensions = D;
 
+	///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
 	template<class A, class B, class C>
 	GridTraitsType(const A& min, const A& max, const B& b, C grid_delta) ://, int open_boundary) :
 		GridDelta(grid_delta) {//, open_boundary_direction(open_boundary) {
@@ -103,47 +107,60 @@ public:
 		}
 	}
 
+	///Returns the minimum index at in the "dir" axial direction
 	index_type min_index(int dir) const {
 		return Min_[dir];
 	}
 
+	///Returns the maximum index at in the "dir" axial direction
 	index_type max_index(int dir) const {
 		return Max_[dir];
 	}
 
+	///Returns the grid position in the "dir" axial direction (Index*GridDelta)
 	coord_type grid_position(int dir, index_type Index) const {
 		return Index * GridDelta;
 	}
 
+	///Returns the boundary conditions in the "dir" axial direction
 	lvlset::boundary_type boundary_condition(int dir) const {
 		return BoundaryConditions_[dir];
 	}
 };
 
+///Defines the zise_type (unsigned int) and value_type (double) for the level set function
 class LevelSetTraitsType {
 public:
 	typedef unsigned int size_type;
 	typedef double value_type;
 };
 
+///ParameterType is the initial parameter type, which is inherited by a dimension-dependent ParameterDimType
 template<class ParameterType, int D>
-class ParameterDimType: public ParameterType {
-public:
-	static const int Dimension = D;
-	ParameterDimType(const ParameterType& p) :
-		ParameterType(p) {
-	}
+class ParameterDimType:
+	public ParameterType {
+		public:
+		static const int Dimension = D;
+		ParameterDimType(const ParameterType& p) :
+			ParameterType(p) {}
 };
 
+///OutputInfoType stores the information necessary to output a geometry
 class OutputInfoType {
 public:
 
+	///Name of the output file
 	std::string file_name;
+	///Counter keeping track of the outputs
 	unsigned int output_counter;
+	///Counter keeping track of the processes
 	unsigned int process_counter;
+	///Start simulation time
 	double start_time;
+	///End simulation time
 	double end_time;
 
+	///OutputInfoType constructor - only set file name to begin with "Interface"
 	OutputInfoType() :
 		file_name("Interface"), output_counter(0), process_counter(0),
 				start_time(0), end_time(0) {
@@ -158,14 +175,14 @@ void main_(const ParameterType2& p2) {
 	int grid_min[D]={ };
 	int grid_max[D]={ };
 
-	//!Read Geometry
+	//!Read Geometry and populate geometry class
 	geometry::geometry<D> g;
 	int num_surfaces=p.InputFiles.size();
-//	geometry::surface<D> s[num_surfaces];
 	geometry::surface<D> *s = new geometry::surface<D> [num_surfaces];
 
 	if (p.surface_geometry) {
-		//!Read .vtk surface geometries
+		//!If surface geometries are passed, read .vtk surface geometries
+		//!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
 		std::cout << "The geometry consists of " << p.InputFiles.size() <<" input surfaces. \n";
 		for(int cs=0;cs<num_surfaces;cs++) {
 			msg::print_start("Read surface input file "+p.InputFiles[cs]+"...");
@@ -185,8 +202,8 @@ void main_(const ParameterType2& p2) {
 #endif
 		}
 	} else {
-		//!Read Geometry
-
+		//!If volume geometry is passed, read the volume geometry.
+		//!surface.Read(...) reads a geometry file and modifies it according to the user-set parameters
 		// g.Read reads a geometry file and modifies it according to the user-set parameters
 		msg::print_start("Read geometry input file...");
 		g.Read(p.InputFiles[0], p.InputScale, p.InputTransformationDirections,
@@ -212,7 +229,7 @@ void main_(const ParameterType2& p2) {
 		msg::print_done();
 	}
 
-	//determine boundary conditions for level set domain
+	//!Determine boundary conditions for level set domain
 	lvlset::boundary_type bnc[D];
 	for (int hh = 0; hh < D; ++hh) {
 		if ((p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY)
@@ -238,11 +255,13 @@ void main_(const ParameterType2& p2) {
 #endif
 //	}
 
+	//!Set the level set grid "GridTraitsType<D> GridProperties(grid_min, grid_max, boundary conditions, GridDelta)"
 	GridTraitsType<D> GridProperties(grid_min, grid_max, bnc, p.GridDelta);
 
+	//!Generate the grid_type with the set GridProperties
 	lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
 
-	//Transform to surfaces
+	//!Transform the input volume geometry to surfaces and interfaces "geometry::TransformGeometryToSurfaces(...)"
 	msg::print_start("Extract surface and interfaces...");
 	typedef std::list<geometry::surface<D> > SurfacesType;
 	SurfacesType Surfaces;
@@ -293,12 +312,13 @@ void main_(const ParameterType2& p2) {
 		++SurfaceCounter;
 	}
 	//Create levelsets
-
+	//!Create the LevelSets - a list of all level set functions
 	typedef std::list<lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType> > LevelSetsType;
 	LevelSetsType LevelSets; //list of all level set functions
 
 	msg::print_start("Distance transformation...");
 
+	//!Initialize each level set with "lvlset::init(...)"
 	for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
 		LevelSets.push_back(lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid));
 		lvlset::init(LevelSets.back(), *it, p.report_import_errors);
@@ -313,6 +333,10 @@ void main_(const ParameterType2& p2) {
 	//organization of the output information by initiation of required models
 	OutputInfoType output_info;
 
+	//!Initialize the required models and call "proc::ExecuteProcess(...)"
+	//!		Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
+	//!		HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
+	//!		and BooleanOperation
 	for (typename std::list<typename ParameterType2::ProcessParameterType>::const_iterator
 			pIter = p.ProcessParameters.begin(); pIter
 			!= p.ProcessParameters.end(); ++pIter) {
@@ -426,10 +450,10 @@ int main(int argc, char *argv[]) {
 	//check intrinsinc double-type
 	assert(std::numeric_limits<double>::is_iec559);
 
-	//!Read Parameters-File
+	//!Read Parameters-File and populate Parameters class
 	par::Parameters p(argv[1]);
 
-	//!set maximum number of threads
+	//!Set maximum number of threads
 #ifdef _OPENMP
 	if (p.OpenMP_threads>0) omp_set_num_threads(p.OpenMP_threads);
 #endif
@@ -440,6 +464,7 @@ int main(int argc, char *argv[]) {
 	my::stat::InitRandomGenerator(my_rank, num_nodes, p.RNG_Seed, p.RNG_Type,
 			p.RNG_Par);
 
+//!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
 #ifdef DIMENSION_2
 	if (p.Dimensions == 2)
 		main_<2, par::Parameters> (p);
@@ -461,5 +486,3 @@ int main(int argc, char *argv[]) {
 	return 0;
 
 }
-
-

@@ -13,6 +13,7 @@
 #include "../parser_actors.h"
 
 namespace model {
+///Chemical mechanical planarization
 
     class Planarization {
 

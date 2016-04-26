@@ -10,9 +10,7 @@
 
 namespace model {
 
-	///------------------------------------------------------------
-	///ETCHING MODEL
-	///------------------------------------------------------------
+///HBr/O2 plasma etching model
 
 	class HBr_O2PlasmaEtching {
 

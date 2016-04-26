@@ -12,6 +12,7 @@
 // J. Vac. Sci. technol. B 8 (6), 1990
 
 namespace model {
+///Non-linear deposition model (Cale & Raupp, 1990)
 
 	class NonlinearDeposition {
 

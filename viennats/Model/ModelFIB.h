@@ -13,6 +13,7 @@
 namespace model {
 
    class FIB {
+///Focused ion beam model
 
        static const double e0;
 
