@@ -9,9 +9,7 @@
 #include <cassert>
 
 namespace model {
-
-///CFx deposition model
-    const double FactorAccuracyIons=1.;
+///Model for the deposition of
 
 	class CFx_Deposition {
 
@@ -73,7 +71,7 @@ namespace model {
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
-             NumberOfParticleClusters[0]=(IonFlux>0.)?static_cast<unsigned int>(Accuracy*FactorAccuracyIons):0;
+             NumberOfParticleClusters[0]=(IonFlux>0.)?static_cast<unsigned int>(Accuracy):0;
              NumberOfParticleClusters[1]=(CFxFlux>0.)?static_cast<unsigned int>(Accuracy):0;
         }
 

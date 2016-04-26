@@ -23,6 +23,7 @@
 using namespace std;
 
 namespace model {
+///Model which applies a constant isotropic or anisotropic velocity
 
 	class ConstantRates {
 

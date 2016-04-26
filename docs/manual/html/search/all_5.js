@@ -1,7 +1,6 @@
 var searchData=
 [
   ['fac',['fac',['../namespacemy_1_1math.html#a0d15c722c9f44d15c18b64021b7967cd',1,'my::math']]],
-  ['factoraccuracyions',['FactorAccuracyIons',['../namespacemodel.html#a652743c7e29686f3a4c1eb35ec54ae92',1,'model']]],
   ['factorial',['factorial',['../classmy_1_1math_1_1factorial.html',1,'my::math']]],
   ['factorial_3c_200_20_3e',['factorial&lt; 0 &gt;',['../classmy_1_1math_1_1factorial_3_010_01_4.html',1,'my::math']]],
   ['fib',['FIB',['../classmodel_1_1FIB.html#a045fcd5a9e13fe6c4aa4821bec23a4e1',1,'model::FIB']]],

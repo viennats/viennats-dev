@@ -15,6 +15,7 @@
 
 
 namespace model {
+///Model for boolean operations between geometries
 
     class BooleanOps {
 

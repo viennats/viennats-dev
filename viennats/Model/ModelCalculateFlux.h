@@ -25,6 +25,7 @@
 
 
 namespace model {
+///Model to calculate flux along an interface depending on the reflection used
 
   class CalculateFlux {
 

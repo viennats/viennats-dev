@@ -1,5 +1,0 @@
-var classlvlset_1_1LAX__FRIEDRICHS__SCALAR__1ST__ORDER__TYPE =
-[
-    [ "LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE", "classlvlset_1_1LAX__FRIEDRICHS__SCALAR__1ST__ORDER__TYPE.html#a29dadf4ac2710c108998dc7269138b79", null ],
-    [ "alpha", "classlvlset_1_1LAX__FRIEDRICHS__SCALAR__1ST__ORDER__TYPE.html#a5885be9527316937f174e956274eb6d0", null ]
-];

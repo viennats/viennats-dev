@@ -11,9 +11,9 @@
 #include "../parser_actors.h"
 
 namespace model {
-
-   class FIB {
 ///Focused ion beam model
+
+	class FIB {
 
        static const double e0;
 
