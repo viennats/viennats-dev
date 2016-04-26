@@ -4,13 +4,13 @@ Script Execution
 
 Execute the script "generate_VTK_files.sh" in order to create the executable "mask2wafer" and generate the "mask_volume.vtk" required to run the DrLitho example in ViennaTS.
 
-./generate_wafer.sh [resist_profile_file_name]
+$> ./generate_wafer.sh [resist_profile_file_name]
 
 ----------------------
 Compiling in Linux g++
 ----------------------
 
-g++ -o mask2wafer litho.cpp
+$> g++ -o mask2wafer litho.cpp
 
 ----------------------
 Command Line Arguments
@@ -18,4 +18,4 @@ Command Line Arguments
 
 Generate a ViennaTS-importable volume mesh "wafer_volume.vtk"
 
-./mask2wafer resist_profile.vtk
+$> ./mask2wafer resist_profile.vtk

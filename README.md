@@ -15,7 +15,7 @@ System requirements
 
 Currently supported operating systems
 --------------------------
-* GNU/Linux (64Bit)
+* GNU/Linux (32/64Bit)
 
 Building instructions
 --------------------------

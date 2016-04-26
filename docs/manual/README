@@ -1,0 +1,8 @@
+----------------------
+Generating html
+----------------------
+
+$> doxygen ViennaTS
+
+To generate the html folder and documentation the Doxygen tool is used.
+For information on Doxygen, see http://www.stack.nl/~dimitri/doxygen/

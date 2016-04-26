@@ -1,0 +1,27 @@
+----------------------
+Running ViennaTS
+----------------------
+
+$> ./viennats [parameters_file]
+
+All simulation and grid parameters are passed through the parameters file.
+This includes the location of the input geometry file which, for the examples given, is located in the same directory as the parameters file.
+
+----------------------
+Directory
+----------------------
+
+The location of the input geometry file is given in the parameters file.
+Since this path is relative, all examples must be executed from within the folder where the parameters file and geometry file are located.
+
+----------------------
+SiO2 Etching Example
+----------------------
+
+The input geometry file is: examples/SiO2_Etching/SiO2_etch.dx
+The parameters file is: examples/SiO2_Etching/par_2d.txt
+
+This example is run by first traversing into the examples/SiO2_Etching/ folder and then running ViennaTS:
+
+$> cd examples/SiO2_Etching/
+$> ../../build/viennats par_2d.txt

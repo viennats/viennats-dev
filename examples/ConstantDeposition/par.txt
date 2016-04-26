@@ -1,6 +1,6 @@
 omp_threads=100;
 
-geometry_file  =   "geometry2.dx";
+geometry_file = "geometry2.dx";
 
 output_path = "./output/";
 
