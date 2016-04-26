@@ -10,6 +10,7 @@ var hierarchy =
     [ "model::CalculateFlux", "classmodel_1_1CalculateFlux.html", null ],
     [ "geom::cell< D >", "classgeom_1_1cell.html", null ],
     [ "partition::UpDownLinkTree< C >::node::SCUnion::Cells2", "structpartition_1_1UpDownLinkTree_1_1node_1_1SCUnion_1_1Cells2.html", null ],
+    [ "model::CFx_Deposition", "classmodel_1_1CFx__Deposition.html", null ],
     [ "lvlset::levelset< GridTraitsType, LevelSetTraitsType >::const_iterator_base", "classlvlset_1_1levelset_1_1const__iterator__base.html", [
       [ "lvlset::levelset< GridTraitsType, LevelSetTraitsType >::const_iterator_runs", "classlvlset_1_1levelset_1_1const__iterator__runs.html", null ],
       [ "lvlset::levelset< GridTraitsType, LevelSetTraitsType >::const_iterator_runs_offset", "classlvlset_1_1levelset_1_1const__iterator__runs__offset.html", null ]
@@ -94,6 +95,7 @@ var hierarchy =
     [ "model::SF6_O2PlasmaEtching::ParticleType", "classmodel_1_1SF6__O2PlasmaEtching_1_1ParticleType.html", null ],
     [ "model::SimpleDeposition::ParticleType", "classmodel_1_1SimpleDeposition_1_1ParticleType.html", null ],
     [ "model::SiO2_PlasmaEtching::ParticleType", "classmodel_1_1SiO2__PlasmaEtching_1_1ParticleType.html", null ],
+    [ "model::CFx_Deposition::ParticleType", "classmodel_1_1CFx__Deposition_1_1ParticleType.html", null ],
     [ "calc::PartitionTraits< ParameterType >", "classcalc_1_1PartitionTraits.html", null ],
     [ "model::Planarization", "classmodel_1_1Planarization.html", null ],
     [ "my::math::Polynom< CoefT, Order >", "classmy_1_1math_1_1Polynom.html", null ],
@@ -108,11 +110,11 @@ var hierarchy =
     [ "lvlset::SmoothingScheme< LevelSetType >", "classlvlset_1_1SmoothingScheme.html", [
       [ "lvlset::IntegrationScheme< LevelSetType, VelocityType, SMOOTHING_SCHEME_TYPE >", "classlvlset_1_1IntegrationScheme_3_01LevelSetType_00_01VelocityType_00_01SMOOTHING__SCHEME__TYPE_01_4.html", null ]
     ] ],
-    [ "partition::FullGrid< C >::subbox", "classpartition_1_1FullGrid_1_1subbox.html", null ],
-    [ "partition::NeighborLinksArrays< C >::subbox", "classpartition_1_1NeighborLinksArrays_1_1subbox.html", null ],
+    [ "partition::DownLinkTreeNoBoxInfo< C >::subbox", "classpartition_1_1DownLinkTreeNoBoxInfo_1_1subbox.html", null ],
     [ "partition::DownLinkTreeWithBoxInfo< C >::subbox", "classpartition_1_1DownLinkTreeWithBoxInfo_1_1subbox.html", null ],
     [ "partition::UpDownLinkTree< C >::subbox", "classpartition_1_1UpDownLinkTree_1_1subbox.html", null ],
-    [ "partition::DownLinkTreeNoBoxInfo< C >::subbox", "classpartition_1_1DownLinkTreeNoBoxInfo_1_1subbox.html", null ],
+    [ "partition::FullGrid< C >::subbox", "classpartition_1_1FullGrid_1_1subbox.html", null ],
+    [ "partition::NeighborLinksArrays< C >::subbox", "classpartition_1_1NeighborLinksArrays_1_1subbox.html", null ],
     [ "geometry::surface< D >", "classgeometry_1_1surface.html", null ],
     [ "tdr_geometry", "structtdr__geometry.html", null ],
     [ "par::tmp_counter_check_class", "classpar_1_1tmp__counter__check__class.html", null ],

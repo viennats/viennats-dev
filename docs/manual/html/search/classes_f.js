@@ -7,10 +7,10 @@ var searchData=
   ['sio2_5fplasmaetching',['SiO2_PlasmaEtching',['../classmodel_1_1SiO2__PlasmaEtching.html',1,'model']]],
   ['smoothing_5fscheme_5ftype',['SMOOTHING_SCHEME_TYPE',['../classlvlset_1_1SMOOTHING__SCHEME__TYPE.html',1,'lvlset']]],
   ['smoothingscheme',['SmoothingScheme',['../classlvlset_1_1SmoothingScheme.html',1,'lvlset']]],
-  ['subbox',['subbox',['../classpartition_1_1NeighborLinksArrays_1_1subbox.html',1,'partition::NeighborLinksArrays']]],
   ['subbox',['subbox',['../classpartition_1_1DownLinkTreeWithBoxInfo_1_1subbox.html',1,'partition::DownLinkTreeWithBoxInfo']]],
   ['subbox',['subbox',['../classpartition_1_1UpDownLinkTree_1_1subbox.html',1,'partition::UpDownLinkTree']]],
   ['subbox',['subbox',['../classpartition_1_1FullGrid_1_1subbox.html',1,'partition::FullGrid']]],
   ['subbox',['subbox',['../classpartition_1_1DownLinkTreeNoBoxInfo_1_1subbox.html',1,'partition::DownLinkTreeNoBoxInfo']]],
+  ['subbox',['subbox',['../classpartition_1_1NeighborLinksArrays_1_1subbox.html',1,'partition::NeighborLinksArrays']]],
   ['surface',['surface',['../classgeometry_1_1surface.html',1,'geometry']]]
 ];

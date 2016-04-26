@@ -2,6 +2,7 @@ var searchData=
 [
   ['process_5fbooleanops',['PROCESS_BOOLEANOPS',['../viennats_8cpp.html#a6f3b40b2d404e901a7efeb4078c66011',1,'viennats.cpp']]],
   ['process_5fcalculateflux',['PROCESS_CALCULATEFLUX',['../viennats_8cpp.html#a7826ec6f7b1071e6ff1b137076e913d4',1,'viennats.cpp']]],
+  ['process_5fcfx_5fdeposition',['PROCESS_CFx_DEPOSITION',['../viennats_8cpp.html#a23a754d547010c53d60d6605a9687ac8',1,'viennats.cpp']]],
   ['process_5fconstant_5frates',['PROCESS_CONSTANT_RATES',['../viennats_8cpp.html#a92545f44720ed0f1610a051f17e879d0',1,'viennats.cpp']]],
   ['process_5ffib',['PROCESS_FIB',['../viennats_8cpp.html#af7e85fa853c4ff376fc8e0ee4ac72f22',1,'viennats.cpp']]],
   ['process_5fhbr_5fo2_5fplasma_5fetching',['PROCESS_HBr_O2_PLASMA_ETCHING',['../viennats_8cpp.html#abef398866329269e73ccfd32c89a9d92',1,'viennats.cpp']]],

@@ -2,6 +2,7 @@ var namespacemodel =
 [
     [ "BooleanOps", "classmodel_1_1BooleanOps.html", "classmodel_1_1BooleanOps" ],
     [ "CalculateFlux", "classmodel_1_1CalculateFlux.html", "classmodel_1_1CalculateFlux" ],
+    [ "CFx_Deposition", "classmodel_1_1CFx__Deposition.html", "classmodel_1_1CFx__Deposition" ],
     [ "ConstantRates", "classmodel_1_1ConstantRates.html", "classmodel_1_1ConstantRates" ],
     [ "FIB", "classmodel_1_1FIB.html", "classmodel_1_1FIB" ],
     [ "HBr_O2PlasmaEtching", "classmodel_1_1HBr__O2PlasmaEtching.html", "classmodel_1_1HBr__O2PlasmaEtching" ],

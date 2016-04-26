@@ -7,6 +7,7 @@ var searchData=
   ['misc_2ehpp',['misc.hpp',['../misc_8hpp.html',1,'']]],
   ['modelbooleanops_2eh',['ModelBooleanOps.h',['../ModelBooleanOps_8h.html',1,'']]],
   ['modelcalculateflux_2eh',['ModelCalculateFlux.h',['../ModelCalculateFlux_8h.html',1,'']]],
+  ['modelcfx_5fdeposition_2eh',['ModelCFx_Deposition.h',['../ModelCFx__Deposition_8h.html',1,'']]],
   ['modelconstantrates_2eh',['ModelConstantRates.h',['../ModelConstantRates_8h.html',1,'']]],
   ['modelfib_2eh',['ModelFIB.h',['../ModelFIB_8h.html',1,'']]],
   ['modelhbr_5fo2plasmaetching_2eh',['ModelHBr_O2PlasmaEtching.h',['../ModelHBr__O2PlasmaEtching_8h.html',1,'']]],

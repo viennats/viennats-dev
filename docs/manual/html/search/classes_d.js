@@ -5,6 +5,7 @@ var searchData=
   ['parameters',['Parameters',['../classpar_1_1Parameters.html',1,'par']]],
   ['particletype',['ParticleType',['../classmodel_1_1WetEtching_1_1ParticleType.html',1,'model::WetEtching']]],
   ['particletype',['ParticleType',['../classmodel_1_1HBr__O2PlasmaEtching_1_1ParticleType.html',1,'model::HBr_O2PlasmaEtching']]],
+  ['particletype',['ParticleType',['../classmodel_1_1CFx__Deposition_1_1ParticleType.html',1,'model::CFx_Deposition']]],
   ['particletype',['ParticleType',['../classmodel_1_1NonlinearDeposition_1_1ParticleType.html',1,'model::NonlinearDeposition']]],
   ['particletype',['ParticleType',['../classmodel_1_1SimpleDeposition_1_1ParticleType.html',1,'model::SimpleDeposition']]],
   ['particletype',['ParticleType',['../classmodel_1_1CalculateFlux_1_1ParticleType.html',1,'model::CalculateFlux']]],

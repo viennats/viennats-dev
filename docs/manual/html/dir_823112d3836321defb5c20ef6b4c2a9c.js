@@ -7,6 +7,7 @@ var dir_823112d3836321defb5c20ef6b4c2a9c =
       [ "CalculateFlux", "classmodel_1_1CalculateFlux.html", "classmodel_1_1CalculateFlux" ],
       [ "ParticleType", "classmodel_1_1CalculateFlux_1_1ParticleType.html", "classmodel_1_1CalculateFlux_1_1ParticleType" ]
     ] ],
+    [ "ModelCFx_Deposition.h", "ModelCFx__Deposition_8h.html", "ModelCFx__Deposition_8h" ],
     [ "ModelConstantRates.h", "ModelConstantRates_8h.html", [
       [ "ConstantRates", "classmodel_1_1ConstantRates.html", "classmodel_1_1ConstantRates" ],
       [ "ParticleType", "classmodel_1_1ConstantRates_1_1ParticleType.html", "classmodel_1_1ConstantRates_1_1ParticleType" ]

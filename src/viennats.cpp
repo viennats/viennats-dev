@@ -25,6 +25,7 @@
 #define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_SiO2_PLASMA_ETCHING
+#define PROCESS_CFx_DEPOSITION
 #define PROCESS_HBr_O2_PLASMA_ETCHING
 #define PROCESS_NONLINEAR_DEPOSITION
 #define PROCESS_WET_ETCHING
@@ -64,6 +65,7 @@
 #include "Model/ModelSF6_O2PlasmaEtching.h"
 #include "Model/ModelSiO2_PlasmaEtching.h"
 #include "Model/ModelHBr_O2PlasmaEtching.h"
+#include "Model/ModelCFx_Deposition.h"
 #include "Model/ModelNonlinearDeposition.h"
 #include "Model/ModelWetEtching.h"
 #include "Model/ModelFIB.h"
@@ -382,6 +384,13 @@ void main_(const ParameterType2& p2) {
 #ifdef PROCESS_HBr_O2_PLASMA_ETCHING
 		if (pIter->ModelName == "HBr_O2PlasmaEtching") {
 			model::HBr_O2PlasmaEtching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_CFx_DEPOSITION
+		if (pIter->ModelName == "CFx_Deposition") {
+			model::CFx_Deposition m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
