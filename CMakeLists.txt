@@ -1,7 +1,7 @@
 # Required CMake Version
 ###############
-# cmake_minimum_required(VERSION 2.6)
-cmake_minimum_required(VERSION 3.1.0)
+ cmake_minimum_required(VERSION 2.8)
+#cmake_minimum_required(VERSION 3.1.0)
 
 # Project setup
 ###############
@@ -59,11 +59,17 @@ SET(LIBRARIES ${LIBRARIES} ${SPRNG_LIBRARY})
 
 # HDF5
 FIND_PACKAGE(HDF5 COMPONENTS CXX)
-INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
-SET(LIBRARIES ${LIBRARIES} ${HDF5_LIBRARIES})
 IF(HDF5_FOUND)
-  add_definitions(-DUSE_HDF5)
-  add_definitions(${HDF5_DEFINITIONS})
+  IF(HDF5_hdf5_cpp_LIBRARY)
+    add_definitions(-DUSE_HDF5)
+    add_definitions(${HDF5_DEFINITIONS})
+    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+    SET(LIBRARIES ${LIBRARIES} ${HDF5_LIBRARIES})
+  ELSE(HDF5_hdf5_cpp_LIBRARY)
+    message(FATAL_ERROR "Missing HDF5 C++ library")
+  ENDIF(HDF5_hdf5_cpp_LIBRARY)
+ELSE(HDF5_FOUND)
+  message(STATUS "Missing HDF5 library: ViennaTS will be built without TDR file support")
 ENDIF(HDF5_FOUND)
 
 # Subdirectories

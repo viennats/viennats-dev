@@ -11,10 +11,11 @@ System requirements
 * OpenMP
 * Boost C++ Libraries
 * SPRNG 
+* HDF5 (optional - required for TDR file support)
 
 Currently supported operating systems
 --------------------------
-* GNU/Linux
+* GNU/Linux (64Bit)
 
 Building instructions
 --------------------------
@@ -22,7 +23,7 @@ Building instructions
 To build ViennaTS, clone the repository and issue the following suggested commands:
 
 <pre>
-$> cd viennats-dev  # the checked-out GIT folder
+$> cd viennats-dev    # the checked-out GIT folder
 $> mkdir build        # the build folder
 </pre>
 
@@ -31,8 +32,9 @@ Configure the build, default build type is the 'optimized/release' mode:
 $> cd build/
 $> cmake ..
 </pre>
+Watch for Warning/Error messages during the configuration stage.
 
-Now build the 'viennats' executable 
+Now build the 'viennats' simulation executable 
 <pre>
 $> make 
 </pre>
@@ -51,10 +53,10 @@ Current contributors: Lado Filipovic, Paul Manstetten, and Josef Weinbub
 
 Contact us via: viennats AT iue DOT tuwien DOT ac DOT at
 
-Founder and initial author was Otmar Ertl; not active anymore.
+Founder and initial developer was Otmar Ertl; not active anymore.
 
 ViennaTS was developed under the aegis of the 'Institute for Microelectronics' at the 'TU Wien'.
-
+http://www.iue.tuwien.ac.at/
 
 License
 --------------------------
