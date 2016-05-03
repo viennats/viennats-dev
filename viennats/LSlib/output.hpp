@@ -16,6 +16,7 @@
 
 #include <vector>
 #include <fstream>
+#include <omp.h>
 
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
@@ -212,7 +213,14 @@ namespace lvlset {
 
         typename GetActivePointType<typename LevelSetTraitsType::size_type, DataType>::result ActivePointList;
 
+        double TimeMarchingCubes=0;
+        TimeMarchingCubes-=omp_get_wtime();
         extract(l, s, eps, ActivePointList);
+        TimeMarchingCubes+=omp_get_wtime();
+//        ofstream newFile("scorefile.txt", std::ios_base::app);
+        std::ofstream f_march("MarchingCubesTimes.csv", std::ios_base::app);
+        f_march << TimeMarchingCubes <<"\n";
+        f_march.close();
 
         std::ofstream f(filename.c_str());
 
