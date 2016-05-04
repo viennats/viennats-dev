@@ -1,6 +1,6 @@
 build
 .*.swp
 *~
-/output*
-/output
+*output*
+*output
 *.cvs
