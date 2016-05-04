@@ -973,7 +973,6 @@ namespace proc {
                         init_cycles--;
                     } while (init_cycles>=0);
                     init_cycles=rec_cycles;
-
                     TimeRates+=my::time::GetTime();
                 }
 #endif

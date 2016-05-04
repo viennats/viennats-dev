@@ -150,8 +150,8 @@ namespace model {
 
     static void UpdateCoverage(double *Coverages, const double *Rates) {}
 
-        template <class DropletType, class ParameterType, class PartitionType>
-        void DropletGeneration(DropletType& d, double* Position, const ParameterType& Parameter, const PartitionType& Partition) const {}
+//        template <class DropletType, class ParameterType, class PartitionType>
+//        void DropletGeneration(DropletType& d, double* Position, const ParameterType& Parameter, const PartitionType& Partition) const {}
 
 //        template <class PT, class ParameterType, class PartitionType>
 //        void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position, const ParameterType& Parameter, const PartitionType& Partition) const {
