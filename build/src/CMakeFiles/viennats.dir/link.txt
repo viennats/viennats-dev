@@ -1,1 +1,0 @@
-/usr/bin/c++   -Wall -pedantic -fopenmp -O3    CMakeFiles/viennats.dir/viennats.cpp.o  -o ../viennats -rdynamic -lsprng -lhdf5_cpp -lhdf5 -lpthread -lz -lm 
