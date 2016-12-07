@@ -16,6 +16,8 @@ namespace model {
 
 		static const double end_probability;
 		static const double reaction_order;
+		static const double m_NH3;
+		static const double m_TDMAT;
 
 		double StartDirection[3];
 
@@ -90,11 +92,7 @@ namespace model {
 
 		template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-			if (Material==0) {	//Si
-				Velocity=0.*Coverages[1];
-			} else if (Material==1) {
-				Velocity=0.*Coverages[1];										//in cm/s     //TODO
-			} else Velocity=0.;
+			Velocity=Coverages[0]/m_NH3 + Coverages[1]/m_TDMAT;
 		}
 
 		template<class VecType>
@@ -110,8 +108,8 @@ namespace model {
 
 		static void UpdateCoverage(double *Coverages, const double *Rates) {
 
-			Coverages[0]=1;
-			Coverages[1]=1;
+			Coverages[0]=(1-Coverages[0]);
+			Coverages[1]=(1-Coverages[1]);
 		}
 
 		template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position) const {
@@ -216,6 +214,8 @@ namespace model {
 
 	double const TiN_ALD::end_probability=0.001;
 	double const TiN_ALD::reaction_order=1.0;
+	double const TiN_ALD::m_NH3=1.0;
+	double const TiN_ALD::m_TDMAT=4.0;
 }
 
 #endif /*MODELTIN_ALD_H_*/
