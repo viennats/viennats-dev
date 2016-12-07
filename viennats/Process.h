@@ -715,6 +715,551 @@ namespace proc {
     }
 
 	//Topography simulation - execute a topography changing process according to required model and parameters
+	template <class LevelSetsType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
+				LevelSetsType& LevelSets,
+                const model::TiN_ALD& Model,
+				const ParameterType& Parameter,
+				const ProcessParameterType& ProcessParameter,
+				OutputInfoType & output_info
+		) {
+
+		const int D=LevelSetsType::value_type::dimensions;
+
+
+	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
+
+
+	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
+
+	    //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
+
+	    //----------------------------------------------------------------------------------------------------------------------------------------
+//	    while (LevelSets.size()>1) {
+//	    	LevelSets.pop_back();
+//	    }
+//	    typedef typename LevelSetsType::value_type LevelSetType;
+//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary_direction, !Parameter.is_open_boundary_negative));
+	    //----------------------------------------------------------------------------------------------------------------------------------------
+
+		int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
+		int rec_cycles=ProcessParameter.IterationCycles;		//number of subsequent iteration cycles
+
+
+		geom::cells<ParameterType::Dimension> Cells;
+
+		std::vector<double> Coverages(std::max(LevelSets.back().num_active_pts()* Model.CoverageStorageSize,1u),0.);
+		std::vector<double> Rates(1,0);
+		std::vector<double> NormalVectors;
+		std::vector<double> DistancesToReceiver;
+		std::vector<unsigned int> PointMaterials;
+		std::vector<bool> Connectivities;
+		std::vector<bool> Visibilities;
+
+		//time statistics
+		const std::string TimeStatFileName=Parameter.GetCompleteOutputFileName("StatisticsTimes.cvs");
+		std::ofstream f;
+
+		//unsigned int LineNumber;
+		if (Parameter.PrintStatistics) {
+			if(!std::ifstream(TimeStatFileName.c_str())) {
+
+#ifdef VERBOSE
+				msg::print_message("Print Header in StatisticsTimes.cvs");
+#endif
+
+				f.open(TimeStatFileName.c_str());
+				f << "Time for expansion"				<<";";
+				f << "Time for normal vector calc."		<<";";
+				f << "Determining materials"			<<";";
+				f << "Determining connectivities"       <<";";
+				f << "Reduced graph num vertices"       <<";";
+				f << "num componenets"                  <<";";
+				f << "Time for smoothing"               <<";";
+				f << "Determining visibilities"         <<";";
+				f << "Setup active cells"				<<";";
+				f << "Setup partition"					<<";";
+				f << "Rate calculation"					<<";";
+				f << "Memory Ray Tracing Data Structure"<<";";
+				f << "Level set time integration"    	<<";";
+				f << "Output"							<<";";
+				f << "Time for Output"					<<";";
+				f << "Total time step excl. Output"		<<";";
+				f << "Total time step incl. Output"		<<";";         //TODO
+				f << "Chosen time step"					<<";";          //TODO
+				f << "Time"								<<";";           //TODO
+				f << "Left Time"						<<std::endl;
+				f.close();
+			}
+		}
+
+		const double & ProcessTime = ProcessParameter.ProcessTime;
+		double RelativeTime=0;
+
+		//while ((OutputTimesIter!=OutputTimes.end()) && (RelativeTime>*OutputTimesIter)) ++OutputTimesIter;
+
+#ifdef VERBOSE
+				msg::print_message("Start loop over time");
+#endif
+
+
+		while(true) {
+
+		    double TimeTotalExclOutput=-my::time::GetTime();
+            double TimeTotalInclOutput=-my::time::GetTime();
+            double TimeExpansion=0;
+            double TimeNormals=0;
+            double TimeMaterials=0;
+            double TimeCells=0;
+            double TimePartition=0;
+            double TimeRates=0;
+            double TimeTimeIntegration=0;
+            double TimeOutput=0;
+            double TimeConnectivities=0;
+            double TimeVisibilities=0;
+            double TimeSmoothing=0;
+            double ray_tracing_memory=0;
+
+            unsigned int graph_size=0;
+            unsigned int num_components=0;
+
+		    bool MakeOutput=false;
+		    if (OutputTimesIter!=OutputTimes.end()) {
+		        assert(RelativeTime<=*OutputTimesIter);
+		        if (RelativeTime==*OutputTimesIter) {
+		            MakeOutput=true;
+		            OutputTimesIter++;
+		        }
+		    }
+
+		    //if ((RelativeTime==EndTime) && (ProcessParameter.final_output)) MakeOutput=true;
+		    //if ((RelativeTime==StartTime) && (ProcessParameter.initial_output)) MakeOutput=true;
+
+		    if (!MakeOutput) if (RelativeTime==ProcessTime) break;
+
+		    //###########################
+            // smooth surface level set
+            //###########################
+
+		    if (ProcessParameter.smoothing_material_level>0) {
+#ifdef VERBOSE
+				msg::print_message("smoothing");
+#endif
+
+		        TimeSmoothing-=my::time::GetTime();
+
+		        double time_step;
+
+		        int dummy;
+
+		        int counter=0;
+
+		        do {
+                    time_step=lvlset::time_integrate(
+                                LevelSets,
+                                dummy,
+                                lvlset::SMOOTHING_SCHEME(ProcessParameter.smoothing_material_level, ProcessParameter.smoothing_max_curvature, ProcessParameter.smoothing_min_curvature),
+                                Parameter.TimeStepRatio,
+                                std::numeric_limits<double>::max(),
+                                Coverages,
+                                Model.CoverageStorageSize);
+					counter++;
+		        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
+
+		        if (time_step!=std::numeric_limits<double>::max()) {
+		        	msg::print_message("maximum number of iterations reached during smoothing operation");
+		        }
+
+
+		        TimeSmoothing+=my::time::GetTime();
+		    }
+
+			/*
+			//Output statistics for level sets
+			if (Parameter.PrintStatistics) {
+			    TimeTotalExclOutput+=my::time::GetTime();
+				int i=0;
+				for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
+					std::ostringstream tmp;
+					tmp << Parameter.OutputPath << "StatisticsLevelSet" << i << ".cvs";
+					lvlset::misc::PrintStatistics(*it, tmp.str());
+					i++;
+				}
+				TimeTotalExclOutput-=my::time::GetTime();
+			}
+            */
+
+            if (Model.ReemissionIsMaterialDependent) {
+#ifdef VERBOSE
+				msg::print_message("determine top most layer");
+#endif
+                TimeMaterials-=my::time::GetTime();
+                DetermineTopMostLayer(LevelSets, PointMaterials);
+                TimeMaterials+=my::time::GetTime();
+            }
+
+            if (Model.CalculateConnectivities) {
+#ifdef VERBOSE
+				msg::print_message("calculate connectivities");
+#endif
+                TimeConnectivities-=my::time::GetTime();
+                std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.is_open_boundary_negative);
+                graph_size=x.first;
+                num_components=x.second;
+                TimeConnectivities+=my::time::GetTime();
+            }
+            if (Model.CalculateVisibilities) {
+#ifdef VERBOSE
+				msg::print_message("calculate visibilities");
+#endif
+                TimeVisibilities-=my::time::GetTime();
+                CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+                TimeVisibilities+=my::time::GetTime();
+            }
+
+            if ((Model.CalculateNormalVectors) || (Model.NumberOfParticleTypes>0)){
+#ifdef VERBOSE
+				msg::print_message("calculate normal vectors");
+#endif
+
+#ifdef VERBOSE
+				msg::print_message("expansion");
+#endif
+				TimeExpansion-=my::time::GetTime();
+                LevelSets.back().expand(3);
+                TimeExpansion+=my::time::GetTime();
+#ifdef VERBOSE
+				msg::print_message("normal vector calculation");
+#endif
+                TimeNormals-=my::time::GetTime();
+                calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative, Parameter.ReceptorRadius, lvlset::vec<double,D>(Parameter.DefaultDiskOrientation));
+                TimeNormals+=my::time::GetTime();
+            }
+
+            if (Model.NumberOfParticleTypes>0) {
+
+#ifdef VERBOSE
+				msg::print_message("start monte carlo");
+#endif
+
+                std::vector<lvlset::vec<int,ParameterType::Dimension > > CellCoordinates;
+
+                TimeExpansion-=my::time::GetTime();
+                LevelSets.back().add_voxel_corners();
+                TimeExpansion+=my::time::GetTime();
+
+                TimeCells-=my::time::GetTime();
+                calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.ReceptorRadius);
+                TimeCells+=my::time::GetTime();
+
+                typedef typename calc::PartitionTraits<ParameterType> tmp_type;
+
+//#ifdef COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
+//                partition::NeighborLinksArrays<tmp_type> Partition;
+//                if (ProcessParameter.partition_data_structure==partition::NEIGHBOR_LINKS_ARRAYS) {
+//                	typedef partition::NeighborLinksArrays<tmp_type> PartitionType;
+//                    partition::NeighborLinksArrays<tmp_type> Partition;
+//                    TimePartition-=my::time::GetTime();
+//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+//                    TimePartition+=my::time::GetTime();
+//                    ray_tracing_memory=Partition.get_memory();
+//                    if (Parameter.PrintStatistics) {
+//                        TimeTotalExclOutput+=my::time::GetTime();
+//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+//                        TimeTotalExclOutput-=my::time::GetTime();
+//                    }
+//
+//                    TimeRates-=my::time::GetTime();
+//                    do {
+//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+//                        calc::UpdateCoverages(Rates, Coverages, Model);
+//                        init_cycles--;
+//                    } while (init_cycles>=0);
+//                    init_cycles=rec_cycles;
+//                    TimeRates+=my::time::GetTime();
+//                }
+//#endif
+//#ifdef COMPILE_PARTITION_FULL_GRID
+//#ifdef COMPILE_PARTITION_FULL_GRID
+//                partition::FullGrid<tmp_type> Partition;
+//                if (ProcessParameter.partition_data_structure==partition::FULL_GRID) {
+//                	typedef partition::FullGrid<tmp_type> PartitionType;
+//                	partition::FullGrid<tmp_type> Partition;
+//                    TimePartition-=my::time::GetTime();
+//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+//                    TimePartition+=my::time::GetTime();
+//                    ray_tracing_memory=Partition.get_memory();
+//                    if (Parameter.PrintStatistics) {
+//                        TimeTotalExclOutput+=my::time::GetTime();
+//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+//                        TimeTotalExclOutput-=my::time::GetTime();
+//                    }
+//
+//                    TimeRates-=my::time::GetTime();
+//                    do {
+//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+//                        calc::UpdateCoverages(Rates, Coverages, Model);
+//                        init_cycles--;
+//                    } while (init_cycles>=0);
+//                    init_cycles=rec_cycles;
+//
+//                    TimeRates+=my::time::GetTime();
+//                }
+//#endif
+//#ifdef COMPILE_UP_DOWN_LINKED_TREE
+//#ifdef COMPILE_UP_DOWN_LINKED_TREE
+//                partition::UpDownLinkTree<tmp_type> Partition;
+//                if (ProcessParameter.partition_data_structure==partition::UP_DOWN_LINKED_TREE) {
+//                	typedef partition::UpDownLinkTree<tmp_type> PartitionType;
+//                    partition::UpDownLinkTree<tmp_type> Partition;
+//                    TimePartition-=my::time::GetTime();
+//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+//                    TimePartition+=my::time::GetTime();
+//                    ray_tracing_memory=Partition.get_memory();
+//                    if (Parameter.PrintStatistics) {
+//                        TimeTotalExclOutput+=my::time::GetTime();
+//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+//                        TimeTotalExclOutput-=my::time::GetTime();
+//                    }
+//
+//                    TimeRates-=my::time::GetTime();
+//                    do {
+//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+//                        calc::UpdateCoverages(Rates, Coverages, Model);
+//                        init_cycles--;
+//                    } while (init_cycles>=0);
+//                    init_cycles=rec_cycles;
+//
+//                    TimeRates+=my::time::GetTime();
+//                }
+//#endif
+
+                partition::NeighborLinksArrays<tmp_type> Partition;
+                TimePartition-=my::time::GetTime();
+                Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+                TimePartition+=my::time::GetTime();
+                ray_tracing_memory=Partition.get_memory();
+                if (Parameter.PrintStatistics) {
+                    TimeTotalExclOutput+=my::time::GetTime();
+                    Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                    TimeTotalExclOutput-=my::time::GetTime();
+                }
+
+                TimeRates-=my::time::GetTime();
+                do {
+                    calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+                    calc::UpdateCoverages(Rates, Coverages, Model);
+                    init_cycles--;
+                } while (init_cycles>=0);
+                init_cycles=rec_cycles;
+
+                TimeRates+=my::time::GetTime();
+
+			}
+
+            //#######################################
+            // output
+            //#######################################
+
+            TimeTotalExclOutput+=my::time::GetTime();
+            TimeOutput-=my::time::GetTime();
+
+            if (MakeOutput) {
+
+#ifdef VERBOSE
+				msg::print_message("make output");
+#endif
+
+
+                DataAccessClass<model::TiN_ALD, ParameterType::Dimension> Data(  Model,
+                                                                            &Coverages[0],
+                                                                            &Rates[0],
+                                                                            &NormalVectors[0],
+                                                                            PointMaterials,
+                                                                            Connectivities,
+                                                                            Visibilities,
+                                                                            ProcessParameter.print_velocities || Parameter.print_velocities,
+                                                                            ProcessParameter.print_coverages || Parameter.print_coverages,
+                                                                            ProcessParameter.print_rates || Parameter.print_rates,
+                                                                            ProcessParameter.print_materials || Parameter.print_materials
+                                                                        );
+
+                {
+                    std::ostringstream oss;
+                    oss<<"Write " << output_info.output_counter << "-th output (time = " << RelativeTime << ")...";
+                    msg::print_start(oss.str());
+                }
+
+                typename LevelSetsType::iterator it=LevelSets.begin();
+                for (unsigned int i=0;i<LevelSets.size();i++) {
+
+                    if (Parameter.print_dx) {
+                        std::ostringstream oss;
+                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+#ifdef VERBOSE
+                        msg::print_message("print dx");
+#endif
+
+                        if (i!=LevelSets.size()-1) {
+                            write_explicit_surface_opendx(*it,oss.str());
+                        } else {
+                            write_explicit_surface_opendx(*it,oss.str(), Data);
+                        }
+                    }
+                    if (Parameter.print_vtk) {
+                        std::ostringstream oss;
+                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+#ifdef VERBOSE
+                        msg::print_message("print vtk");
+#endif
+
+                        if (i!=LevelSets.size()-1) {
+                            write_explicit_surface_vtk(*it,oss.str());
+                        } else {
+                            write_explicit_surface_vtk(*it,oss.str(), Data);
+                        }
+                    }
+                    it++;
+                }
+
+                output_info.output_counter++;
+
+                msg::print_done();
+            }
+
+            TimeOutput+=my::time::GetTime();
+            TimeTotalExclOutput-=my::time::GetTime();
+
+//            std::cout << "Relative Time: " << RelativeTime << "\n";
+            bool is_finished=(RelativeTime==ProcessTime);
+
+
+            //#######################################
+            // time integration
+            //#######################################
+#ifdef VERBOSE
+			msg::print_message("time integration");
+#endif
+
+            double time_step=0;
+            if (!is_finished) {
+
+                //determine next time stop
+                double NextTimeStop=std::min(ProcessTime, RelativeTime+ProcessParameter.MaxTimeStep);
+                if (OutputTimesIter!=OutputTimes.end()) NextTimeStop=std::min(NextTimeStop, *OutputTimesIter);
+
+                double MaxTimeStep=NextTimeStop-RelativeTime;
+
+                if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_1ST_ORDER) {
+
+                	VelocityClass2<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(3);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
+                            Parameter.TimeStepRatio,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
+
+                	VelocityClass2<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::ENGQUIST_OSHER_SV_2ND_ORDER,
+                            Parameter.TimeStepRatio,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
+
+                	VelocityClass<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(3);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::LAX_FRIEDRICHS_SCALAR_1ST_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.TimeStepRatio,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                } else assert(0);
+
+                if (time_step>=MaxTimeStep) {
+                    assert(time_step==MaxTimeStep);
+                    time_step=MaxTimeStep;
+                    RelativeTime=NextTimeStop;
+                } else {
+                    RelativeTime+=time_step;
+                }
+
+
+            }
+
+            TimeTotalExclOutput+=my::time::GetTime();
+            TimeTotalInclOutput+=my::time::GetTime();
+
+            //#######################################
+            // print statistics
+            //#######################################
+			if (Parameter.PrintStatistics) {
+#ifdef VERBOSE
+				msg::print_message("print statistics");
+#endif
+
+				f.open(TimeStatFileName.c_str(),std::ios_base::app);
+				f<<TimeExpansion			<<";";
+				f<<TimeNormals				<<";";
+				f<<TimeMaterials			<<";";
+				f<<TimeConnectivities       <<";";
+				f<<graph_size               <<";";
+				f<<num_components           <<";";
+				f<<TimeSmoothing            <<";";
+				f<<TimeVisibilities         <<";";
+				f<<TimeCells				<<";";
+				f<<TimePartition			<<";";
+				f<<TimeRates				<<";";
+				f<<ray_tracing_memory		<<";";
+				f<<TimeTimeIntegration		<<";";
+				f<<MakeOutput				<<";";
+				f<<TimeOutput				<<";";
+				f<<TimeTotalExclOutput		<<";";
+				f<<TimeTotalInclOutput		<<";";
+				f<<time_step				<<";";
+				f<<RelativeTime             <<";";
+				f<<(ProcessTime-RelativeTime)	<< std::endl;
+				f.close();
+			}
+
+			if (is_finished) break;
+		}
+	}
+
 	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
 				LevelSetsType& LevelSets,
 				const ModelType& Model,

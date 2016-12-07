@@ -573,7 +573,7 @@ namespace geometry {
           int mat=oldMaterials[a];
           if (mat<static_cast<int>(MapMaterials.size()+1))
           {
-            mat=MapMaterials[mat-1];
+            mat=MapMaterials[mat];
             if (mat<=0) add=false;
           }
           else

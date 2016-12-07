@@ -23,6 +23,7 @@
 //Processes
 #define PROCESS_CONSTANT_RATES
 #define PROCESS_SIMPLE_DEPOSITION
+#define PROCESS_TIN_ALD
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_SiO2_PLASMA_ETCHING
 #define PROCESS_CFx_DEPOSITION
@@ -40,8 +41,8 @@
 #define PROCESS_CALCULATEFLUX
 
 #define COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
-#define COMPILE_PARTITION_FULL_GRID
-#define COMPILE_UP_DOWN_LINKED_TREE
+//#define COMPILE_PARTITION_FULL_GRID
+//#define COMPILE_UP_DOWN_LINKED_TREE
 
 #define MAX_NUM_THREADS 110
 
@@ -62,6 +63,7 @@
 
 #include "Model/ModelConstantRates.h"
 #include "Model/ModelSimpleDeposition.h"
+#include "Model/ModelTiNAtomicLayerDeposition.h"
 #include "Model/ModelSF6_O2PlasmaEtching.h"
 #include "Model/ModelSiO2_PlasmaEtching.h"
 #include "Model/ModelHBr_O2PlasmaEtching.h"
@@ -367,6 +369,14 @@ void main_(const ParameterType2& p2) {
 		}
 #endif
 
+
+//#ifdef PROCESS_TIN_ALD
+//		if (pIter->ModelName == "TiNAtomicLayerDeposition") {
+//			model::TiNAtomicLayerDeposition m(pIter->ModelParameters);
+//			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+//		}
+//#endif
+
 #ifdef PROCESS_SF6_O2_PLASMA_ETCHING
 		if (pIter->ModelName == "SF6_O2PlasmaEtching") {
 			model::SF6_O2PlasmaEtching m(pIter->ModelParameters);
@@ -442,6 +452,13 @@ void main_(const ParameterType2& p2) {
         model::BooleanOps m(pIter->ModelParameters);
         proc::ExecuteProcess(LevelSets, m, p, *pIter,output_info);
     }
+#endif
+
+#ifdef PROCESS_TIN_ALD
+		if (pIter->ModelName == "AtomicLayerDeposition") {
+			model::TiN_ALD m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
 #endif
 
 		output_info.start_time = output_info.end_time;

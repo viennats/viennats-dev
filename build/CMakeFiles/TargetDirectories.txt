@@ -1,0 +1,2 @@
+/home/filipov/Coding/git/viennats-dev/build/src/CMakeFiles/viennats.dir
+/home/filipov/Coding/git/viennats-dev/build/CMakeFiles/MAKE_HEADERS_VISIBLE.dir

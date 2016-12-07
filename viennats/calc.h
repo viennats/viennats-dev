@@ -614,7 +614,7 @@ namespace calc {
 
             //loop until particle stack is empty
             while (true) {
-                //initialize the travelled distance from the intersection with -oo
+              //initialize the travelled distance from the intersection with -oo
               double travelled_distance_from_intersection(-std::numeric_limits<double>::max());
 
               //the indices of the surface grid cell which was previously visited

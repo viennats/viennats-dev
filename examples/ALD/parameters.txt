@@ -1,0 +1,46 @@
+geometry_file  =   "geometry.dx";
+
+receptor_radius=0.8;
+
+print_statistics=true;
+
+output_path = "./output/";
+
+cfl_condition = 0.1;
+
+input_scale=1.5e-6;//2e-6;
+
+grid_delta = 1e-6;//2e-6;
+
+num_dimensions = 2;
+
+boundary_conditions = {
+	{PERIODIC, PERIODIC},
+	{INFINITE, INFINITE}
+};
+
+random_seed = 44356376;
+
+omp_threads=3;
+
+default_disk_orientation={0,0};
+
+processes = {
+//Cycle 1
+    {
+	finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 1;
+	model_name="TiN_ALD";
+	add_layer=1;
+	parameters={
+		direction={0,-1,0};
+		TDMAT_time=7;
+		NH3_time=4;
+		Purge_time=2;
+		statistical_accuracy=500;
+	};
+	initial_output=true;
+	final_output=true;
+    }
+};

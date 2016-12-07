@@ -197,7 +197,8 @@ namespace model {
 				if (Coverages[1]>1) std::cout << "Coverages[1]= " << Coverages[1] << ", Rates[0]= " << Rates[0] << ", Rates[1]= " << Rates[1] << "\n";
 			} else if (Material==1) {
 				Velocity=(-Rates[5]*Coverages[1]/rho_SiO2);										//in cm/s     //TODO
-			} else assert(0);
+			} else Velocity=0.;
+//assert(0);
 
 		}
 

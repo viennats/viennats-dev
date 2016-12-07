@@ -4,7 +4,6 @@ geometry_file  =   "SiO2_etch.dx";
 receptor_radius=0.8;
 
 print_statistics=true;
-print_coverages=true;
 
 output_path = "./output_2d/";
 
