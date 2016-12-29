@@ -8,7 +8,7 @@ print_coverages=true;
 print_rates=false;
 print_velocities=true;
 
-output_path = "./output2/";
+output_path = "./output_2/";
 
 cfl_condition = 0.1;
 input_scale=0.1;//.5e-6;//2e-6;
