@@ -651,7 +651,7 @@ namespace proc {
     		if (Model.surface()) {
     			Surfaces.push_back(boolop_surface);
     		} else {
-    			std::cout << "transform to surface\n";
+    			//std::cout << "transform to surface\n";
                 geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
     		}
 
@@ -715,19 +715,19 @@ namespace proc {
     }
 
 	//Topography simulation - execute a topography changing process according to required model and parameters
-	template <class LevelSetsType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
+	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
 				LevelSetsType& LevelSets,
-                const model::TiN_ALD& Model,
+				const ModelType& Model,
 				const ParameterType& Parameter,
 				const ProcessParameterType& ProcessParameter,
-				OutputInfoType & output_info
+				OutputInfoType & output_info,
+                                std::vector<double>& Coverages//,
+//                                std::vector<double> Rates//,
+//                                int step_cycle
 		) {
-
-		const int D=LevelSetsType::value_type::dimensions;
-
+            const int D=LevelSetsType::value_type::dimensions;
 
 	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
-
 
 	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
 
@@ -747,7 +747,7 @@ namespace proc {
 
 		geom::cells<ParameterType::Dimension> Cells;
 
-		std::vector<double> Coverages(std::max(LevelSets.back().num_active_pts()* Model.CoverageStorageSize,1u),0.);
+//		std::vector<double> Coverages(std::max(LevelSets.back().num_active_pts()* Model.CoverageStorageSize,1u),0.);
 		std::vector<double> Rates(1,0);
 		std::vector<double> NormalVectors;
 		std::vector<double> DistancesToReceiver;
@@ -803,6 +803,7 @@ namespace proc {
 
 
 		while(true) {
+//                        std::vector<double>& Coverages_temp = Coverages;
 
 		    double TimeTotalExclOutput=-my::time::GetTime();
             double TimeTotalInclOutput=-my::time::GetTime();
@@ -935,6 +936,7 @@ namespace proc {
                 TimeNormals+=my::time::GetTime();
             }
 
+                double MaxStep=0;
             if (Model.NumberOfParticleTypes>0) {
 
 #ifdef VERBOSE
@@ -953,106 +955,84 @@ namespace proc {
 
                 typedef typename calc::PartitionTraits<ParameterType> tmp_type;
 
-//#ifdef COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
-//                partition::NeighborLinksArrays<tmp_type> Partition;
-//                if (ProcessParameter.partition_data_structure==partition::NEIGHBOR_LINKS_ARRAYS) {
-//                	typedef partition::NeighborLinksArrays<tmp_type> PartitionType;
-//                    partition::NeighborLinksArrays<tmp_type> Partition;
-//                    TimePartition-=my::time::GetTime();
-//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
-//                    TimePartition+=my::time::GetTime();
-//                    ray_tracing_memory=Partition.get_memory();
-//                    if (Parameter.PrintStatistics) {
-//                        TimeTotalExclOutput+=my::time::GetTime();
-//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
-//                        TimeTotalExclOutput-=my::time::GetTime();
-//                    }
-//
-//                    TimeRates-=my::time::GetTime();
-//                    do {
-//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-//                        calc::UpdateCoverages(Rates, Coverages, Model);
-//                        init_cycles--;
-//                    } while (init_cycles>=0);
-//                    init_cycles=rec_cycles;
-//                    TimeRates+=my::time::GetTime();
-//                }
-//#endif
-//#ifdef COMPILE_PARTITION_FULL_GRID
-//#ifdef COMPILE_PARTITION_FULL_GRID
-//                partition::FullGrid<tmp_type> Partition;
-//                if (ProcessParameter.partition_data_structure==partition::FULL_GRID) {
-//                	typedef partition::FullGrid<tmp_type> PartitionType;
-//                	partition::FullGrid<tmp_type> Partition;
-//                    TimePartition-=my::time::GetTime();
-//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
-//                    TimePartition+=my::time::GetTime();
-//                    ray_tracing_memory=Partition.get_memory();
-//                    if (Parameter.PrintStatistics) {
-//                        TimeTotalExclOutput+=my::time::GetTime();
-//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
-//                        TimeTotalExclOutput-=my::time::GetTime();
-//                    }
-//
-//                    TimeRates-=my::time::GetTime();
-//                    do {
-//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-//                        calc::UpdateCoverages(Rates, Coverages, Model);
-//                        init_cycles--;
-//                    } while (init_cycles>=0);
-//                    init_cycles=rec_cycles;
-//
-//                    TimeRates+=my::time::GetTime();
-//                }
-//#endif
-//#ifdef COMPILE_UP_DOWN_LINKED_TREE
-//#ifdef COMPILE_UP_DOWN_LINKED_TREE
-//                partition::UpDownLinkTree<tmp_type> Partition;
-//                if (ProcessParameter.partition_data_structure==partition::UP_DOWN_LINKED_TREE) {
-//                	typedef partition::UpDownLinkTree<tmp_type> PartitionType;
-//                    partition::UpDownLinkTree<tmp_type> Partition;
-//                    TimePartition-=my::time::GetTime();
-//                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
-//                    TimePartition+=my::time::GetTime();
-//                    ray_tracing_memory=Partition.get_memory();
-//                    if (Parameter.PrintStatistics) {
-//                        TimeTotalExclOutput+=my::time::GetTime();
-//                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
-//                        TimeTotalExclOutput-=my::time::GetTime();
-//                    }
-//
-//                    TimeRates-=my::time::GetTime();
-//                    do {
-//                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-//                        calc::UpdateCoverages(Rates, Coverages, Model);
-//                        init_cycles--;
-//                    } while (init_cycles>=0);
-//                    init_cycles=rec_cycles;
-//
-//                    TimeRates+=my::time::GetTime();
-//                }
-//#endif
+#ifdef COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
+                if (ProcessParameter.partition_data_structure==partition::NEIGHBOR_LINKS_ARRAYS) {
+                    partition::NeighborLinksArrays<tmp_type> Partition;
+                    TimePartition-=my::time::GetTime();
+                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+                    TimePartition+=my::time::GetTime();
+                    ray_tracing_memory=Partition.get_memory();
+                    if (Parameter.PrintStatistics) {
+                        TimeTotalExclOutput+=my::time::GetTime();
+                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        TimeTotalExclOutput-=my::time::GetTime();
+                    }
 
-                partition::NeighborLinksArrays<tmp_type> Partition;
-                TimePartition-=my::time::GetTime();
-                Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
-                TimePartition+=my::time::GetTime();
-                ray_tracing_memory=Partition.get_memory();
-                if (Parameter.PrintStatistics) {
-                    TimeTotalExclOutput+=my::time::GetTime();
-                    Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
-                    TimeTotalExclOutput-=my::time::GetTime();
+                    TimeRates-=my::time::GetTime();
+                    do {
+                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+                        calc::UpdateCoverages(Rates, Coverages, Model, MaxStep);//, RelativeTime);
+//                                            //std::cout << "MaxStep = " << MaxStep << "\n";
+
+                        init_cycles--;
+                    } while (init_cycles>=0);
+                    init_cycles=rec_cycles;
+                    TimeRates+=my::time::GetTime();
                 }
+#endif
 
-                TimeRates-=my::time::GetTime();
-                do {
-                    calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-                    calc::UpdateCoverages(Rates, Coverages, Model);
-                    init_cycles--;
-                } while (init_cycles>=0);
-                init_cycles=rec_cycles;
+#ifdef COMPILE_PARTITION_FULL_GRID
+                if (ProcessParameter.partition_data_structure==partition::FULL_GRID) {
 
-                TimeRates+=my::time::GetTime();
+                    partition::FullGrid<tmp_type> Partition;
+
+                    TimePartition-=my::time::GetTime();
+                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+                    TimePartition+=my::time::GetTime();
+                    ray_tracing_memory=Partition.get_memory();
+                    if (Parameter.PrintStatistics) {
+                        TimeTotalExclOutput+=my::time::GetTime();
+                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        TimeTotalExclOutput-=my::time::GetTime();
+                    }
+
+                    TimeRates-=my::time::GetTime();
+                    do {
+                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+                        calc::UpdateCoverages(Rates, Coverages, Model, MaxStep);//, RelativeTime);
+                        init_cycles--;
+                    } while (init_cycles>=0);
+                    init_cycles=rec_cycles;
+
+                    TimeRates+=my::time::GetTime();
+                }
+#endif
+#ifdef COMPILE_UP_DOWN_LINKED_TREE
+                if (ProcessParameter.partition_data_structure==partition::UP_DOWN_LINKED_TREE) {
+
+                    partition::UpDownLinkTree<tmp_type> Partition;
+
+                    TimePartition-=my::time::GetTime();
+                    Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
+                    TimePartition+=my::time::GetTime();
+                    ray_tracing_memory=Partition.get_memory();
+                    if (Parameter.PrintStatistics) {
+                        TimeTotalExclOutput+=my::time::GetTime();
+                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        TimeTotalExclOutput-=my::time::GetTime();
+                    }
+
+                    TimeRates-=my::time::GetTime();
+                    do {
+                        calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+                        calc::UpdateCoverages(Rates, Coverages, Model, MaxStep);//, RelativeTime);
+                        init_cycles--;
+                    } while (init_cycles>=0);
+                    init_cycles=rec_cycles;
+
+                    TimeRates+=my::time::GetTime();
+                }
+#endif
 
 			}
 
@@ -1070,7 +1050,7 @@ namespace proc {
 #endif
 
 
-                DataAccessClass<model::TiN_ALD, ParameterType::Dimension> Data(  Model,
+                DataAccessClass<ModelType, ParameterType::Dimension> Data(  Model,
                                                                             &Coverages[0],
                                                                             &Rates[0],
                                                                             &NormalVectors[0],
@@ -1129,7 +1109,7 @@ namespace proc {
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
 
-//            std::cout << "Relative Time: " << RelativeTime << "\n";
+//            //std::cout << "Relative Time: " << RelativeTime << "\n";
             bool is_finished=(RelativeTime==ProcessTime);
 
 
@@ -1144,35 +1124,43 @@ namespace proc {
             if (!is_finished) {
 
                 //determine next time stop
-                double NextTimeStop=std::min(ProcessTime, RelativeTime+ProcessParameter.MaxTimeStep);
+                double NextTimeStop=std::min(ProcessTime, std::min(RelativeTime+ProcessParameter.MaxTimeStep,RelativeTime+MaxStep));
                 if (OutputTimesIter!=OutputTimes.end()) NextTimeStop=std::min(NextTimeStop, *OutputTimesIter);
 
                 double MaxTimeStep=NextTimeStop-RelativeTime;
+//                //std::cout << "MaxTimeStep = " << MaxTimeStep << "\n";
 
                 if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_1ST_ORDER) {
 
-                	VelocityClass2<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
+                    LevelSetsType& LevelSets_temp=LevelSets;
                     TimeExpansion-=my::time::GetTime();
-                    LevelSets.back().expand(3);
+                    LevelSets_temp.back().expand(3);
                     TimeExpansion+=my::time::GetTime();
 
                     TimeTimeIntegration-=my::time::GetTime();
 
-                    time_step=lvlset::time_integrate(
-                            LevelSets,
+                        time_step=lvlset::time_integrate(
+                            LevelSets_temp,
                             Velocities,
                             lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
                             Parameter.TimeStepRatio,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
+//                        if (time_step == MaxTimeStep) {
+//                            LevelSets.back().expand(3);
+//                            LevelSets=LevelSets_temp;
+//                        } else {
+//                            continue;
+//                        }
 
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
 
-                	VelocityClass2<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
                     TimeExpansion-=my::time::GetTime();
                     LevelSets.back().expand(5);
@@ -1191,7 +1179,7 @@ namespace proc {
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
 
-                	VelocityClass<model::TiN_ALD, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                	VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
                     TimeExpansion-=my::time::GetTime();
                     LevelSets.back().expand(3);
@@ -1513,7 +1501,9 @@ namespace proc {
 
                     TimeRates-=my::time::GetTime();
                     do {
+                        //std::cout << "calculate rates!\n";
                         calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
+                        //std::cout << "update coverages!\n";
                         calc::UpdateCoverages(Rates, Coverages, Model);
                         init_cycles--;
                     } while (init_cycles>=0);
@@ -1649,7 +1639,7 @@ namespace proc {
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
 
-//            std::cout << "Relative Time: " << RelativeTime << "\n";
+//            //std::cout << "Relative Time: " << RelativeTime << "\n";
             bool is_finished=(RelativeTime==ProcessTime);
 
 

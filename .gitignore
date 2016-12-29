@@ -1,6 +1,7 @@
 build
 .*.swp
 *~
-*output*
 *output
+*output_*
 *.cvs
+nbproject

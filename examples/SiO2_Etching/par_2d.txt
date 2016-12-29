@@ -5,6 +5,7 @@ receptor_radius=0.8;
 
 print_statistics=true;
 print_coverages=true;
+print_velocities=true;
 
 output_path = "./output_2d/";
 
@@ -24,7 +25,7 @@ boundary_conditions = {
 
 random_seed = 44356376;
 
-omp_threads=3;
+omp_threads=2;
 
 default_disk_orientation={0,0};
 

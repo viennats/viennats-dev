@@ -663,7 +663,7 @@ namespace lvlset {
             assert(itRS==TempRatesStops.end());
 
         }
-
+//        std::cout << "time step = " << MaxTimeStep2 << "\n";
         return MaxTimeStep2;
 
     }

@@ -1,0 +1,81 @@
+geometry_file  =   "./2d_0_35_trench.dx";
+
+print_statistics=false;
+
+output_path = "./output/";
+
+cfl_condition = 0.1;
+
+input_scale=2e-6;
+
+grid_delta = 2e-6;
+
+num_dimensions = 2;
+
+boundary_conditions = {
+	{PERIODIC,PERIODIC},
+	{INFINITE, INFINITE}
+};
+
+random_seed = 985456376;
+
+omp_threads=2;
+
+default_disk_orientation={0,0};
+
+processes = {
+    {
+
+	
+
+	print_coverages=true;
+        print_rates=true;
+        print_velocities=true;
+        print_materials=true;
+
+	output_times = {0};
+	output_times_period_length = 10;
+	output_times_periodicity=30;
+	final_output=true;
+
+        process_time= 300;
+        model_name="SF6_O2PlasmaEtching";
+        add_layer=0;
+        parameters= {
+
+            direction={0,-1,0};
+
+	    statistical_accuracy=500;
+            min_ion_energy=100;
+            delta_ion_energy=40;
+
+            flux_ion=1e16;
+            flux_oxygen=0.;
+            flux_fluorine=8e18;
+            a_oxygen=3.;
+            
+//          flux_ion=1e16;
+//          flux_oxygen=1.5e17;
+//          flux_fluorine=5.5e18;
+//          a_oxygen=3.;
+
+//          flux_ion=1e16;
+//          flux_oxygen=2.5e17;
+//          flux_fluorine=5e18;
+//          a_oxygen=3.;
+
+//          flux_ion=1e16;
+//          flux_oxygen=6e17;
+//          flux_fluorine=4.5e18;
+//          a_oxygen=2.;
+
+//          flux_ion=1e16;//1e16;
+//          flux_oxygen=3e17;//1e18;
+//          flux_fluorine=5.5e18;//4e18;
+//          a_oxygen=4.;//1.;
+        };
+        start_iteration_cycles=10;
+        iteration_cycles=0;
+        //MaxTimeStep=0.01;
+    }
+};

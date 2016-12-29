@@ -32,8 +32,8 @@ processes = {
 		directional_rates={0.05};
 
 	};
-	output_times_period_length = 1;
-	output_times_periodicity=30;
-	output_times={0,30};
+	//output_times_period_length = 1;
+	//output_times_periodicity=30;
+	output_times={0,10,20,30};
     }
 };

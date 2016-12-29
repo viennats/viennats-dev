@@ -57,6 +57,7 @@ namespace par {
             int AddLayer;                   //the number of level set layers which should be added to the geometry before the process is started
 
             double ProcessTime;             //the process time in seconds
+            unsigned int ALDStep;
 
             std::string ModelName;          //the name of the used process model
 
@@ -119,6 +120,7 @@ namespace par {
                 AddLayer=0;
                 Masks=0;
                 ProcessTime=0;
+                ALDStep=1;
                 ModelName.clear();
                 ModelParameters.clear();
                 IterationCycles=0;
@@ -333,6 +335,7 @@ namespace par {
 								rule_process_startPosition,
 								rule_process_endPosition,
 
+                                                                rule_ALD_step,
 								rule_process_time,
 								rule_process_top_mask,
 								rule_process_grow_new_oxide,
@@ -426,6 +429,9 @@ namespace par {
 
 
 				rule_process_time = str_p("process_time")  >> '='  >> real_p[assign_a(tmp_process.ProcessTime)]  >> ';';
+                                
+                                //ALD only
+                                rule_ALD_step = str_p("ALD_step")  >> '='  >> int_p[assign_a(tmp_process.ALDStep)]  >> ';';
 
 				//AFM wire only
 //				rule_process_distance = str_p("process_distance")  >> '='  >> real_p[assign_a(tmp_process.ProcessDistance)]  >> ';';
@@ -493,6 +499,7 @@ namespace par {
 
 				rule_process = ch_p('{') >> *(
                                                 rule_process_time |
+                                                rule_ALD_step |
                                                 rule_process_distance |
                                                 rule_process_startPosition |
                                                 rule_process_endPosition |

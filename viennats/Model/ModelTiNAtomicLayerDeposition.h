@@ -12,87 +12,74 @@ namespace model {
 
 ///TiN ALD model
 
-	class TiN_ALD {
+    	class TiN_ALD {
 
-		static const double end_probability;
-		static const double reaction_order;
-		static const double m_NH3;
-		static const double m_TDMAT;
+            const static double C[]; //{C_NH3_TDMAT, C_TiN_TDMAT, C_TDMAT_NH3, C_TiN_NH3}
+            const static double n[]; //{n_NH3, n_TDMAT}
 
-		double StartDirection[3];
-
-		double sticking_probability;
-		double Flux_TDMAT;
-		double Flux_NH3;
-		double TDMAT_time;
-		double NH3_time;
-		double Purge_time;
-		double Cycle_time;
-		double Flux;
+		double molecular_thickness;
+                double reduction_ratio;
+                double step_size;
+                int step;
+                double m_NH3;
+                double m_TDMAT;
 
 	public:
+            
+        class ParticleType {
+	public:
+		double Direction[3];
+		double Probability;
+		double Flux;
+                int Type;
+	};
 
-		class ParticleType {
-		public:
-			double Direction[3];
-			double Probability;
-			double Energy;
-			double Flux;
-			int Type;
-		};
+	unsigned int NumberOfParticleClusters[1];
 
-		unsigned int NumberOfParticleClusters[3];
+	static const int CoverageStorageSize=12;
+	static const int RatesStorageSize=1;
 
-		static const int CoverageStorageSize=2;
-		static const int RatesStorageSize=6;
-
-		static const unsigned int NumberOfParticleTypes=2;
+	static const unsigned int NumberOfParticleTypes=1;
 
         static const bool OutputFluxes=false;
-		static const bool SpatiallyEqualDistributedFlux=true;
+	static const bool SpatiallyEqualDistributedFlux=true;
 
-		static const bool CalculateVisibilities=false;
+	static const bool CalculateVisibilities=false;
         static const bool CalculateConnectivities=false;
 
         static const bool CalculateNormalVectors=true;
 
-        static const bool ReemissionIsMaterialDependent=true;
+        static const bool ReemissionIsMaterialDependent=false;
+        
 
-        TiN_ALD(const std::string & Parameters) {
+        TiN_ALD(const std::string & Parameters, const int &current_step) {
 
 		    using namespace boost::spirit::classic;
 
-		    double Accuracy;
+                    step=current_step;
+                    step_size=1e-4;
+                    molecular_thickness=0.433;
+                    m_NH3=4.;
+                    m_TDMAT=1.;
 
             bool b = parse(
                     Parameters.begin(),
                     Parameters.end(),
                     *(
-                    		(str_p("direction")				>> '='  >> '{' >> real_p[assign_a(StartDirection[0])] >> ","
-                    												>> real_p[assign_a(StartDirection[1])] >> ","
-                    												>> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
-                            (str_p("TDMAT_time")			>> '='  >> real_p[assign_a(TDMAT_time)]  >> ';') |
-                            (str_p("NH3_time")				>> '='  >> real_p[assign_a(NH3_time)]  >> ';') |
-                            (str_p("Purge_time")			>> '='  >> real_p[assign_a(Purge_time)]  >> ';') |
-                            (str_p("Flux_TDMAT")  			>> '='  >> real_p[assign_a(Flux_TDMAT)]  >> ';') |
-                            (str_p("Flux_NH3")    			>> '='  >> real_p[assign_a(Flux_NH3)]  >> ';') |
-                            (str_p("sticking_probability")  >> '='  >> real_p[assign_a(sticking_probability)]  >> ';') |
-                            (str_p("statistical_accuracy")	>> '='  >>real_p[assign_a(Accuracy)]  >> ';')
+                            (str_p("step_size")  >> '='  >> real_p[assign_a(step_size)] >> ';') |
+                            (str_p("molecular_thickness")  >> '='  >> real_p[assign_a(molecular_thickness)] >> ';') |
+                            (str_p("m_NH3")  >> '='  >> real_p[assign_a(m_NH3)] >> ';') |
+                            (str_p("m_TDMAT")  >> '='  >> real_p[assign_a(m_TDMAT)] >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
-
-		    unsigned int num_particles=static_cast<unsigned int>(Accuracy);
-
-		    NumberOfParticleClusters[0]=(Flux_TDMAT>0.)?num_particles:0;	//Flux
-		    NumberOfParticleClusters[1]=(Flux_NH3>0.)?num_particles:0;		//Flux
-		    Cycle_time = TDMAT_time+NH3_time+2.*Purge_time;
+       		    NumberOfParticleClusters[0]=1;
 		}
 
 		template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-			Velocity=Coverages[0]/m_NH3 + Coverages[1]/m_TDMAT;
+                    Velocity = molecular_thickness*std::max(Coverages[5]/m_NH3 + Coverages[11]/m_TDMAT,0.);
 		}
 
 		template<class VecType>
@@ -106,35 +93,70 @@ namespace model {
 				bool visible
 				) const {}
 
-		static void UpdateCoverage(double *Coverages, const double *Rates) {
+//		static void UpdateCoverage(double *Coverages, const double *Rates) {
+//		static void UpdateCoverage(double *Coverages, const double *Rates, double &delta_time, double &CurrentTime) {
+                    void UpdateCoverage(double *Coverages, const double *Rates, double &delta_time) const {//, double &CurrentTime) const {
 
-			Coverages[0]=(1-Coverages[0]);
-			Coverages[1]=(1-Coverages[1]);
+                    int Type = step-1;
+
+                        double Coverages0_6 = Coverages[6*Type+0];
+                        double Coverages1_7 = Coverages[6*Type+1];
+
+                        delta_time = std::min(
+                                        std::max(
+                                            (step_size * Coverages1_7) / 
+                                            (C[2*Type+1]*std::pow(std::max(Coverages[(6*Type+10)%12] + 
+                                                            Coverages0_6 - Coverages1_7,0.), 
+                                                         n[Type])), 
+                                        step_size),
+                                     0.01);
+
+                        Coverages[6*Type+0] = std::max(
+                                                Coverages[(6*Type+8)%12] 
+                                                - std::pow(
+                                                    std::max(
+                                                        std::pow(
+                                                            Coverages[(6*Type+8)%12] - Coverages0_6,
+                                                            1.-n[Type])
+                                                        - (1 - n[Type])*C[2*Type+0]*delta_time, 
+                                                    0.),
+                                                1./(1.-n[Type])), 
+                                            0.);
+
+                        Coverages[6*Type+1] = Coverages1_7 
+                                              + C[2*Type+1] 
+                                                    * delta_time 
+                                                        * std::max(
+                                                            std::pow(
+                                                                std::max(
+                                                                    Coverages[(6*Type+10)%12] + Coverages0_6 - Coverages1_7,
+                                                                0.)
+                                                            ,n[Type]), 
+                                                        0.);
+
+                        Coverages[6*Type+2] = Coverages[(6*Type+9)%12]  + Coverages[6*Type+1];
+                        Coverages[6*Type+3] = Coverages[(6*Type+8)%12]  - Coverages[6*Type+0];
+                        Coverages[6*Type+4] = Coverages[(6*Type+10)%12] + Coverages[6*Type+0] - Coverages[6*Type+1];
+                        Coverages[6*Type+5] = std::max((Coverages[6*Type+0] - Coverages0_6)/delta_time, 0.);
 		}
 
 		template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position) const {
 
-			double RelativeTimeTemp=ProcessTime / Cycle_time;
-			int RTI=(int) RelativeTimeTemp-0.5;
-			double RelativeTime=RelativeTimeTemp-(double) RTI; 
-			if (RelativeTime <= TDMAT_time) {
-				p.Type = 0;
-			// Generate TDMAT particles
-				my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
-				p.Probability=1.;
-				p.Flux=Flux;
-			} else if ((RelativeTime > (TDMAT_time+Purge_time)) && (RelativeTime <= (TDMAT_time+Purge_time+NH3_time))) {
-			// Generate NH3 particles
-				p.Type = 1;
-				my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
-				p.Probability=1.;
-				p.Flux=Flux;
-			} else {
-			// Purge time
-				p.Type = 2;
-				p.Probability=0.;
-				p.Flux=0.;
-			}
+//                    	p.Type=ParticleType;
+//			switch(ParticleType) {
+//				case 0:	//TTIP
+//					my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
+//					p.Probability=1.;
+//					p.Flux=1.-step;
+//					break;
+//				case 1:	//H2O
+//					my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
+//					p.Probability=1.;
+//					p.Flux=step;
+//					break;
+//				default:
+//					assert(0);
+//			}
 		}
 
         template <class PT, class NormVecType> void ParticleCollision(
@@ -143,22 +165,7 @@ namespace model {
                                     double* Rates,
                                     const double* Coverages,
                                     double RelTime) const {
-
-			Rates[p.Type]+=p.Probability;
-/*			switch(p.Type) {
-				case 0: {	//TDMAT
-					Coverages[0]-=
-					break;
-				}
-				case 1: {	//NH3
-
-					break;
-				}
-				default: {
-					assert(0);
-				}
-			}
-*/
+//                    Rates[p.Type]+=p.Flux;
 		}
 
 
@@ -170,52 +177,11 @@ namespace model {
 			int Material,
 			int D,
 			double dot // dot product between the incoming particle direction and the normal vector
-			) const {
-
-			double new_probability;
-			if (Coverages[p.Type]>0.) {
-				new_probability=p.Probability*(1.-sticking_probability*std::pow(Coverages[p.Type],reaction_order-1));
-			} else {
-				if (reaction_order<1.) {
-					new_probability=0.;
-				} else if (reaction_order==1.) {
-					new_probability=p.Probability*(1.-sticking_probability);
-				} else {
-					new_probability=p.Probability;
-				}
-			}
-
-			if (new_probability>=end_probability) {
-				particle_stack.push(p);
-				PT& p_new=particle_stack.top();
-				p_new.Probability=new_probability;
-				my::stat::CosineNDistributedRandomDirection(1.,NormalVector,p_new.Direction);
-			}
-
-/*			switch(p.Type) {
-				case 0: {	//TDMAT
-
-
-					break;
-				}
-				case 1: {	//NH3
-
-					break;
-				}
-				default: {
-					assert(0);
-				}
-			}
-*/
-
-		}
-
+			) const {}
 	};
 
-	double const TiN_ALD::end_probability=0.001;
-	double const TiN_ALD::reaction_order=1.0;
-	double const TiN_ALD::m_NH3=1.0;
-	double const TiN_ALD::m_TDMAT=4.0;
+            double const TiN_ALD::C[] = {0.75, 0.8, 3.8, 1.2};
+            double const TiN_ALD::n[] = {0.9, 1.2};
 }
 
 #endif /*MODELTIN_ALD_H_*/

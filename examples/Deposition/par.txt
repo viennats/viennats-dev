@@ -1,0 +1,53 @@
+geometry_file = "./3d_hole.gid/release/3d_hole.dx";
+
+receptor_radius=0.9;
+report_import_errors=true;
+print_coverages=true;
+print_rates=false;
+print_velocities=true;
+
+output_path = "./output/";
+
+cfl_condition = 0.1;
+
+omp_threads=1;
+
+print_statistics=false;
+
+input_scale=1e-6;
+grid_delta=2e-6;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{PERIODIC, PERIODIC},
+	{INFINITE, INFINITE},
+	{PERIODIC, PERIODIC}
+};
+
+random_seed = 44356376;
+
+open_boundary="+y";
+
+default_disk_orientation={1,1,0};
+
+processes = {
+     {
+	finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time=10;
+        add_layer=1;
+	model_name="NonlinearDeposition";
+	parameters= {
+		direction={0,-1,0};
+		deposition_rate = 1.;//2e18;
+		sticking_probability=1.;
+		reaction_order=1.;
+		stop_criterion=0.01;
+		statistical_accuracy = 500;
+	};
+	print_velocities=false;
+	final_output=true;
+    output_times={0,0.2,0.4,0.6,0.8,1,1.2,1.4,1.6,1.8,2,2.2,2.4,2.6,2.8,3,3.2,3.4,3.6,3.8,4,4.2,4.4,4.6,4.8,5,5.2,5.4,5.6,5.8,6,6.2,6.4,6.6,6.8,7,7.2,7.4,7.6,7.8,8,8.2,8.4,8.6,8.8,9,9.2,9.4,9.6,9.8,10};
+     }
+};

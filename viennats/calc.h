@@ -93,7 +93,7 @@ namespace calc {
 
             if ((sgn_count!=(1<<D)) && (sgn_count!=0)) {
                 cell_contains_disk=true;
-//                std::cout << "cell_cont_disk! ";
+//                //std::cout << "cell_cont_disk! ";
             } else {
 
                 //cell_equal_signs_counter++;
@@ -128,7 +128,7 @@ namespace calc {
                         }
 
                         if (cell_contains_disk2) {
-//                            std::cout << "cell_cont_disk2! ";
+//                            //std::cout << "cell_cont_disk2! ";
                             cell_contains_disk=true;
                             //cell_contains_disk_counter++;
                             break;
@@ -150,17 +150,17 @@ namespace calc {
                 Cells.push_back(geom::cell<D>());
 
                 for (unsigned int i=0;i<(1<<D); i++ ) {
-//                  if (it.corner(i).pt_id()==1028) std::cout << "it.corner("<<i<<").pt_id():" <<it.corner(i).pt_id() <<std::endl;
+//                  if (it.corner(i).pt_id()==1028) //std::cout << "it.corner("<<i<<").pt_id():" <<it.corner(i).pt_id() <<std::endl;
                     Cells.back().Points[i]=it.corner(i).pt_id();
                     assert(it.corner(i).is_defined());
                 }
             }
         }
 
-        //std::cout << "num_cells=" << cell_counter << std::endl;
-        //std::cout << "num_cells_equal_signs=" << cell_equal_signs_counter << std::endl;
-        //std::cout << "num_cells_contains_disk=" << cell_contains_disk_counter << std::endl;
-        //std::cout << "num_cells_inserted=" << cell_inserted_counter << std::endl;
+        ////std::cout << "num_cells=" << cell_counter << std::endl;
+        ////std::cout << "num_cells_equal_signs=" << cell_equal_signs_counter << std::endl;
+        ////std::cout << "num_cells_contains_disk=" << cell_contains_disk_counter << std::endl;
+        ////std::cout << "num_cells_inserted=" << cell_inserted_counter << std::endl;
     }
 
   template <class LS> void CalculateNormalVectors(
@@ -257,7 +257,7 @@ namespace calc {
 
   template <class LS> void CalculateCurvatureVectors(const LS& l, std::vector<double>& CurvatureVectors, bool initialized) {
 
-    //std::cout << "here!\n";
+    ////std::cout << "here!\n";
         const int D=LS::dimensions;
         typedef typename LS::index_type index_type;
 
@@ -284,7 +284,7 @@ namespace calc {
               for (int k=-1;k<=1;++k) {
                 if (((i!=0) || (j!=0) || (k!=0)) && ((i==0) || (j==0) || (k==0))) {
                   lvlset::vec<index_type,D> v(i,j,k);
-                  //std::cout << "v(" << v[0] << ", " << v[1] << ", " << v[2] << ")\n";
+                  ////std::cout << "v(" << v[0] << ", " << v[1] << ", " << v[2] << ")\n";
                   it_neighbors.push_back(typename LS::const_iterator_runs_offset(l, v,it.indices()));
                 }
               }
@@ -338,11 +338,11 @@ namespace calc {
 
                   if (denom!=0) {
                     *curv=num/(denom*std::sqrt(denom));
-                      //std::cout << "*curv: " << *curv << std::endl;
+                      ////std::cout << "*curv: " << *curv << std::endl;
 //                      if ((k>max_curvature) || (k<min_curvature)) s= -num/denom;
 
                   } else {
-                      std::cout << "warning!!!dlkajf" << std::endl;
+                      //std::cout << "warning!!!dlkajf" << std::endl;
                       if (num>0) {
                         *curv=-std::numeric_limits<double>::max();
                       } else {
@@ -351,7 +351,7 @@ namespace calc {
                   }
               //}
 //              return s;
-//                  std::cout << "curv: " << *curv << "\n";
+//                  //std::cout << "curv: " << *curv << "\n";
       }
         }
 
@@ -396,7 +396,9 @@ namespace calc {
     //Initialize Rates
     unsigned int  num_active_points=SurfaceLevelSet.num_active_pts();
     Rates.clear();
+    //std::cout << "assert normal vector size \n";
     assert(NormalVectors.size()==num_active_points*D);
+    //std::cout << "assert coverages size \n";
     assert(Coverages.size()>=num_active_points*Model.CoverageStorageSize);
 
         #ifdef _OPENMP
@@ -416,7 +418,7 @@ namespace calc {
         RecepterArea*=Parameter.GridDelta;
         if (D==3) RecepterArea*=Parameter.GridDelta;
     }
-    //std::cout << "Recepter Area: " << RecepterArea << endl;
+    ////std::cout << "Recepter Area: " << RecepterArea << endl;
 
 
     #pragma omp parallel
@@ -443,6 +445,7 @@ namespace calc {
       std::vector<double>& tmp_Rates=all_tmp_Rates[my_thread_num];
 
       assert(tmp_Rates.size()==num_active_points*Model.RatesStorageSize);
+      //std::cout << "assert temp rates size \n";
 
       //stacks to store the particles and their positions
       std::stack<typename ModelType::ParticleType> ParticleStack;
@@ -476,11 +479,14 @@ namespace calc {
           StartPosition[tmp_dim]=tmp_s;
 
           starting_subbox=Partition.Access(StartPosition, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+          //std::cout << "equaldistributed \n";
+
           }
 
 
            //for each involved particle type do
           for (unsigned int ParticleType=0;ParticleType<Model.NumberOfParticleTypes;++ParticleType) {
+//              if (ParticleType==1) //std::cout << "AH!!!\n";
 
               //determine the number of particles which have to be simulated
              const unsigned int NumOfParticles=(ModelType::SpatiallyEqualDistributedFlux)?
@@ -490,13 +496,15 @@ namespace calc {
 
             //for each particle do
             for (unsigned int ParticleCounter=0;ParticleCounter<NumOfParticles;++ParticleCounter) {
+                      //std::cout << "\nparticles\n";
+
 
             //generate cluster energy and direction
             typename ModelType::ParticleType p;
             //typename ModelType::TipHeightType dist;
 
             Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
-
+//std::cout << "\nparticlegeneration\n";
             //if particle is not moving downwards
             if (Parameter.is_open_boundary_negative) {
                 if(p.Direction[Parameter.open_boundary_direction]<=0.) continue;
@@ -506,8 +514,10 @@ namespace calc {
 
             //calculate represented flux by that particle
             p.Flux/=Model.NumberOfParticleClusters[ParticleType];
+//            //std::cout<<"p.Flux1="<<p.Flux<<"\n";
             p.Flux/=RecepterArea;
-
+//            //std::cout<<"p.Flux2="<<p.Flux<<"\n";
+            
             //determine starting position and starting subbox
             ClusterPositionType cp;
 
@@ -590,7 +600,7 @@ namespace calc {
                     ParticlePositionsStack.push(new_cp);
                     ParticleStack.push(p);
                 }
-
+                //std::cout << "again EDF\n";
             }
             else {
 
@@ -616,7 +626,7 @@ namespace calc {
             while (true) {
               //initialize the travelled distance from the intersection with -oo
               double travelled_distance_from_intersection(-std::numeric_limits<double>::max());
-
+//std::cout << "DTFI\n";
               //the indices of the surface grid cell which was previously visited
               int last_surface_cell_indices[D];
               for (int r=0;r<D;++r) last_surface_cell_indices[r]=Partition.Min(r)-2;   //initialize with invalid indices
@@ -624,7 +634,7 @@ namespace calc {
 
               //Iterate through the cells between LS.Max() and LS.Min() until surface reached or particle exits environment
               while (true) {
-
+//std::cout << "particleIteration\n";
                 //get reference to actual cluster
                 const typename PartitionType::subbox &Subbox= cp.Subbox;
 
@@ -642,7 +652,7 @@ namespace calc {
                 //for each dimension do
                 int i;
                 for (i=0;i<D;i++) {
-
+//std::cout << "Dimension\n";
                   double t_temp=std::numeric_limits<double>::max();
 
                   //Subbox.Extension(dir) is the length of the subbox in the dir direction
@@ -692,9 +702,9 @@ namespace calc {
                 }
 
                 //cp.X remains unchanged at this point, only max_distance_in_box and LeavingDirection are found
-//                              std::cout << "cp.X4 " << "(" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
-//                std::cout << "max_dinstance_in_box: " << max_distance_in_box << "\n";
-//                std::cout << "LeavingDirection: " << LeavingDirection << "\n";
+//                              //std::cout << "cp.X4 " << "(" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
+//                //std::cout << "max_dinstance_in_box: " << max_distance_in_box << "\n";
+//                //std::cout << "LeavingDirection: " << LeavingDirection << "\n";
                 //Now have max_distance_in_box = distance from cp.X to point of exit in the i direction
                 //where i is the leaving direction (x,y,z)=(0,1,2)
 
@@ -702,11 +712,11 @@ namespace calc {
 
                 //When the subbox which received the particle also contains within it the surface boundary
                 if (Subbox.ContainsCell()) {
-//                  std::cout << "ContainsCell()\n";
+//                  //std::cout << "ContainsCell()\n";
                     //if subbox is a surface grid cell
 
                   const geom::cell<D> &Cell=Cells[Subbox.Cell()];
-
+//std::cout << "containsCell\n";
                   //Calculate the exit direction and distance as before to see if surface is intersected
                   //#######################################################
                   //# check for surface intersection                      #
@@ -747,17 +757,18 @@ namespace calc {
                           Rho,
                           &(poly.Coefficients()[0])
                         );
-//                        std::cout << "cp.X5: (" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
+//                        //std::cout << "cp.X5: (" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
                         relative_distance_to_intersection=my::math::FindFirstTransitionFromPosToNegOfPolynomNewton(0., max_distance_in_box, poly,1e-6);
                       }
 
                       if (relative_distance_to_intersection < std::numeric_limits<double>::max()) {  //if particle hits surface
-
+//std::cout << "hits\n";
                           travelled_distance_from_intersection=-relative_distance_to_intersection;
 
                           ClusterPositionType new_cp=cp;
 
                           for (int kk=0;kk<D;kk++) new_cp.X[kk]+=relative_distance_to_intersection*p.Direction[kk];
+                          //std::cout << "RDI\n";
                           //p.Direction[kk] is unchanged at this point
                           //new_cp.X contains the coordinates within the Subbox at the subbox exit point
 
@@ -765,7 +776,7 @@ namespace calc {
                           double tmp_normalvec[3];
                           my::math::CalculateNormal<D>(tmp_normalvec,new_cp.X,Rho);
                           if (D==2) tmp_normalvec[2]=0.;
-//                                                std::cout << "tmp_normalvec(): " << tmp_normalvec[0] << ", " << tmp_normalvec[1] << ", " << tmp_normalvec[2] << "\n";
+                                                //std::cout << "tmp_normalvec(): " << tmp_normalvec[0] << ", " << tmp_normalvec[1] << ", " << tmp_normalvec[2] << "\n";
 
                           double dot=tmp_normalvec[0]*p.Direction[0];
                           for (int w=1;w<D;++w) dot+=tmp_normalvec[w]*p.Direction[w];
@@ -779,22 +790,33 @@ namespace calc {
                           unsigned int gp=0;
                           unsigned int mat=0;
                           if ((ModelType::CoverageStorageSize>0) || (ModelType::ReemissionIsMaterialDependent)) {
+                              //std::cout << "CSS>0 RMD\n";
                               double dist=std::numeric_limits<double>::max();
+                              //std::cout << "1\n";
                               for (int g=0;g<(1<<D);g++) {
+                                  //std::cout << "2\n";
                                   unsigned int tmp_gp= SurfaceLevelSet.active_pt_id(Cell.Points[g]);
+                                  //std::cout << "3\n";
+                                  //std::cout << "new_cp = " << new_cp.X[0] << ", " << new_cp.X[1] << ", " << new_cp.X[2] << "\n";
                                   if (tmp_gp!=LevelSetType::INACTIVE) {
+                                      //std::cout << "4\n";
                                       double tmp_dist=0;
+                                      //std::cout << "5\n";
                                       for (int iii=0;iii<D;iii++) tmp_dist+=(((g & (1<<iii))==0)?(new_cp.X[iii]):(1.-new_cp.X[iii]));
+                                      //std::cout << "6\n";
                                       if (tmp_dist<dist) {
+                                          //std::cout << "7\n";
                                           dist=tmp_dist;
                                           gp=tmp_gp;
                                       }
                                   }
                               }
+                              //std::cout << "PointMaterials["<<gp<<"]"<<PointMaterials[gp]<<"\n";
                               mat=PointMaterials[gp];
                           }
 
                           //perform particle reemission
+                          //std::cout << "Reflection\n";
                           Model.ParticleReflexion(  p,
                                                       ParticleStack,
                                                       tmp_normalvec,
@@ -805,7 +827,7 @@ namespace calc {
                       }
                     }
                   }
-
+//std::cout << "positionStatusPos\n";
                   if (PositionStatusPos.none() && PositionStatusNeg.none()) {
 
                     //#####################################################################
@@ -906,7 +928,7 @@ namespace calc {
 //                                                int mat = 0;
 //                                                if ((ModelType::CoverageStorageSize>0) || (ModelType::ReemissionIsMaterialDependent))
 //                                                  mat = PointMaterials[gp];
-
+//std::cout << "Collision\n";
                                                 Model.ParticleCollision(  p,
                                                                             Make3DVector<D>(&NormalVectors[gpD]),
                                                                             //&NormalVectors[gpD],
@@ -990,7 +1012,7 @@ namespace calc {
 
               }
 
-//              std::cout << ParticleStack.size() << std::endl;
+//              //std::cout << ParticleStack.size() << std::endl;
               if (ParticleStack.empty()) break;
 
               //#######################################################
@@ -1052,16 +1074,30 @@ namespace calc {
     //local_time=my::time::GetTime()-StartTime;
   }
 
-  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, const ModelType& Model) {
+//  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, const ModelType& Model) {
+  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, 
+          const ModelType& Model, double &time_step) {//, double &current_time) {
     double* c=&Coverages[0];
     const double* r=&Rates[0];
     while (r!=&(*(Rates.end()))) {
-      Model.UpdateCoverage(c, r);
+      Model.UpdateCoverage(c, r, time_step);//, current_time);
+//                    //std::cout << "time_step = " << time_step << "\n";
+//      else Model.UpdateCoverage(c, r);
       c+=Model.CoverageStorageSize;
       r+=Model.RatesStorageSize;
     }
   }
 
+  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, const ModelType& Model) {
+    double* c=&Coverages[0];
+    const double* r=&Rates[0];
+    while (r!=&(*(Rates.end()))) {
+//      if (time_step != 0) Model.UpdateCoverage(c, r, time_step);
+      Model.UpdateCoverage(c, r);
+      c+=Model.CoverageStorageSize;
+      r+=Model.RatesStorageSize;
+    }
+  }
 }
 
 

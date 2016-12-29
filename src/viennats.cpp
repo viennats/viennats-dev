@@ -23,7 +23,8 @@
 //Processes
 #define PROCESS_CONSTANT_RATES
 #define PROCESS_SIMPLE_DEPOSITION
-#define PROCESS_TIN_ALD
+#define PROCESS_TiN_ALD
+//#define PROCESS_TiO2_ALD
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_SiO2_PLASMA_ETCHING
 #define PROCESS_CFx_DEPOSITION
@@ -41,8 +42,8 @@
 #define PROCESS_CALCULATEFLUX
 
 #define COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
-//#define COMPILE_PARTITION_FULL_GRID
-//#define COMPILE_UP_DOWN_LINKED_TREE
+#define COMPILE_PARTITION_FULL_GRID
+#define COMPILE_UP_DOWN_LINKED_TREE
 
 #define MAX_NUM_THREADS 110
 
@@ -61,16 +62,39 @@
 
 #include "Parameters.h"
 
+#ifdef PROCESS_CONSTANT_RATES
 #include "Model/ModelConstantRates.h"
+#endif
+#ifdef PROCESS_SIMPLE_DEPOSITION
 #include "Model/ModelSimpleDeposition.h"
+#endif
+#ifdef PROCESS_TiN_ALD
 #include "Model/ModelTiNAtomicLayerDeposition.h"
+#endif
+#ifdef PROCESS_TiO2_ALD
+#include "Model/ModelTiO2AtomicLayerDeposition.h"
+#endif
+#ifdef PROCESS_SF6_O2_PLASMA_ETCHING
 #include "Model/ModelSF6_O2PlasmaEtching.h"
+#endif
+#ifdef PROCESS_SiO2_PLASMA_ETCHING
 #include "Model/ModelSiO2_PlasmaEtching.h"
+#endif
+#ifdef PROCESS_HBr_O2_PLASMA_ETCHING
 #include "Model/ModelHBr_O2PlasmaEtching.h"
+#endif
+#ifdef PROCESS_CFx_DEPOSITION
 #include "Model/ModelCFx_Deposition.h"
+#endif
+#ifdef PROCESS_NONLINEAR_DEPOSITION
 #include "Model/ModelNonlinearDeposition.h"
+#endif
+#ifdef PROCESS_WET_ETCHING
 #include "Model/ModelWetEtching.h"
+#endif
+#ifdef PROCESS_FIB
 #include "Model/ModelFIB.h"
+#endif
 
 #include "Model/ModelCalculateFlux.h"
 
@@ -254,8 +278,8 @@ void main_(const ParameterType2& p2) {
 	//level set grid
 
 #ifdef VERBOSE
-		std::cout << "dim " << h << " min=" << grid_min[h] << " max="
-				<< grid_max[h] << std::endl;
+//		std::cout << "dim " << h << " min=" << grid_min[h] << " max="
+//				<< grid_max[h] << std::endl;
 #endif
 //	}
 
@@ -341,6 +365,15 @@ void main_(const ParameterType2& p2) {
 	//!		Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
 	//!		HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
 	//!		and BooleanOperation
+
+#ifdef PROCESS_TiO2_ALD
+            std::vector<double> CoveragesALD_TiO2(2*LevelSets.back().num_active_pts(),0.);
+#endif
+#ifdef PROCESS_TiN_ALD
+            std::vector<double> CoveragesALD_TiN(12*LevelSets.back().num_active_pts(),0.);
+            for (unsigned int i=0;i<CoveragesALD_TiN.size();i++) CoveragesALD_TiN[i]=(i%12==10)?1.:0.;
+#endif
+        
 	for (typename std::list<typename ParameterType2::ProcessParameterType>::const_iterator
 			pIter = p.ProcessParameters.begin(); pIter
 			!= p.ProcessParameters.end(); ++pIter) {
@@ -454,11 +487,21 @@ void main_(const ParameterType2& p2) {
     }
 #endif
 
-#ifdef PROCESS_TIN_ALD
-		if (pIter->ModelName == "AtomicLayerDeposition") {
-			model::TiN_ALD m(pIter->ModelParameters);
-			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
-		}
+#ifdef PROCESS_TiN_ALD
+		if (pIter->ModelName == "TiN_ALD") {
+                    for (unsigned int i=0;i<CoveragesALD_TiN.size();i++) 
+                        if ((i%12==6*(pIter->ALDStep-1))||(i%12==6*(pIter->ALDStep-1)+1)||(i%12==5)||(i%12==11))
+                            CoveragesALD_TiN[i]=0.;
+                    model::TiN_ALD m(pIter->ModelParameters, pIter->ALDStep);
+                    proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiN);
+        	}
+#endif
+
+#ifdef PROCESS_TiO2_ALD
+		if (pIter->ModelName == "TiO2_ALD") {
+			model::TiO2_ALD m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiO2);
+        	}
 #endif
 
 		output_info.start_time = output_info.end_time;
@@ -473,7 +516,7 @@ int main(int argc, char *argv[]) {
 
 	msg::print_welcome();
 
-	//check intrinsinc double-type
+	//check intrinsic double-type
 	assert(std::numeric_limits<double>::is_iec559);
 
 	//!Read Parameters-File and populate Parameters class
