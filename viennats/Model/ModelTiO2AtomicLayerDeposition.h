@@ -127,8 +127,9 @@ namespace model {
 				bool visible
 				) const {}
 
-		static void UpdateCoverage(double *Coverages, const double *Rates, double &time, double &CurrentTime) {
-                    
+//		static void UpdateCoverage(double *Coverages, const double *Rates, double &time, double &CurrentTime) {
+                void UpdateCoverage(double *Coverages, const double *Rates, double &delta_time) const {//, double &CurrentTime) const {
+
                     const double Coverages0 = Coverages[0];
                     const double Coverages1 = Coverages[1];
 
