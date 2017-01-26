@@ -21,17 +21,17 @@
 #define DIMENSION_2
 
 //Processes
-//#define PROCESS_CONSTANT_RATES
-//#define PROCESS_SIMPLE_DEPOSITION
+#define PROCESS_CONSTANT_RATES
+#define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_TiN_ALD
 //#define PROCESS_TiO2_ALD
-//#define PROCESS_SF6_O2_PLASMA_ETCHING
-//#define PROCESS_SiO2_PLASMA_ETCHING
-//#define PROCESS_CFx_DEPOSITION
-//#define PROCESS_HBr_O2_PLASMA_ETCHING
-//#define PROCESS_NONLINEAR_DEPOSITION
-//#define PROCESS_WET_ETCHING
-//#define PROCESS_FIB
+#define PROCESS_SF6_O2_PLASMA_ETCHING
+#define PROCESS_SiO2_PLASMA_ETCHING
+#define PROCESS_CFx_DEPOSITION
+#define PROCESS_HBr_O2_PLASMA_ETCHING
+#define PROCESS_NONLINEAR_DEPOSITION
+#define PROCESS_WET_ETCHING
+#define PROCESS_FIB
 
 //LS Processes
 #define PROCESS_PLANARIZATION
@@ -527,11 +527,13 @@ int main(int argc, char *argv[]) {
 	if (p.OpenMP_threads>0) omp_set_num_threads(p.OpenMP_threads);
 #endif
 
+//---- Removed use of SPRNG for random number generation; opted for <random> isntead ----
 	//!Initialize Random-Generators
-	int my_rank = 0;
-	int num_nodes = 1;
-	my::stat::InitRandomGenerator(my_rank, num_nodes, p.RNG_Seed, p.RNG_Type,
-			p.RNG_Par);
+//	int my_rank = 0;
+//	int num_nodes = 1;
+//	my::stat::InitRandomGenerator(my_rank, num_nodes, p.RNG_Seed, p.RNG_Type,
+//			p.RNG_Par);
+//---------------------------------------------------------------------------------------
 
 //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
 #ifdef DIMENSION_2
@@ -544,8 +546,10 @@ int main(int argc, char *argv[]) {
 		main_<3, par::Parameters> (p);
 #endif
 
+//---- Removed use of SPRNG for random number generation; opted for <random> isntead ----
 	//!Finalize Random-Generators
-	my::stat::FreeRandomGenerator();
+//	my::stat::FreeRandomGenerator();
+//---------------------------------------------------------------------------------------
 
   double exec_time = my::time::GetTime()-timer;
   std::stringstream ss;

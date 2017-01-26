@@ -32,7 +32,7 @@
 
 #include "parser_actors.h"
 
-#include "sprng/sprng.h"
+//#include "sprng/sprng.h"
 
 #define BOOST_SPIRIT_DEBUG
 
@@ -153,9 +153,9 @@ namespace par {
         };
 
 		//parameters for random number generator
-		static int RNG_Seed;
-		static const int RNG_Type=SPRNG_MLFG;
-		static const int RNG_Par=SPRNG_DEFAULT;
+//		static int RNG_Seed;
+//		static const int RNG_Type=SPRNG_MLFG;
+//		static const int RNG_Par=SPRNG_DEFAULT;
 
 		//dimension
 		int Dimensions;
@@ -246,7 +246,7 @@ namespace par {
 
 
 
-	int Parameters::RNG_Seed;
+//	int Parameters::RNG_Seed;
 
 	Parameters::ProcessParameterType tmp_process;
 	bnc::boundary_conditions_type tmp_boundary_condition;
@@ -303,7 +303,7 @@ namespace par {
 								rule_default_disk_orientation,
 								rule_ignore_materials,
 								rule_change_input_parity,
-								rule_random_seed,
+//								rule_random_seed,
 								rule_dimensions,
 								rule_OpenMP_threads,
 								rule_Domain_Extension,
@@ -385,7 +385,7 @@ namespace par {
 				rule_default_disk_orientation = (str_p("default_disk_orientation") >> '=' >> '{' >> (real_p[push_back_a(p.DefaultDiskOrientation)] % ',') >> '}' >> ';');
 				rule_ignore_materials = (str_p("ignore_materials") >> '=' >> '{' >> (int_p[push_back_a(p.IgnoreMaterials)] % ',') >> '}' >> ';');
 				rule_change_input_parity=(str_p("change_input_parity")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.change_input_parity)]) >> ';');
-				rule_random_seed   = (str_p("RandomSeed") | str_p("random_seed"))  >> '='  >> int_p[assign_a(p.RNG_Seed)]  >> ';';
+//				rule_random_seed   = (str_p("RandomSeed") | str_p("random_seed"))  >> '='  >> int_p[assign_a(p.RNG_Seed)]  >> ';';
 				rule_dimensions   = (str_p("Dimensions") | str_p("num_dimensions"))  >> '='  >> int_p[assign_a(p.Dimensions)]  >> ';';
 				rule_OpenMP_threads = (str_p("OpenMP_threads") | str_p("omp_threads")) >> '=' >> int_p[assign_a(p.OpenMP_threads)] >> ';';
 				rule_Domain_Extension = (str_p("Domain_Extension") | str_p("domain_extension")) >> '=' >> real_p[assign_a(p.DomainExtension)] >> ';';
@@ -550,7 +550,7 @@ namespace par {
                                 rule_default_disk_orientation		|
                                 rule_ignore_materials				|
                                 rule_change_input_parity            |
-                                rule_random_seed                    |
+//                                rule_random_seed                    |
                                 rule_dimensions                     |
                                 rule_OpenMP_threads                 |
                                 rule_Domain_Extension               |

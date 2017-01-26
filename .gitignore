@@ -7,3 +7,5 @@ build
 *output_*
 *.cvs
 nbproject
+*.job
+TCAD.sh

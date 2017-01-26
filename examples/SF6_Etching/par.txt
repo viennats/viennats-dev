@@ -17,7 +17,7 @@ boundary_conditions = {
 	{INFINITE, INFINITE}
 };
 
-random_seed = 985456376;
+
 
 omp_threads=2;
 

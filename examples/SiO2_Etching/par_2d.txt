@@ -23,9 +23,9 @@ boundary_conditions = {
 	
 };
 
-random_seed = 44356376;
 
-omp_threads=2;
+
+omp_threads=20;
 
 default_disk_orientation={0,0};
 
@@ -48,7 +48,7 @@ processes = {
 	  delta_ion_energy=0;
 
           flux_ion=5.6e16;//5.6e17;//1e16;
-          flux_etchant=2.5e17;//4e18;
+          flux_etchant=5e17;//4e18;
           flux_polymer=1e17;//1e18;
 	temperature=298.;
         };

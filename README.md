@@ -10,7 +10,6 @@ System requirements
 * C++ compiler
 * OpenMP
 * Boost C++ Libraries
-* SPRNG 
 * HDF5 (optional - required for TDR file support)
 
 Currently supported operating systems

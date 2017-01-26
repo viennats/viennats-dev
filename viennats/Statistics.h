@@ -18,7 +18,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <omp.h>
-#include "sprng/sprng.h"
+//#include "sprng/sprng.h"
+#include <chrono>
+#include <random>
+
 #include "message.h"
 
 #include <fstream>
@@ -28,6 +31,9 @@ namespace my {
 	namespace stat {
 
         static const double epsilon=1e-10;
+	unsigned int ClockSEED = std::chrono::system_clock::now().time_since_epoch().count();
+	std::default_random_engine generator(ClockSEED);
+	std::uniform_real_distribution<double> distribution(0.0,1.0);
 
 		using namespace math;
 
@@ -35,10 +41,11 @@ namespace my {
 		#pragma omp threadprivate (rng)
 
 		inline double RandomNumber() {
-		    return sprng(rng);
+		    return distribution(generator);
+//		    return sprng(rng);
 		}
 
-		inline void InitRandomGenerator(unsigned int my_rank, unsigned int size, int seed, int rng_type, int rng_par) {
+/*		inline void InitRandomGenerator(unsigned int my_rank, unsigned int size, int seed, int rng_type, int rng_par) {
 
             #pragma omp parallel
             {
@@ -60,7 +67,7 @@ namespace my {
                 free_sprng(rng);
             }
         }
-
+*/
 
 
        inline void PickRandomPointOnUnitCircle(double& a, double& b) {        //better on AMD
