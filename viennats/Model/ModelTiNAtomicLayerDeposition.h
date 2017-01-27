@@ -220,13 +220,13 @@ namespace model {
 
 
 		template <class PT, class VecType> void ParticleReflexion(
-			const PT& p,
-			std::stack<PT>& particle_stack,
-			const VecType& NormalVector,
-			const double* Coverages,
-			int Material,
-			int D,
-			double dot // dot product between the incoming particle direction and the normal vector
+							const PT& p,
+							std::stack<PT>& particle_stack,
+							const VecType& NormalVector,
+							const double* Coverages,
+							int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
 			) const {
                     	double new_probability;
 //                        std::cout << "ParticleCollision = " << "\n";

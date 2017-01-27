@@ -1,6 +1,6 @@
 geometry_file = "./AirGap.dx";
 
-output_path = "./outputSA2/";
+output_path = "./output_SA/";
 
 cfl_condition = 0.1;
 

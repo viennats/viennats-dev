@@ -383,7 +383,7 @@ namespace calc {
     const std::vector<unsigned int>& PointMaterials,
     const geom::cells<ParameterType::Dimension>& Cells,
     double ProcessTime) {
-
+//      std::cout << "1\n";
     const int D=ParameterType::Dimension;
     typedef ClusterPositionType<D, PartitionType> ClusterPositionType;
 
@@ -712,7 +712,7 @@ namespace calc {
 
                 //When the subbox which received the particle also contains within it the surface boundary
                 if (Subbox.ContainsCell()) {
-//                  //std::cout << "ContainsCell()\n";
+//                  std::cout << "ContainsCell()\n";
                     //if subbox is a surface grid cell
 
                   const geom::cell<D> &Cell=Cells[Subbox.Cell()];
@@ -734,8 +734,10 @@ namespace calc {
 
                     for (int i=0;i<(1<<D);i++) {
                       Rho[i]=SurfaceLevelSet.value2(Cell.Points[((std::bitset<D>(i) | PositionStatusPos) & (~PositionStatusNeg)).to_ulong()]);
+//std::cout << "Rho[" << i << "] = " << Rho[i] << "\n";
                       if (Rho[i]>0) sgn_count++;
                     }
+//                    std::cout << "HERE!\n";
 
                     if (sgn_count!=(1<<D)) {
 
@@ -757,7 +759,7 @@ namespace calc {
                           Rho,
                           &(poly.Coefficients()[0])
                         );
-//                        //std::cout << "cp.X5: (" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
+//                        std::cout << "cp.X5: (" << cp.X[0] << "," << cp.X[1] << "," << cp.X[2] << ")\n";
                         relative_distance_to_intersection=my::math::FindFirstTransitionFromPosToNegOfPolynomNewton(0., max_distance_in_box, poly,1e-6);
                       }
 
@@ -768,7 +770,7 @@ namespace calc {
                           ClusterPositionType new_cp=cp;
 
                           for (int kk=0;kk<D;kk++) new_cp.X[kk]+=relative_distance_to_intersection*p.Direction[kk];
-                          //std::cout << "RDI\n";
+//                          std::cout << "RDI\n";
                           //p.Direction[kk] is unchanged at this point
                           //new_cp.X contains the coordinates within the Subbox at the subbox exit point
 
@@ -776,7 +778,7 @@ namespace calc {
                           double tmp_normalvec[3];
                           my::math::CalculateNormal<D>(tmp_normalvec,new_cp.X,Rho);
                           if (D==2) tmp_normalvec[2]=0.;
-                                                //std::cout << "tmp_normalvec(): " << tmp_normalvec[0] << ", " << tmp_normalvec[1] << ", " << tmp_normalvec[2] << "\n";
+//                                                std::cout << "tmp_normalvec(): " << tmp_normalvec[0] << ", " << tmp_normalvec[1] << ", " << tmp_normalvec[2] << "\n";
 
                           double dot=tmp_normalvec[0]*p.Direction[0];
                           for (int w=1;w<D;++w) dot+=tmp_normalvec[w]*p.Direction[w];
@@ -790,38 +792,42 @@ namespace calc {
                           unsigned int gp=0;
                           unsigned int mat=0;
                           if ((ModelType::CoverageStorageSize>0) || (ModelType::ReemissionIsMaterialDependent)) {
-                              //std::cout << "CSS>0 RMD\n";
+//                              std::cout << "CSS>0 RMD\n";
                               double dist=std::numeric_limits<double>::max();
-                              //std::cout << "1\n";
+//                              std::cout << "D = " << D << "\n";
                               for (int g=0;g<(1<<D);g++) {
-                                  //std::cout << "2\n";
+//                                  std::cout << "g = " << g << "\n";
                                   unsigned int tmp_gp= SurfaceLevelSet.active_pt_id(Cell.Points[g]);
-                                  //std::cout << "3\n";
-                                  //std::cout << "new_cp = " << new_cp.X[0] << ", " << new_cp.X[1] << ", " << new_cp.X[2] << "\n";
+//                                  std::cout << "tmp_gp = " << tmp_gp << "\n";
+//                                  std::cout << "new_cp = " << new_cp.X[0] << ", " << new_cp.X[1] << ", " << new_cp.X[2] << "\n";
+//                                  std::cout << "LevelSetType::INACTIVE = " << LevelSetType::INACTIVE << "\n";
                                   if (tmp_gp!=LevelSetType::INACTIVE) {
-                                      //std::cout << "4\n";
+//                                      std::cout << "4\n";
                                       double tmp_dist=0;
-                                      //std::cout << "5\n";
+//                                      std::cout << "5\n";
                                       for (int iii=0;iii<D;iii++) tmp_dist+=(((g & (1<<iii))==0)?(new_cp.X[iii]):(1.-new_cp.X[iii]));
-                                      //std::cout << "6\n";
+//                                      std::cout << "6\n";
+//                                          std::cout << "dist = " << dist << "\n";
+//                                          std::cout << "tmp_dist = " << tmp_dist << "\n";
                                       if (tmp_dist<dist) {
-                                          //std::cout << "7\n";
+//                                          std::cout << "7\n";
                                           dist=tmp_dist;
                                           gp=tmp_gp;
+//                                          std::cout << "gp = " << gp << "\n";
                                       }
                                   }
                               }
-                              //std::cout << "PointMaterials["<<gp<<"]"<<PointMaterials[gp]<<"\n";
+//                              std::cout << "PointMaterials["<<gp<<"] = "<<PointMaterials[gp]<<"\n";
                               mat=PointMaterials[gp];
                           }
 
                           //perform particle reemission
-                          //std::cout << "Reflection\n";
+//                          std::cout << "Reflection\n";
                           Model.ParticleReflexion(  p,
                                                       ParticleStack,
                                                       tmp_normalvec,
                                                       &Coverages[gp*Model.CoverageStorageSize],
-                                                      mat, D, dot
+                                                      mat//, D, dot
                                               );
                           while (ParticleStack.size()>ParticlePositionsStack.size()) ParticlePositionsStack.push(new_cp);
                       }
@@ -1012,7 +1018,7 @@ namespace calc {
 
               }
 
-//              //std::cout << ParticleStack.size() << std::endl;
+//              std::cout << ParticleStack.size() << std::endl;
               if (ParticleStack.empty()) break;
 
               //#######################################################

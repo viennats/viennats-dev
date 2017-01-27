@@ -96,7 +96,9 @@
 #include "Model/ModelFIB.h"
 #endif
 
+#ifdef PROCESS_CALCULATEFLUX
 #include "Model/ModelCalculateFlux.h"
+#endif
 
 #include "Model/ModelPlanarization.h"
 #include "Model/ModelMask.h"
@@ -461,7 +463,7 @@ void main_(const ParameterType2& p2) {
 
 #ifdef PROCESS_CALCULATEFLUX
 		if (pIter->ModelName == "CalculateFlux") {
-			model::CalculateFlux m(pIter->ModelParameters);
+			model::CalculateFlux m(pIter->ModelParameters, D);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif

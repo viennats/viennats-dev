@@ -233,14 +233,14 @@ namespace model {
         }
 
 
-        template <class PT, class NormVecType> void ParticleReflexion(
-                            const PT& p,
-                            std::stack<PT>& particle_stack,
-                            const NormVecType& NormalVector,
-                            const double* Coverages,
-                            int Material,
-                            int D,
-                            double dot // dot product between the incoming particle direction and the normal vector
+		template <class PT, class VecType> void ParticleReflexion(
+							const PT& p,
+							std::stack<PT>& particle_stack,
+							const VecType& NormalVector,
+							const double* Coverages,
+							int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
         					) const {
 
             if (calculate_redeposition) {

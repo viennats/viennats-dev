@@ -1475,19 +1475,16 @@ namespace proc {
 #ifdef VERBOSE
 				msg::print_message("start monte carlo");
 #endif
-
                 std::vector<lvlset::vec<int,ParameterType::Dimension > > CellCoordinates;
-
                 TimeExpansion-=my::time::GetTime();
                 LevelSets.back().add_voxel_corners();
                 TimeExpansion+=my::time::GetTime();
-
+                
                 TimeCells-=my::time::GetTime();
                 calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.ReceptorRadius);
                 TimeCells+=my::time::GetTime();
-
+                
                 typedef typename calc::PartitionTraits<ParameterType> tmp_type;
-
 #ifdef COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
                 if (ProcessParameter.partition_data_structure==partition::NEIGHBOR_LINKS_ARRAYS) {
                     partition::NeighborLinksArrays<tmp_type> Partition;
@@ -1500,12 +1497,12 @@ namespace proc {
                         Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
-
+                    
                     TimeRates-=my::time::GetTime();
                     do {
-                        //std::cout << "calculate rates!\n";
+//                        std::cout << "calculate rates!\n";
                         calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-                        //std::cout << "update coverages!\n";
+//                        std::cout << "update coverages!\n";
                         calc::UpdateCoverages(Rates, Coverages, Model);
                         init_cycles--;
                     } while (init_cycles>=0);

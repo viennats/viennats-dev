@@ -42,7 +42,7 @@ string read_string(const H5Object &g, const string name)
 	buf[a.getDataType().getSize()]='\0';
 
 	return string(buf);
-	delete[] buf;
+//	delete[] buf;
 }
 
 struct dataset_t

@@ -158,9 +158,9 @@ namespace model {
 							std::stack<PT>& particle_stack,
 							const VecType& NormalVector,
 							const double* Coverages,
-							int Material,
-                            int D,
-                            double dot // dot product between the incoming particle direction and the normal vector
+							int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
 							) {}
 	};
 

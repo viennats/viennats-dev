@@ -1,0 +1,19 @@
+BeginZE /home/filipov/examples/mcdes_examples/geometries/3d_hole.gid/3d_hole.vv
+   x -123.309 273.306
+   y 65.8193 -165.822
+   z -426.781 276.781
+   e 117.26
+   v 0.278443 -0.119713 0.0522374
+   r -0.95153
+   m 0.96588 0.0327444 0.256911 0 -0.166077 0.839481 0.517387 0 -0.19873 -0.542401 0.816276 0 0 0 0 1
+   c 75 -50 75
+   pd 0
+   pno 0
+   pfo 0
+   pf 4
+   pv 0
+   NowUse 1
+   DrawingType 0
+   LightVector 90 90 150 0
+EndZE /home/filipov/examples/mcdes_examples/geometries/3d_hole.gid/3d_hole.vv
+

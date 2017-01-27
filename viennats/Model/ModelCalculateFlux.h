@@ -35,6 +35,7 @@ namespace model {
     double end_probability;
     double StartAngleDistribution;
     double ReemittedAngleDistribution;
+    int dim;
 
     double StartDirection[3];
 
@@ -68,7 +69,7 @@ namespace model {
     };
 
 
-    CalculateFlux(const std::string & Parameters):StartAngleDistribution(1.),ReemittedAngleDistribution(1.) {
+    CalculateFlux(const std::string & Parameters, int D):StartAngleDistribution(1.),ReemittedAngleDistribution(1.),dim(D) {
 
         double Accuracy;
             using namespace boost::spirit::classic;
@@ -176,9 +177,9 @@ namespace model {
                             std::stack<PT>& particle_stack,
                             const VecType& NormalVector,
                             const double* Coverages,
-                            int Material,
-                            int D,
-                            double dot // dot product between the incoming particle direction and the normal vector
+                            int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
                             ) const {
 
           if(ReflectionModel == NONE) return;
@@ -235,7 +236,11 @@ namespace model {
 
             // assign the new particle the reflection vector as direction: R = V - 2N<V,N>
             // http://mathworld.wolfram.com/Reflection.html
-            for (int d=0;d<D;++d) p_new.Direction[d] = p.Direction[d] - 2.0 * NormalVector[d] * dot;
+	    
+            const double dot=(NormalVector[0]*p.Direction[0]+NormalVector[1]*p.Direction[1]+NormalVector[2]*p.Direction[2]);
+            for (int d=0;d<dim;++d) {
+                p_new.Direction[d] = p.Direction[d] - 2.0 * NormalVector[d] * dot;
+            }
           }
        }
        else if(ReflectionModel == DIFFUSIVE_COMBINED)

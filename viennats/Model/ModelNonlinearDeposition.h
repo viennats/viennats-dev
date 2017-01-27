@@ -27,7 +27,7 @@ namespace model {
 
         static const bool OutputFluxes=false;
 		static const bool SpatiallyEqualDistributedFlux=true;
-		static const bool ReemissionIsMaterialDependent=false;
+		static const bool ReemissionIsMaterialDependent=true;
 		static const bool CalculateConnectivities=false;
 		static const bool CalculateVisibilities=false;
 		static const bool CalculateNormalVectors=false;
@@ -54,7 +54,7 @@ namespace model {
                     Parameters.begin(),
                     Parameters.end(),
                     *(
-                    		(str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
+                    	    (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("deposition_rate")  >> '='  >> real_p[assign_a(deposition_rate)]  >> ';') |
                             (str_p("sticking_probability")  >> '='  >> real_p[assign_a(sticking_probability)]  >> ';') |
                             (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
@@ -105,7 +105,7 @@ namespace model {
 			my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
 
 			p.Probability=1.;
-			p.Flux=1.;
+//			p.Flux=1.;
 		}
 
 
@@ -115,7 +115,10 @@ namespace model {
                             double* Rates,
                             const double* Coverages,
                             double RelTime) const {
-			Rates[0]+=p.Flux*p.Probability;
+//                                    std::cout << "ParticleCollision inside model \n";
+
+//			Rates[0]+=p.Flux*p.Probability;
+                        Rates[0]+=p.Probability;
 		}
 
 		template <class PT, class VecType> void ParticleReflexion(
@@ -123,11 +126,12 @@ namespace model {
                             std::stack<PT>& particle_stack,
                             const VecType& NormalVector,
                             const double* Coverages,
-                            int Material,
-                            int D,
-                            double dot // dot product between the incoming particle direction and the normal vector
+                            int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
                             ) const {
 
+//                    std::cout << "ParticleReflexion inside model \n";
 
 			double new_probability;
 
