@@ -1,0 +1,47 @@
+geometry_file = "./AirGap.dx";
+
+output_path = "./output/";
+
+cfl_condition = 0.5;
+
+omp_threads=2;
+
+print_velocities=true;
+print_statistics=false;
+print_rates=true;
+
+input_scale=1e-7;
+grid_delta=1e-7;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{PERIODIC,PERIODIC},
+	{INFINITE, INFINITE},
+	{PERIODIC,PERIODIC}
+};
+
+open_boundary="+y";
+
+default_disk_orientation={1,1,0};
+
+processes = {
+     {
+	finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time=50;
+	model_name="TwoSpeciesDeposition";
+	parameters= {
+		direction={0,-1,0};
+		rate_main 	      = 2e-7;
+		rate_intermediate     = 1e-7;
+		sticking_main	      = 1e-4;
+		sticking_intermediate = 1.;
+		reaction_order	      = 1.;
+		statistical_accuracy  = 1000;
+	};
+	print_velocities=false;
+	final_output=false;
+    output_times={0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,36,38,40,42,44,46,48,50};
+     }
+};

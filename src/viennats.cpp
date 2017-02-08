@@ -30,6 +30,7 @@
 #define PROCESS_CFx_DEPOSITION
 #define PROCESS_HBr_O2_PLASMA_ETCHING
 #define PROCESS_NONLINEAR_DEPOSITION
+#define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
 #define PROCESS_FIB
 
@@ -88,6 +89,9 @@
 #endif
 #ifdef PROCESS_NONLINEAR_DEPOSITION
 #include "Model/ModelNonlinearDeposition.h"
+#endif
+#ifdef PROCESS_TWOSPECIES_DEPOSITION
+#include "Model/ModelTwoSpeciesDeposition.h"
 #endif
 #ifdef PROCESS_WET_ETCHING
 #include "Model/ModelWetEtching.h"
@@ -443,6 +447,13 @@ void main_(const ParameterType2& p2) {
 #ifdef PROCESS_NONLINEAR_DEPOSITION
 		if (pIter->ModelName == "NonlinearDeposition") {
 			model::NonlinearDeposition m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_TWOSPECIES_DEPOSITION
+		if (pIter->ModelName == "TwoSpeciesDeposition") {
+			model::TwoSpeciesDeposition m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
