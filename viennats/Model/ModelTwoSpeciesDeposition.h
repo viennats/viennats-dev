@@ -15,8 +15,14 @@ namespace model {
 
 	class TwoSpeciesDeposition {
 
-		double rate_main;
-		double rate_intermediate;
+            	static const double rho_SiO2; 	//in g/cm^3
+                static const double N_A;   //in /mol
+                static const double M_SiO2;     //molar mass in g/mol
+
+//		double rate_main;
+//		double rate_intermediate;
+		double flux_main;
+		double flux_intermediate;
 		double sticking_main;
 		double sticking_intermediate;
 		double reaction_order;
@@ -58,12 +64,14 @@ namespace model {
                     Parameters.end(),
                     *(
                     	    (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
-                            (str_p("rate_main")  >> '='  >> real_p[assign_a(rate_main)]  >> ';') |
-                            (str_p("rate_intermediate")  >> '='  >> real_p[assign_a(rate_intermediate)]  >> ';') |
+//                            (str_p("rate_main")  >> '='  >> real_p[assign_a(rate_main)]  >> ';') |
+//                            (str_p("rate_intermediate")  >> '='  >> real_p[assign_a(rate_intermediate)]  >> ';') |
+                            (str_p("flux_main")  >> '='  >> real_p[assign_a(flux_main)]  >> ';') |
+                            (str_p("flux_intermediate")  >> '='  >> real_p[assign_a(flux_intermediate)]  >> ';') |
                             (str_p("sticking_main")  >> '='  >> real_p[assign_a(sticking_main)]  >> ';') |
                             (str_p("sticking_intermediate")  >> '='  >> real_p[assign_a(sticking_intermediate)]  >> ';') |
                             (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
-//                            (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
+                            (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
                             (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
 
                     ),
@@ -72,9 +80,10 @@ namespace model {
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
 
+//            if (flux_main > 0) rate_main = flux_main/rho_SiO2;
+//            if (flux_intermediate > 0) rate_intermediate = flux_intermediate/rho_SiO2;
 
-
-             end_probability = 1e-4*std::min(sticking_main,sticking_intermediate);
+             end_probability *= std::min(sticking_main,sticking_intermediate);
              NumberOfParticleClusters[0]=static_cast<unsigned int>(Accuracy);
              NumberOfParticleClusters[1]=static_cast<unsigned int>(Accuracy);
         }
@@ -88,7 +97,8 @@ namespace model {
             int Material, bool Connected, bool Visible) const {
 
 //		    Velocity=deposition_rate*std::pow(Rates[0],reaction_order);
-                    Velocity = rate_main*Rates[0] + rate_intermediate*Rates[1];
+//?                    Velocity = rate_main*Rates[0] + rate_intermediate*Rates[1];
+                    Velocity = M_SiO2*(Rates[0] + Rates[1])/(rho_SiO2 * N_A);
 		}
 
 		template<class VecType>
@@ -111,14 +121,14 @@ namespace model {
                             case 0: {       //main
                                 my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
                                 p.Probability=1.;
-                                p.Flux=1.;
+                                p.Flux=flux_main;//1.;
                                 p.Type=0;
                                 break;
                             }
                             case 1: {           //intermediate
                                 my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
                                 p.Probability=1.;
-                                p.Flux=1.;
+                                p.Flux=flux_intermediate;//1.;
                                 p.Type=1;
                                 break;
                             }
@@ -192,6 +202,10 @@ namespace model {
 		}
 	};
 
+//	double const TwoSpeciesDeposition::rho_SiO2 = 2.3e22; 	//in atoms/cm^3 //2.6e22
+        double const TwoSpeciesDeposition::rho_SiO2 = 2.2;             //in g/cm^3
+        double const TwoSpeciesDeposition::N_A = 6.022140857e23;   //in /mol
+        double const TwoSpeciesDeposition::M_SiO2 = 60.1;    //molar mass in g/mol
 
 }
 

@@ -725,7 +725,7 @@ namespace proc {
 //                                std::vector<double> Rates//,
 //                                int step_cycle
 		) {
-            const int D=LevelSetsType::value_type::dimensions;
+    const int D=LevelSetsType::value_type::dimensions;
 
 	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
 
@@ -972,7 +972,6 @@ namespace proc {
                     do {
                         calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
                                                 std::cout << "RelativeTime = " << RelativeTime << "\n";
-
                         calc::UpdateCoverages(Rates, Coverages, Model, MaxStep);//, RelativeTime);
 //                                            //std::cout << "MaxStep = " << MaxStep << "\n";
 

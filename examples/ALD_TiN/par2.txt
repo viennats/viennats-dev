@@ -21,24 +21,27 @@ boundary_conditions = {
 	{INFINITE, INFINITE}
 };
 
-
-
-omp_threads=1;
+omp_threads=2;
 
 default_disk_orientation={0,1};
 
 processes = {
 //Cycle 1
     {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
+	finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 1;
+        max_time_step = 0.0002;
         ALD_step=1;
 	model_name="TiN_ALD";
 	add_layer=0;
 	parameters={
-                step_size=1e-6;
+		direction={0,-1,0};
+		reaction_order=1.;
+		stop_criterion=0.001;
+		sticking_probability=0.1;
+		statistical_accuracy=10000;
+                step_size=2e-4;
                 molecular_thickness=0.433;
                 m_TDMAT=4.;
                 m_NH3=1.;
@@ -56,343 +59,14 @@ processes = {
 	model_name="TiN_ALD";
 	add_layer=0;
 	parameters={
-                step_size=1e-6;
+		direction={0,-1,0};
+                step_size=0.001;
                 molecular_thickness=0.433;
                 m_TDMAT=4.;
                 m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=50;
-	output_times={0,5};
-    },
-//Cycle 1
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 1.5;
-        max_time_step = 0.001;
-        ALD_step=1;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
-	};
-	output_times_period_length = 0.1;
-	output_times_periodicity=20;
-	output_times={0,2};
-    },
-    {
-	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
-	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
-	process_time= 3;
-        max_time_step = 0.001;
-        ALD_step=2;
-	model_name="TiN_ALD";
-	add_layer=0;
-	parameters={
-                step_size=1e-6;
-                molecular_thickness=0.433;
-                m_TDMAT=4.;
-                m_NH3=1.;
+		stop_criterion=0.1;
+		sticking_probability=1;
+		statistical_accuracy=500;
 	};
 	output_times_period_length = 0.1;
 	output_times_periodicity=50;

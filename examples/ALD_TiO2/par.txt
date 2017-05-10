@@ -38,17 +38,17 @@ processes = {
 	add_layer=0;
 	parameters={
 		direction={0,-1,0};
-                TTIT_Flux=1e18;
+                TTIP_Flux=1e18;
                 H2O_Flux=0.;
                 sticking_TTIP=0.3;
                 sticking_H2O=0.91;
-		statistical_accuracy=500;
+		statistical_accuracy=1000;
                 end_probability=0.001;
 	};
 //	initial_output=true;
 //	final_output=true;
-	output_times_period_length = 0.1;
-	output_times_periodicity=40;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
         output_times={0,4};
     },
     {
@@ -60,17 +60,17 @@ processes = {
 	add_layer=0;
 	parameters={
 		direction={0,-1,0};
-                TTIT_Flux=0.;
+                TTIP_Flux=0.;
                 H2O_Flux=0.;
                 sticking_TTIP=0.3;
                 sticking_H2O=0.91;
                 end_probability=0.001;
-		statistical_accuracy=500;
+		statistical_accuracy=1000;
 	};
 //	initial_output=true;
 //	final_output=true;
-	output_times_period_length = 0.1;
-	output_times_periodicity=40;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
         output_times={0,4};
     },
     {
@@ -82,17 +82,17 @@ processes = {
 	add_layer=0;
 	parameters={
 		direction={0,-1,0};
-                TTIT_Flux=0.;
+                TTIP_Flux=0.;
                 H2O_Flux=4e19;
                 sticking_TTIP=0.3;
                 sticking_H2O=0.91;
                 end_probability=0.001;
-		statistical_accuracy=500;
+		statistical_accuracy=1000;
 	};
 //	initial_output=true;
 //        final_output=true;
-	output_times_period_length = 0.1;
-	output_times_periodicity=120;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
         output_times={0,12};
     },
     {
@@ -104,17 +104,996 @@ processes = {
 	add_layer=0;
 	parameters={
 		direction={0,-1,0};
-                TTIT_Flux=0.;
+                TTIP_Flux=0.;
                 H2O_Flux=0.;
                 sticking_TTIP=0.3;
                 sticking_H2O=0.91;
                 end_probability=0.001;
-		statistical_accuracy=500;
+		statistical_accuracy=1000;
 	};
 //	initial_output=true;
 //	final_output=true;
-	output_times_period_length = 0.1;
-	output_times_periodicity=40;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=1000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
+        output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=60;
+        output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=1000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.2;
+	output_times_periodicity=20;
         output_times={0,4};
     }
 };

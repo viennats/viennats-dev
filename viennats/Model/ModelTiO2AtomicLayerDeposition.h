@@ -10,7 +10,7 @@
 
 namespace model {
 
-///TiN ALD model
+///TiO2 ALD model
 
     	class TiO2_ALD {
 
@@ -53,12 +53,13 @@ namespace model {
 		int Type;
 	};
 
-	unsigned int NumberOfParticleClusters[3];
+//	unsigned int NumberOfParticleClusters[3];
 
 	static const int CoverageStorageSize=2;
 	static const int RatesStorageSize=2;
 
 	static const unsigned int NumberOfParticleTypes=2;
+	unsigned int NumberOfParticleClusters[NumberOfParticleTypes];
 
         static const bool OutputFluxes=false;
 	static const bool SpatiallyEqualDistributedFlux=true;
@@ -87,7 +88,7 @@ namespace model {
                             (str_p("sticking_TTIP")        >> '='  >> real_p[assign_a(sticking[0])]  >> ';') |
                             (str_p("sticking_H2O")         >> '='  >> real_p[assign_a(sticking[1])]  >> ';') |
                             (str_p("end_probability")      >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
-                            (str_p("TTIT_Flux")            >> '='  >> real_p[assign_a(FluxTTIP)]  >> ';') |
+                            (str_p("TTIP_Flux")            >> '='  >> real_p[assign_a(FluxTTIP)]  >> ';') |
                             (str_p("H2O_Flux")             >> '='  >> real_p[assign_a(FluxH2O)]  >> ';') |
                             (str_p("statistical_accuracy") >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
                     ),
@@ -110,10 +111,10 @@ namespace model {
 
 		template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-
 //                     k2_pyrolysis*kdes_TTIP*Coverages0 + k_hydrolysis*Cov0_H2O*Coverages1
-                    Velocity = 0.;//std::max(Coverages[1]*Coverages[0]*Cov0_TTIP*Cov0_H2O/k_hydrolysis + Coverages[1]*Coverages[0]/Cov0_H2O,0.);
+//                    Velocity = 0.;//std::max(Coverages[1]*Coverages[0]*Cov0_TTIP*Cov0_H2O/k_hydrolysis + Coverages[1]*Coverages[0]/Cov0_H2O,0.);
 //                    std::cout << "Velocity = " << Velocity << "\n";
+                    Velocity = std::max(Coverages[1]*Coverages[0],0.);
 		}
 
 		template<class VecType>
@@ -129,20 +130,37 @@ namespace model {
 
 //		static void UpdateCoverage(double *Coverages, const double *Rates, double &time, double &CurrentTime) {
                 void UpdateCoverage(double *Coverages, const double *Rates, double &delta_time) const {//, double &CurrentTime) const {
+                    delta_time=1e-4;
+//                    std::cout << "    Coverages[0] = " << Coverages[0] << ", ";
+//                    std::cout << "    Coverages[1] = " << Coverages[1] << "\n";
+                    const double Coverages0 = Coverages[0]*Cov0_TTIP;
+                    const double Coverages1 = Coverages[1]*Cov0_H2O;
 
-                    const double Coverages0 = Coverages[0];
-                    const double Coverages1 = Coverages[1];
+                    const double C_TTIP = Rates[0]*sticking[0]//*(1.-Coverages[0])
+                                        - kdes_TTIP*Coverages0
+                                        - k2_pyrolysis*Coverages0*Coverages0
+                                        - k_hydrolysis*Coverages0*Coverages1;
+                    const double C_H2O  = Rates[1]*sticking[1]//*(1.-Coverages[1])
+                                        - kdes_H2O *Coverages1
+                                        - k_hydrolysis*Coverages0*Coverages1;
 
-                    const double A0 = Rates[0]/Cov0_TTIP;    // 2e3
-                    const double B0 = kdes_TTIP + k2_pyrolysis*kdes_TTIP*Coverages0 + k_hydrolysis*Cov0_H2O*Coverages1 + A0; // 7.803e11
+                    Coverages[0] += delta_time*(C_TTIP/Cov0_TTIP);
+                    Coverages[1] += delta_time*(C_H2O/Cov0_H2O);
+                    Coverages[0] = Coverages[0]>=1.?1.:Coverages[0];
+                    Coverages[1] = Coverages[1]>=1.?1.:Coverages[1];
+//                    std::cout << "1 - Coverages[0] = " << Coverages[0] << ", ";
+//                    std::cout << "1 - Coverages[1] = " << Coverages[1] << "\n";
 
-                    const double A1 = Rates[1]/Cov0_H2O;     // 2.427e4
-                    const double B1 = kdes_H2O + k_hydrolysis*Cov0_TTIP*Coverages0 + A1;   // 8.574e13
-                    time = std::min(error/B0,error/B1);
-                    //time = 0.001;
-
-                    Coverages[0] = std::max(A0/B0 + (Coverages0 - A0/B0)*std::exp(-B0*(time)),0.);   // 2.563e-9
-                    Coverages[1] = std::max(A1/B1 + (Coverages1 - A1/B1)*std::exp(-B1*(time)),0.);   // 2.830e-10
+//                    const double A0 = Rates[0]/Cov0_TTIP;    // 2e3
+//                    const double B0 = kdes_TTIP + k2_pyrolysis*kdes_TTIP*Coverages0 + k_hydrolysis*Cov0_H2O*Coverages1 + A0; // 7.803e11
+//
+//                    const double A1 = Rates[1]/Cov0_H2O;     // 2.427e4
+//                    const double B1 = kdes_H2O + k_hydrolysis*Cov0_TTIP*Coverages0 + A1;   // 8.574e13
+//                    delta_time = std::min(error/B0,error/B1);
+//                    //time = 0.001;
+//
+//                    Coverages[0] = std::max(A0/B0 + (Coverages0 - A0/B0)*std::exp(-B0*(delta_time)),0.);   // 2.563e-9
+//                    Coverages[1] = std::max(A1/B1 + (Coverages1 - A1/B1)*std::exp(-B1*(delta_time)),0.);   // 2.830e-10
 		}
 
 		template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position) const {
@@ -171,7 +189,9 @@ namespace model {
                                     const double* Coverages,
                                     double RelTime) const {
 
-            Rates[p.Type]+=p.Flux*p.Probability*sticking[p.Type];//*std::max(1.-Coverages[0],0.);
+            Rates[p.Type]+=p.Flux*p.Probability*std::max(1.-Coverages[p.Type],0.);
+//                        Rates[p.Type]+=p.Flux*p.Probability*sticking[p.Type];//*std::max(1.-Coverages[0],0.);
+
 /*
                     switch(p.Type) {
 			case 0: {   //TTIP
@@ -191,36 +211,36 @@ namespace model {
 */
 		}
 
-
-		template <class PT, class VecType> void ParticleReflexion(
-			const PT& p,
-			std::stack<PT>& particle_stack,
-			const VecType& NormalVector,
-			const double* Coverages,
-			int Material,
-			int D,
-			double dot // dot product between the incoming particle direction and the normal vector
+        template <class PT, class VecType> void ParticleReflexion(
+							const PT& p,
+							std::stack<PT>& particle_stack,
+							const VecType& NormalVector,
+							const double* Coverages,
+							int Material//,
+//                            int D,
+//                            double dot // dot product between the incoming particle direction and the normal vector
 			) const {
                     
                     double new_probability;
                     
-                    	if (Coverages[p.Type]>0.) {
-				new_probability=p.Probability*(1.-sticking[p.Type]*std::pow(Coverages[p.Type],reaction_order-1));
-			} else {
-				if (reaction_order<1.) {
-					new_probability=0.;
-				} else if (reaction_order==1.) {
+//                    	if (Coverages[p.Type]>0.) {
+//				new_probability=p.Probability*(1.-sticking[p.Type]*std::pow(Coverages[p.Type],reaction_order-1));
+//			} else {
+//				if (reaction_order<1.) {
+//					new_probability=0.;
+//				} else if (reaction_order==1.) {
 					new_probability=p.Probability*(1.-sticking[p.Type]);
-				} else {
-					new_probability=p.Probability;
-				}
-			}
+//				} else {
+//					new_probability=p.Probability;
+//				}
+//			}
 //                            const double new_probability=p.Probability*(1-StickingProbability);
                             if (new_probability>=end_probability) {
                                 particle_stack.push(p);
                                 PT& p_new=particle_stack.top();
                                 p_new.Probability=new_probability;
-                                my::stat::Cosine1DistributedRandomDirection(NormalVector,p_new.Direction);
+				//my::stat::Cosine1DistributedRandomDirection(NormalVector,p_new.Direction);
+				my::stat::CosineNDistributedRandomDirection(1.,NormalVector,p_new.Direction);
                             }
 /*
                     switch(p.Type) {

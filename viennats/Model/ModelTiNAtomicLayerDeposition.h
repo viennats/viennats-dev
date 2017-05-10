@@ -138,14 +138,14 @@ namespace model {
 //                        std::cout << "Coverages[(6*Type+10)%12] = " << Coverages[(6*Type+10)%12] << "\n";
 //                        std::cout << "Coverages0_6 = " << Coverages0_6 << "\n";
 //                        std::cout << "n[Type] = " << n[Type] << "\n";
-                        delta_time = std::min(
-                                        std::max(
-                                            (step_size * Coverages1_7) / 
-                                            (C[2*Type+1]*std::pow(std::max(Coverages[(6*Type+10)%12] + 
-                                                            Coverages0_6 - Coverages1_7,0.), 
-                                                         n[Type])), 
-                                        step_size),
-                                     0.01);
+//                        delta_time = std::min(
+//                                        std::max(
+//                                            (step_size * Coverages1_7) / 
+//                                            (C[2*Type+1]*std::pow(std::max(Coverages[(6*Type+10)%12] + 
+//                                                            Coverages0_6 - Coverages1_7,0.), 
+//                                                         n[Type])), 
+//                                        step_size),
+//                                     0.01);
 
                         Coverages[6*Type+0] = std::max(
                                                 Coverages[(6*Type+8)%12] 
