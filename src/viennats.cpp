@@ -21,26 +21,27 @@
 #define DIMENSION_2
 
 //Processes
-#define PROCESS_CONSTANT_RATES
-#define PROCESS_SIMPLE_DEPOSITION
-#define PROCESS_TiN_ALD
-#define PROCESS_TiO2_ALD
-#define PROCESS_SF6_O2_PLASMA_ETCHING
-#define PROCESS_SiO2_PLASMA_ETCHING
-#define PROCESS_CFx_DEPOSITION
-#define PROCESS_HBr_O2_PLASMA_ETCHING
+//#define PROCESS_CONSTANT_RATES
+//#define PROCESS_SIMPLE_DEPOSITION
+//#define PROCESS_TiN_ALD
+//#define PROCESS_TiO2_ALD
+//#define PROCESS_SF6_O2_PLASMA_ETCHING
+//#define PROCESS_SiO2_PLASMA_ETCHING
+//#define PROCESS_CFx_DEPOSITION
+#define PROCESS_HfO2_DEPOSITION
+//#define PROCESS_HBr_O2_PLASMA_ETCHING
 #define PROCESS_NONLINEAR_DEPOSITION
-#define PROCESS_TWOSPECIES_DEPOSITION
-#define PROCESS_WET_ETCHING
-#define PROCESS_FIB
+//#define PROCESS_TWOSPECIES_DEPOSITION
+//#define PROCESS_WET_ETCHING
+//#define PROCESS_FIB
 
 //LS Processes
-#define PROCESS_PLANARIZATION
-#define PROCESS_MASK
-#define PROCESS_BOOLEANOPS
+//#define PROCESS_PLANARIZATION
+//#define PROCESS_MASK
+//#define PROCESS_BOOLEANOPS
 
 //Flux calculation
-#define PROCESS_CALCULATEFLUX
+//#define PROCESS_CALCULATEFLUX
 
 #define COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
 #define COMPILE_PARTITION_FULL_GRID
@@ -86,6 +87,9 @@
 #endif
 #ifdef PROCESS_CFx_DEPOSITION
 #include "Model/ModelCFx_Deposition.h"
+#endif
+#ifdef PROCESS_HfO2_DEPOSITION
+#include "Model/ModelHfO2_Deposition.h"
 #endif
 #ifdef PROCESS_NONLINEAR_DEPOSITION
 #include "Model/ModelNonlinearDeposition.h"
@@ -373,7 +377,7 @@ void main_(const ParameterType2& p2) {
 	//!		and BooleanOperation
 
 #ifdef PROCESS_TiO2_ALD
-            std::vector<double> CoveragesALD_TiO2(2*LevelSets.back().num_active_pts(),0.);
+            std::vector<double> CoveragesALD_TiO2(4*LevelSets.back().num_active_pts(),0.);
 #endif
 #ifdef PROCESS_TiN_ALD
             std::vector<double> CoveragesALD_TiN(12*LevelSets.back().num_active_pts(),0.);
@@ -440,6 +444,13 @@ void main_(const ParameterType2& p2) {
 #ifdef PROCESS_CFx_DEPOSITION
 		if (pIter->ModelName == "CFx_Deposition") {
 			model::CFx_Deposition m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+                
+#ifdef PROCESS_HfO2_DEPOSITION
+		if (pIter->ModelName == "HfO2_Deposition") {
+			model::HfO2_Deposition m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif

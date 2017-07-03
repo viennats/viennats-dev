@@ -1,0 +1,120 @@
+geometry_file  =   "geometry.dx";
+
+receptor_radius=0.8;
+
+
+print_statistics=false;
+print_coverages=true;
+print_rates=true;
+print_velocities=true;
+
+output_path = "./output_cycle_3/";
+
+cfl_condition = 0.1;
+input_scale=1.;//.5e-6;//2e-6;
+grid_delta = 5.;//.5e-6;//2e-6;
+
+num_dimensions = 2;
+
+boundary_conditions = {
+	{PERIODIC, PERIODIC},
+	{INFINITE, INFINITE}
+};
+
+
+
+omp_threads=8;
+
+default_disk_orientation={0,1};
+
+processes = {
+//Cycle 1
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=1e18;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+		statistical_accuracy=5000;
+                end_probability=0.001;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.1;
+	output_times_periodicity=40;
+	output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=5000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.1;
+	output_times_periodicity=40;
+	output_times={0,4};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 12;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=4e19;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=5000;
+	};
+//	initial_output=true;
+//        final_output=true;
+	output_times_period_length = 0.1;
+	output_times_periodicity=120;
+	output_times={0,12};
+    },
+    {
+	//finite_difference_scheme=ENGQUIST_OSHER_1ST_ORDER;
+	//partition_data_structure=NEIGHBOR_LINKS_ARRAYS;
+	process_time= 4;
+        max_time_step = 0.001;
+	model_name="TiO2_ALD";
+	add_layer=0;
+	parameters={
+		direction={0,-1,0};
+                TTIP_Flux=0.;
+                H2O_Flux=0.;
+                sticking_TTIP=0.3;
+                sticking_H2O=0.91;
+                end_probability=0.001;
+		statistical_accuracy=5000;
+	};
+//	initial_output=true;
+//	final_output=true;
+	output_times_period_length = 0.1;
+	output_times_periodicity=40;
+	output_times={0,4};
+    }
+};

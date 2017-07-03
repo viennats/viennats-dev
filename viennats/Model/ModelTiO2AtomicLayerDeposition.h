@@ -18,6 +18,7 @@ namespace model {
             
             const static double temperature;
             const static double k_B;
+            const static double gas;
             const static double kJm_eV;
 
 //            const static double s_TTIP;
@@ -32,6 +33,7 @@ namespace model {
             
             const static double error;
 
+                double molecular_thickness;
                 double end_probability;
 		double reaction_order;
                 double FluxTTIP;
@@ -76,7 +78,7 @@ namespace model {
 		    using namespace boost::spirit::classic;
 
 		    double Accuracy;
-
+                    molecular_thickness = 0.5e-8;//0.5Angstrom (cm)
             bool b = parse(
                     Parameters.begin(),
                     Parameters.end(),
@@ -85,12 +87,14 @@ namespace model {
                     						          >> real_p[assign_a(StartDirection[1])] >> ","
                     						          >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("reaction_order")       >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
+            
                             (str_p("sticking_TTIP")        >> '='  >> real_p[assign_a(sticking[0])]  >> ';') |
                             (str_p("sticking_H2O")         >> '='  >> real_p[assign_a(sticking[1])]  >> ';') |
                             (str_p("end_probability")      >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
                             (str_p("TTIP_Flux")            >> '='  >> real_p[assign_a(FluxTTIP)]  >> ';') |
                             (str_p("H2O_Flux")             >> '='  >> real_p[assign_a(FluxH2O)]  >> ';') |
-                            (str_p("statistical_accuracy") >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
+                            (str_p("statistical_accuracy") >> '='  >>real_p[assign_a(Accuracy)]  >> ';') |
+                            (str_p("molecular_thickness")  >> '='  >> real_p[assign_a(molecular_thickness)] >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
@@ -114,7 +118,7 @@ namespace model {
 //                     k2_pyrolysis*kdes_TTIP*Coverages0 + k_hydrolysis*Cov0_H2O*Coverages1
 //                    Velocity = 0.;//std::max(Coverages[1]*Coverages[0]*Cov0_TTIP*Cov0_H2O/k_hydrolysis + Coverages[1]*Coverages[0]/Cov0_H2O,0.);
 //                    std::cout << "Velocity = " << Velocity << "\n";
-                    Velocity = std::max(Coverages[1]*Coverages[0],0.);
+                    Velocity = molecular_thickness*std::max(Coverages[0]*Coverages[3]+Coverages[1]*Coverages[2],0.);
 		}
 
 		template<class VecType>
@@ -130,24 +134,32 @@ namespace model {
 
 //		static void UpdateCoverage(double *Coverages, const double *Rates, double &time, double &CurrentTime) {
                 void UpdateCoverage(double *Coverages, const double *Rates, double &delta_time) const {//, double &CurrentTime) const {
-                    delta_time=1e-4;
+                    //delta_time=1e-5;
 //                    std::cout << "    Coverages[0] = " << Coverages[0] << ", ";
 //                    std::cout << "    Coverages[1] = " << Coverages[1] << "\n";
                     const double Coverages0 = Coverages[0]*Cov0_TTIP;
                     const double Coverages1 = Coverages[1]*Cov0_H2O;
 
-                    const double C_TTIP = Rates[0]*sticking[0]//*(1.-Coverages[0])
+                    const double C_TTIP = (Rates[0]*sticking[0]//*(1.-Coverages[0])
                                         - kdes_TTIP*Coverages0
                                         - k2_pyrolysis*Coverages0*Coverages0
-                                        - k_hydrolysis*Coverages0*Coverages1;
-                    const double C_H2O  = Rates[1]*sticking[1]//*(1.-Coverages[1])
+                                        - k_hydrolysis*Coverages0*Coverages1)/Cov0_TTIP;
+//                                C_TTIP /= Cov0_TTIP;
+                    const double t_TTIP = std::min(0.01/std::abs(C_TTIP),0.001);
+                    const double C_H2O  = (Rates[1]*sticking[1]//*(1.-Coverages[1])
                                         - kdes_H2O *Coverages1
-                                        - k_hydrolysis*Coverages0*Coverages1;
+                                        - k_hydrolysis*Coverages0*Coverages1)/Cov0_H2O;
+//                                C_H2O /= Cov0_H2O;
+                    const double t_H2O = std::min(0.01/std::abs(C_H2O),0.001);
+                    
+                    delta_time = std::min(t_TTIP,t_H2O);
 
-                    Coverages[0] += delta_time*(C_TTIP/Cov0_TTIP);
-                    Coverages[1] += delta_time*(C_H2O/Cov0_H2O);
+                    Coverages[0] += delta_time*(C_TTIP);
+                    Coverages[1] += delta_time*(C_H2O);
                     Coverages[0] = Coverages[0]>=1.?1.:Coverages[0];
                     Coverages[1] = Coverages[1]>=1.?1.:Coverages[1];
+                    Coverages[2] = C_TTIP;
+                    Coverages[3] = C_H2O;
 //                    std::cout << "1 - Coverages[0] = " << Coverages[0] << ", ";
 //                    std::cout << "1 - Coverages[1] = " << Coverages[1] << "\n";
 
@@ -229,7 +241,7 @@ namespace model {
 //				if (reaction_order<1.) {
 //					new_probability=0.;
 //				} else if (reaction_order==1.) {
-					new_probability=p.Probability*(1.-sticking[p.Type]);
+					new_probability=std::max(p.Probability*(1.-sticking[p.Type]),0.);
 //				} else {
 //					new_probability=p.Probability;
 //				}
@@ -455,16 +467,22 @@ namespace model {
 
         double const TiO2_ALD::temperature=200+273.15; //K
         double const TiO2_ALD::k_B=8.6173303e-5;     // eV/K
-        double const TiO2_ALD::kJm_eV=0.0103641;
+        double const TiO2_ALD::kJm_eV=0.010364272301331;
+        double const TiO2_ALD::gas=8.3144598;
 
 //        double const TiO2_ALD::s_TTIP=0.3;     // a.u.
 //        double const TiO2_ALD::s_H2O=0.91;     // a.u.
         double const TiO2_ALD::Cov0_TTIP=1.5e14;   // /cm2
         double const TiO2_ALD::Cov0_H2O=1.5e15;    // /cm2
-        double const TiO2_ALD::kdes_TTIP=2.0e10*exp(-114*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));       // /s
-        double const TiO2_ALD::kdes_H2O=5.0e9*exp(-81*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));        // /s
-        double const TiO2_ALD::k2_pyrolysis=1.3e3*exp(-185*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));    // cm2/s
-        double const TiO2_ALD::k_hydrolysis=4.7e-7*exp(-86*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));    // cm2/s
+//        double const TiO2_ALD::kdes_TTIP=2.0e10*std::exp(-114*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));       // /s
+//        double const TiO2_ALD::kdes_H2O=5.0e9*std::exp(-81*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));        // /s
+//        double const TiO2_ALD::k2_pyrolysis=1.3e3*std::exp(-185*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));    // cm2/s
+//        double const TiO2_ALD::k_hydrolysis=4.7e-7*std::exp(-86*TiO2_ALD::kJm_eV/(TiO2_ALD::k_B*TiO2_ALD::temperature));    // cm2/s
+
+        double const TiO2_ALD::kdes_TTIP    = 2.0e10*std::exp(-114000/(TiO2_ALD::gas*TiO2_ALD::temperature));       // /s
+        double const TiO2_ALD::kdes_H2O     = 5.0e9* std::exp(- 81000/(TiO2_ALD::gas*TiO2_ALD::temperature));        // /s
+        double const TiO2_ALD::k2_pyrolysis = 1.3e3* std::exp(-185000/(TiO2_ALD::gas*TiO2_ALD::temperature));    // cm2/s
+        double const TiO2_ALD::k_hydrolysis = 4.7e-7*std::exp(- 86000/(TiO2_ALD::gas*TiO2_ALD::temperature));    // cm2/s
 
         double const TiO2_ALD::error=0.001;     // a.u.
 }
