@@ -104,7 +104,7 @@ namespace model {
 			my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
 
 			p.Probability=1.;
-//			p.Flux=1.;
+			p.Flux=1.;
 		}
 
 
@@ -116,8 +116,8 @@ namespace model {
                             double RelTime) const {
 //                                    std::cout << "ParticleCollision inside model \n";
 
-//			Rates[0]+=p.Flux*p.Probability;
-                        Rates[0]+=p.Probability;
+			Rates[0]+=p.Flux*p.Probability;
+//                        Rates[0]+=p.Probability;
 		}
 
 		template <class PT, class VecType> void ParticleReflexion(

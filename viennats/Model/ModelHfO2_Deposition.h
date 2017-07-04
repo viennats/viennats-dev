@@ -51,7 +51,6 @@ namespace model {
 			double Flux;
 		};
 
-
 		HfO2_Deposition(const std::string & Parameters) {
 
 		    double Accuracy;
@@ -67,16 +66,15 @@ namespace model {
                             (str_p("pressure")  >> '='  >> real_p[assign_a(pressure)]  >> ';') |
                             (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
                             (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
-
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
             temperature += 273.15;
             deposition_rate = rate0*std::exp(-E/(kB*temperature));
-            std::cout << "deposition rate = " << deposition_rate << "\n";
+//            std::cout << "deposition rate = " << deposition_rate << "\n";
             sticking_probability = 1e-10*deposition_rate*rho_HfO2/(M_HfO2*pressure)*std::sqrt(2000.*kB*temperature*M_gas);
-            std::cout << "sticking probability = " << sticking_probability << "\n";
+//            std::cout << "sticking probability = " << sticking_probability << "\n";
             reaction_order = 1.0;
 
              NumberOfParticleClusters[0]=static_cast<unsigned int>(Accuracy);
@@ -91,9 +89,9 @@ namespace model {
             int Material, bool Connected, bool Visible) const {
 
 		    Velocity=deposition_rate*std::pow(Rates[0],reaction_order);
-                    std::cout << "Velocity = " << Velocity << "\n";
-                    std::cout << "reaction_order = " << reaction_order << "\n";
-                    std::cout << "Rates[0] = " << Rates[0] << "\n";
+//                    std::cout << "Velocity = " << Velocity << "\n";
+//                    std::cout << "reaction_order = " << reaction_order << "\n";
+//                    std::cout << "Rates[0] = " << Rates[0] << "\n";
 		}
 
 		template<class VecType>
@@ -117,7 +115,7 @@ namespace model {
 			my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
 
 			p.Probability=1.;
-//			p.Flux=1.;
+			p.Flux=1.;
 		}
 
 
@@ -128,9 +126,9 @@ namespace model {
                             const double* Coverages,
                             double RelTime) const {
 //                                    std::cout << "ParticleCollision inside model \n";
-                        std::cout << "p.Probability = " << p.Probability << "\n";
-//			Rates[0]+=p.Flux*p.Probability;
-                        Rates[0]+=p.Probability;
+//                        std::cout << "p.Probability = " << p.Probability << "\n";
+			Rates[0]+=p.Flux*p.Probability;
+//                        Rates[0]+=p.Probability;
                         
 		}
 
