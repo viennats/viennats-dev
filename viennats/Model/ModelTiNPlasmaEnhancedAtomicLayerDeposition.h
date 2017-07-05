@@ -1,5 +1,5 @@
-#ifndef MODELTIN_ALD_H_
-#define MODELTIN_ALD_H_
+#ifndef MODELTIN_PEALD_H_
+#define MODELTIN_PEALD_H_
 
 #include <stack>
 #include "../Statistics.h"
@@ -12,7 +12,7 @@ namespace model {
 
 ///TiN ALD model
 
-    	class TiN_ALD {
+    	class TiN_PEALD {
 
             const static double C[]; //{C_NH3_TDMAT, C_TiN_TDMAT, C_TDMAT_NH3, C_TiN_NH3}
             const static double n[]; //{n_NH3, n_TDMAT}
@@ -21,7 +21,7 @@ namespace model {
                 double reduction_ratio;
                 double step_size;
                 int step;
-                double m_NH3;
+                double m_Plasma;
                 double m_TDMAT;
                 double sticking_probability;
 		double StartDirection[3];
@@ -59,7 +59,7 @@ namespace model {
         static const bool ReemissionIsMaterialDependent=false;
         
 
-        TiN_ALD(const std::string & Parameters, const int &current_step) {
+        TiN_PEALD(const std::string & Parameters, const int &current_step) {
 
 		    double Accuracy;
 		    using namespace boost::spirit::classic;
@@ -67,7 +67,7 @@ namespace model {
                     step=current_step;
                     step_size=1e-4;
                     molecular_thickness=0.433;
-                    m_NH3=4.;
+                    m_Plasma=13.58;
                     m_TDMAT=1.;
                     Flux=1.;
 //                    if (step == 1){
@@ -87,9 +87,9 @@ namespace model {
                             (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("step_size")  >> '='  >> real_p[assign_a(step_size)] >> ';') |
                             (str_p("molecular_thickness")  >> '='  >> real_p[assign_a(molecular_thickness)] >> ';') |
-                            (str_p("m_NH3")  >> '='  >> real_p[assign_a(m_NH3)] >> ';') |
-                            (str_p("m_TDMAT")  >> '='  >> real_p[assign_a(m_TDMAT)] >> ';') |
-                            (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
+//                            (str_p("m_Plasma")  >> '='  >> real_p[assign_a(m_Plasma)] >> ';') |
+//                            (str_p("m_TDMAT")  >> '='  >> real_p[assign_a(m_TDMAT)] >> ';') |
+//                            (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
                             (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
                             (str_p("sticking_probability")  >> '='  >> real_p[assign_a(sticking_probability)] >> ';') |
                             (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
@@ -106,7 +106,8 @@ namespace model {
 
 		template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-                    Velocity = molecular_thickness*std::max(Coverages[5]/m_NH3 + Coverages[11]/m_TDMAT,0.);
+                    Velocity = molecular_thickness*std::max(Coverages[11]/m_TDMAT,0.);
+//                    Velocity = molecular_thickness*std::max(Coverages[5]/m_Plasma + Coverages[11]/m_TDMAT,0.);
 		}
 
 		template<class VecType>
@@ -213,6 +214,7 @@ namespace model {
                                     double* Rates,
                                     const double* Coverages,
                                     double RelTime) const {
+//                        std::cout << "ParticleCollision = " << "\n";
 
                     Rates[p.Type]+=p.Flux*p.Probability;
 		}
@@ -252,9 +254,9 @@ namespace model {
 
                 }
 	};
-           
-            double const TiN_ALD::C[] = {0.75, 0.8, 3.8, 1.2};
-            double const TiN_ALD::n[] = {0.9, 1.2};
+
+              double const TiN_PEALD::C[] = {9.0, 7.5, 6.0, 6.0};
+              double const TiN_PEALD::n[] = {1.6, 1.05};
 }
 
-#endif /*MODELTIN_ALD_H_*/
+#endif /*MODELTIN_PEALD_H_*/

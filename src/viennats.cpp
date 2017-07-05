@@ -24,13 +24,14 @@
 //#define PROCESS_CONSTANT_RATES
 //#define PROCESS_SIMPLE_DEPOSITION
 //#define PROCESS_TiN_ALD
+#define PROCESS_TiN_PEALD
 //#define PROCESS_TiO2_ALD
 //#define PROCESS_SF6_O2_PLASMA_ETCHING
 //#define PROCESS_SiO2_PLASMA_ETCHING
 //#define PROCESS_CFx_DEPOSITION
 #define PROCESS_HfO2_DEPOSITION
 //#define PROCESS_HBr_O2_PLASMA_ETCHING
-#define PROCESS_NONLINEAR_DEPOSITION
+//#define PROCESS_NONLINEAR_DEPOSITION
 //#define PROCESS_TWOSPECIES_DEPOSITION
 //#define PROCESS_WET_ETCHING
 //#define PROCESS_FIB
@@ -72,6 +73,9 @@
 #endif
 #ifdef PROCESS_TiN_ALD
 #include "Model/ModelTiNAtomicLayerDeposition.h"
+#endif
+#ifdef PROCESS_TiN_PEALD
+#include "Model/ModelTiNPlasmaEnhancedAtomicLayerDeposition.h"
 #endif
 #ifdef PROCESS_TiO2_ALD
 #include "Model/ModelTiO2AtomicLayerDeposition.h"
@@ -383,7 +387,11 @@ void main_(const ParameterType2& p2) {
             std::vector<double> CoveragesALD_TiN(12*LevelSets.back().num_active_pts(),0.);
             for (unsigned int i=0;i<CoveragesALD_TiN.size();i++) CoveragesALD_TiN[i]=(i%12==10)?1.:0.;
 #endif
-        
+#ifdef PROCESS_TiN_PEALD
+            std::vector<double> CoveragesPEALD_TiN(12*LevelSets.back().num_active_pts(),0.);
+            for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++) CoveragesPEALD_TiN[i]=(i%12==10)?1.:0.;
+#endif
+
 	for (typename std::list<typename ParameterType2::ProcessParameterType>::const_iterator
 			pIter = p.ProcessParameters.begin(); pIter
 			!= p.ProcessParameters.end(); ++pIter) {
@@ -518,6 +526,16 @@ void main_(const ParameterType2& p2) {
                             CoveragesALD_TiN[i]=0.;
                     model::TiN_ALD m(pIter->ModelParameters, pIter->ALDStep);
                     proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiN);
+        	}
+#endif
+                
+#ifdef PROCESS_TiN_PEALD
+		if (pIter->ModelName == "TiN_PEALD") {
+                    for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++) 
+                        if ((i%12==6*(pIter->ALDStep-1))||(i%12==6*(pIter->ALDStep-1)+1)||(i%12==5)||(i%12==11))
+                            CoveragesPEALD_TiN[i]=0.;
+                    model::TiN_PEALD m(pIter->ModelParameters, pIter->ALDStep);
+                    proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesPEALD_TiN);
         	}
 #endif
 
