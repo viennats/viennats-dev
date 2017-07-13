@@ -72,9 +72,9 @@ namespace model {
             if (!b) msg::print_error("Failed interpreting process parameters!");
             temperature += 273.15;
             deposition_rate = rate0*std::exp(-E/(kB*temperature));
-//            std::cout << "deposition rate = " << deposition_rate << "\n";
+            std::cout << "deposition rate = " << deposition_rate << "\n";
             sticking_probability = 1e-10*deposition_rate*rho_HfO2/(M_HfO2*pressure)*std::sqrt(2000.*kB*temperature*M_gas);
-//            std::cout << "sticking probability = " << sticking_probability << "\n";
+            std::cout << "sticking probability = " << sticking_probability << "\n";
             reaction_order = 1.0;
 
              NumberOfParticleClusters[0]=static_cast<unsigned int>(Accuracy);

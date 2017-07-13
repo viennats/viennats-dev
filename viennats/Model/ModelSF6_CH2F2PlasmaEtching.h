@@ -1,5 +1,5 @@
-#ifndef MODELSiO2_PLASMAETCHING_H_
-#define MODELSiO2_PLASMAETCHING_H_
+#ifndef MODELSF6_CH2F2_PLASMAETCHING_H_
+#define MODELSF6_CH2F2_PLASMAETCHING_H_
 
 #include <stack>
 #include "../Statistics.h"
@@ -14,11 +14,14 @@ namespace model {
 //A. LaMagna and G. Garozzo "Factors affecting profile evolution in plasma etching of SiO2
 //modelling and experimental verification" Journal of the Electrochemical Society 150(10)
 //2003 pp. 1896-1902
-
-	class SiO2_PlasmaEtching {
+// AND    
+//O. Luere et al., "Etch mechanisms of silicon gate structures patterned in SF6/CH2F2/Ar inductively coupled plasmas"
+//Journal of Vacuum Science & Technology B 29, 011028 (2011)
+    
+	class SF6_CH2F2_PlasmaEtching {
 
 		static const double kB;	// m2 kg s-2 K-1
-		static const double rho_SiO2; 	//in atoms/cm^3 //2.6e22
+		static const double rho_polySi; // 	//in atoms/cm^3 //2.6e22
 		static const double rho_p;	//in atoms/cm^3
 
 		static const double k_ei;
@@ -89,7 +92,7 @@ namespace model {
 //        int stacked_mat;
 
 
-        SiO2_PlasmaEtching(const std::string & Parameters) {//, int stacked_material) {
+        SF6_CH2F2_PlasmaEtching(const std::string & Parameters) {//, int stacked_material) {
 
 		    using namespace boost::spirit::classic;
 //		    stacked_mat=stacked_material;
@@ -100,7 +103,7 @@ namespace model {
                     Parameters.begin(),
                     Parameters.end(),
                     *(
-                    	    (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
+                    		(str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("flux_ion")  >> '='  >> real_p[assign_a(FluxIon)]  >> ';') |
                             (str_p("flux_polymer")  >> '='  >> real_p[assign_a(FluxP)]  >> ';') |
                             (str_p("flux_etchant")  >> '='  >> real_p[assign_a(FluxE)]  >> ';') |
@@ -120,7 +123,7 @@ namespace model {
 		    NumberOfParticleClusters[2]=(FluxE>0.)?num_particles:0;
 
 //		    temperature=300;
-		    Flux_ev=0.0027*FluxE*exp(-0.168/(kB*temperature));
+		    Flux_ev=0.0027*FluxE*std::exp(-0.168/(kB*temperature));
 		}
 
 		template <class VecType>
@@ -137,7 +140,7 @@ namespace model {
 				}
 			} else { 			//Etching
 				if (Material==0) {	//Si
-					Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_SiO2;
+					Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
 				} else {
 					Velocity = 0;
 				}
@@ -226,7 +229,7 @@ namespace model {
 					Rates[1]+=p.Flux*Ye_ei;
 					Rates[2]+=p.Flux*Yp_ei;
 
-					Rates[6]=0.0027*p.Flux*exp(-0.168/(kB*temperature));
+					Rates[6]=0.0027*p.Flux*std::exp(-0.168/(kB*temperature));
 
 					break;
 				}
@@ -265,34 +268,32 @@ namespace model {
 
 	};
 
-	double const SiO2_PlasmaEtching::kB=0.000086173324;	// m2 kg s-2 K-1
-	double const SiO2_PlasmaEtching::rho_SiO2=2.2e22; 	//in atoms/cm^3 //2.6e22
-	double const SiO2_PlasmaEtching::rho_p=2.0e22;	//in atoms/cm^3
+	double const SF6_CH2F2_PlasmaEtching::kB=0.000086173324;    // m2 kg s-2 K-1
+	double const SF6_CH2F2_PlasmaEtching::rho_polySi=2.328e22;  //in atoms/cm^3 //2.6e22
+	double const SF6_CH2F2_PlasmaEtching::rho_p=2.0e22;         //in atoms/cm^3
 
-	double const SiO2_PlasmaEtching::k_ei=2;
-	double const SiO2_PlasmaEtching::k_ev=2;
+	double const SF6_CH2F2_PlasmaEtching::k_ei=2;
+	double const SF6_CH2F2_PlasmaEtching::k_ev=2;
 
-	double const SiO2_PlasmaEtching::Gamma_ee=0.9;
-	double const SiO2_PlasmaEtching::Gamma_p=0.26;
-	double const SiO2_PlasmaEtching::Gamma_ep=0.6;
+	double const SF6_CH2F2_PlasmaEtching::Gamma_ee=0.9;
+	double const SF6_CH2F2_PlasmaEtching::Gamma_p=0.26;
+	double const SF6_CH2F2_PlasmaEtching::Gamma_ep=0.6;
 
 //		double const SiO2_PlasmaEtching::A_p=0.0337;
-	double const SiO2_PlasmaEtching::Ae_ei=0.0361;
-	double const SiO2_PlasmaEtching::Ae_sp=0.0139;
-	double const SiO2_PlasmaEtching::Ap_ei=0.1444;
+	double const SF6_CH2F2_PlasmaEtching::Ae_ei=0.0361;
+	double const SF6_CH2F2_PlasmaEtching::Ae_sp=0.0139;
+	double const SF6_CH2F2_PlasmaEtching::Ap_ei=0.1444;
 
-	double const SiO2_PlasmaEtching::B_sp=9.3;
+	double const SF6_CH2F2_PlasmaEtching::B_sp=9.3;
 
-	double const SiO2_PlasmaEtching::Eth_e_e=4;
-	double const SiO2_PlasmaEtching::Eth_e_p=4;
-	double const SiO2_PlasmaEtching::Eth_e_sp=18;//
+	double const SF6_CH2F2_PlasmaEtching::Eth_e_e=4;
+	double const SF6_CH2F2_PlasmaEtching::Eth_e_p=4;
+	double const SF6_CH2F2_PlasmaEtching::Eth_e_sp=18;//
 
-	double const SiO2_PlasmaEtching::ion_exponent=1000.;
+	double const SF6_CH2F2_PlasmaEtching::ion_exponent=1000.;
 
-	double const SiO2_PlasmaEtching::Phi_min=1.3962634;
-
-//	const double SiO2_PlasmaEtching::Phi_min;
+	double const SF6_CH2F2_PlasmaEtching::Phi_min=1.3962634;
 
 }
 
-#endif /*MODELSiO2_PLASMAETCHING_H_*/
+#endif /*MODELSF6_CH2F2_PLASMAETCHING_H_*/

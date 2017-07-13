@@ -24,12 +24,15 @@
 //#define PROCESS_CONSTANT_RATES
 //#define PROCESS_SIMPLE_DEPOSITION
 //#define PROCESS_TiN_ALD
-#define PROCESS_TiN_PEALD
+//#define PROCESS_TiN_PEALD
 //#define PROCESS_TiO2_ALD
 //#define PROCESS_SF6_O2_PLASMA_ETCHING
+#define PROCESS_Cl2_CH4_PLASMA_ETCHING
+#define PROCESS_BCl3_PLASMA_ETCHING
 //#define PROCESS_SiO2_PLASMA_ETCHING
+#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
 //#define PROCESS_CFx_DEPOSITION
-#define PROCESS_HfO2_DEPOSITION
+//#define PROCESS_HfO2_DEPOSITION
 //#define PROCESS_HBr_O2_PLASMA_ETCHING
 //#define PROCESS_NONLINEAR_DEPOSITION
 //#define PROCESS_TWOSPECIES_DEPOSITION
@@ -83,8 +86,17 @@
 #ifdef PROCESS_SF6_O2_PLASMA_ETCHING
 #include "Model/ModelSF6_O2PlasmaEtching.h"
 #endif
+#ifdef PROCESS_Cl2_CH4_PLASMA_ETCHING
+#include "Model/ModelCl2_CH4PlasmaEtching.h"
+#endif
+#ifdef PROCESS_BCl3_PLASMA_ETCHING
+#include "Model/ModelBCl3PlasmaEtching.h"
+#endif
 #ifdef PROCESS_SiO2_PLASMA_ETCHING
 #include "Model/ModelSiO2_PlasmaEtching.h"
+#endif
+#ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
+#include "Model/ModelSF6_CH2F2PlasmaEtching.h"
 #endif
 #ifdef PROCESS_HBr_O2_PLASMA_ETCHING
 #include "Model/ModelHBr_O2PlasmaEtching.h"
@@ -435,9 +447,30 @@ void main_(const ParameterType2& p2) {
 		}
 #endif
 
+#ifdef PROCESS_Cl2_CH4_PLASMA_ETCHING
+		if (pIter->ModelName == "Cl2_CH4PlasmaEtching") {
+			model::Cl2_CH4PlasmaEtching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_BCl3_PLASMA_ETCHING
+		if (pIter->ModelName == "BCl3PlasmaEtching") {
+			model::BCl3PlasmaEtching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
 #ifdef PROCESS_SiO2_PLASMA_ETCHING
 		if (pIter->ModelName == "SiO2_PlasmaEtching") {
 			model::SiO2_PlasmaEtching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
+		if (pIter->ModelName == "SF6_CH2F2PlasmaEtching") {
+			model::SF6_CH2F2_PlasmaEtching m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
