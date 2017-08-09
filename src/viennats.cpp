@@ -13,8 +13,8 @@
 
 
 //COMPILE OPTIONS#####################################
-//#define TEST_MODE
-//#define VERBOSE
+#define TEST_MODE
+#define VERBOSE
 
 //Dimensions
 #define DIMENSION_3
@@ -40,12 +40,12 @@
 #define PROCESS_FIB
 
 //LS Processes
-//#define PROCESS_PLANARIZATION
-//#define PROCESS_MASK
-//#define PROCESS_BOOLEANOPS
+#define PROCESS_PLANARIZATION
+#define PROCESS_MASK
+#define PROCESS_BOOLEANOPS
 
 //Flux calculation
-//#define PROCESS_CALCULATEFLUX
+#define PROCESS_CALCULATEFLUX
 
 #define COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
 #define COMPILE_PARTITION_FULL_GRID
