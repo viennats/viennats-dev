@@ -149,7 +149,7 @@ namespace lvlset {
 
         ) {
 
-		typedef typename TriangulationType::element_index_type element_index_type;
+		    typedef typename TriangulationType::element_index_type element_index_type;
 //        typedef typename TriangulationType::node_index_type node_index_type;
         typedef typename LevelSetType::index_type index_type;
         typedef typename LevelSetType::value_type value_type;
@@ -206,7 +206,6 @@ namespace lvlset {
             //for each surface element do
 
             for (element_index_type e=0;e<srf.number_of_elements();e++) {
-
                 vec<value_type,D> c[D];						//nodes of element
                 vec<value_type,D> center(value_type(0));	//center point of triangle
 
@@ -351,12 +350,13 @@ namespace lvlset {
             }
 
             std::sort(points.begin(),points.end());         //sort points lexicographically
-
+            
             //setup list of index/distance pairs for level set initialization
             typename point_vector::iterator it_points=points.begin();
             while(it_points!=points.end()) {
                 vec<index_type,D> tmp=it_points->first;
                 points2.push_back(std::make_pair(it_points->first, it_points->second.second));
+
                 do {
                     ++it_points;
                 } while ((it_points!=points.end()) && (it_points->first==tmp));

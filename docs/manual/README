@@ -6,3 +6,8 @@ $> doxygen ViennaTS
 
 To generate the html folder and documentation the Doxygen tool is used.
 For information on Doxygen, see http://www.stack.nl/~dimitri/doxygen/
+
+
+
+Alternatively run "make" to automatically set up all the paths for doxygen and run it.
+

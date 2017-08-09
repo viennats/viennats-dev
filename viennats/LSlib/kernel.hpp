@@ -683,7 +683,7 @@ namespace lvlset {
             // builds a new sub_levelsets_type that copies the one passed to the function as s
                 subs.resize(s.size());
 
-                #pragma omp parallel for schedule(static,1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+                #pragma omp parallel for schedule(static,1)// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
                 for (int k=0;k<static_cast<int>(s.size());++k) {
                     subs[k]= sub_levelset_ptr_type(new sub_levelset_type(s[k]));
                 }

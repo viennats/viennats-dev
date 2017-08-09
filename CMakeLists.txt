@@ -15,7 +15,7 @@ set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 # Default build type
 ##############
 IF (NOT CMAKE_BUILD_TYPE)
-  SET(CMAKE_BUILD_TYPE "Release")
+  SET(CMAKE_BUILD_TYPE "Debug")
 ENDIF()
 
 # Default compile options
@@ -71,19 +71,19 @@ INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
 #SET(LIBRARIES ${LIBRARIES} ${SPRNG_LIBRARY})
 
 # HDF5
-FIND_PACKAGE(HDF5 COMPONENTS CXX)
-IF(HDF5_FOUND)
-  IF(HDF5_hdf5_cpp_LIBRARY)
-    add_definitions(-DUSE_HDF5)
-    add_definitions(${HDF5_DEFINITIONS})
-    INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
-    SET(LIBRARIES ${LIBRARIES} ${HDF5_LIBRARIES})
-  ELSE(HDF5_hdf5_cpp_LIBRARY)
-    message(FATAL_ERROR "Missing HDF5 C++ library")
-  ENDIF(HDF5_hdf5_cpp_LIBRARY)
-ELSE(HDF5_FOUND)
-  message(STATUS "Missing HDF5 library: ViennaTS will be built without TDR file support")
-ENDIF(HDF5_FOUND)
+#FIND_PACKAGE(HDF5 COMPONENTS CXX)
+#IF(HDF5_FOUND)
+#  IF(HDF5_hdf5_cpp_LIBRARY)
+#    add_definitions(-DUSE_HDF5)
+#    add_definitions(${HDF5_DEFINITIONS})
+#   INCLUDE_DIRECTORIES(${HDF5_INCLUDE_DIRS})
+#    SET(LIBRARIES ${LIBRARIES} ${HDF5_LIBRARIES})
+#  ELSE(HDF5_hdf5_cpp_LIBRARY)
+#    message(FATAL_ERROR "Missing HDF5 C++ library")
+#  ENDIF(HDF5_hdf5_cpp_LIBRARY)
+#ELSE(HDF5_FOUND)
+#  message(STATUS "Missing HDF5 library: ViennaTS will be built without TDR file support")
+#ENDIF(HDF5_FOUND)
 
 # Subdirectories
 ################

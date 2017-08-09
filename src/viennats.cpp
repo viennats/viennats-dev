@@ -21,23 +21,23 @@
 #define DIMENSION_2
 
 //Processes
-//#define PROCESS_CONSTANT_RATES
-//#define PROCESS_SIMPLE_DEPOSITION
-//#define PROCESS_TiN_ALD
-//#define PROCESS_TiN_PEALD
-//#define PROCESS_TiO2_ALD
-//#define PROCESS_SF6_O2_PLASMA_ETCHING
+#define PROCESS_CONSTANT_RATES
+#define PROCESS_SIMPLE_DEPOSITION
+#define PROCESS_TiN_ALD
+#define PROCESS_TiN_PEALD
+#define PROCESS_TiO2_ALD
+#define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_Cl2_CH4_PLASMA_ETCHING
 #define PROCESS_BCl3_PLASMA_ETCHING
-//#define PROCESS_SiO2_PLASMA_ETCHING
+#define PROCESS_SiO2_PLASMA_ETCHING
 #define PROCESS_SF6_CH2F2_PLASMA_ETCHING
-//#define PROCESS_CFx_DEPOSITION
-//#define PROCESS_HfO2_DEPOSITION
-//#define PROCESS_HBr_O2_PLASMA_ETCHING
-//#define PROCESS_NONLINEAR_DEPOSITION
-//#define PROCESS_TWOSPECIES_DEPOSITION
-//#define PROCESS_WET_ETCHING
-//#define PROCESS_FIB
+#define PROCESS_CFx_DEPOSITION
+#define PROCESS_HfO2_DEPOSITION
+#define PROCESS_HBr_O2_PLASMA_ETCHING
+#define PROCESS_NONLINEAR_DEPOSITION
+#define PROCESS_TWOSPECIES_DEPOSITION
+#define PROCESS_WET_ETCHING
+#define PROCESS_FIB
 
 //LS Processes
 //#define PROCESS_PLANARIZATION
@@ -488,7 +488,7 @@ void main_(const ParameterType2& p2) {
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
-                
+
 #ifdef PROCESS_HfO2_DEPOSITION
 		if (pIter->ModelName == "HfO2_Deposition") {
 			model::HfO2_Deposition m(pIter->ModelParameters);
@@ -554,17 +554,17 @@ void main_(const ParameterType2& p2) {
 
 #ifdef PROCESS_TiN_ALD
 		if (pIter->ModelName == "TiN_ALD") {
-                    for (unsigned int i=0;i<CoveragesALD_TiN.size();i++) 
+                    for (unsigned int i=0;i<CoveragesALD_TiN.size();i++)
                         if ((i%12==6*(pIter->ALDStep-1))||(i%12==6*(pIter->ALDStep-1)+1)||(i%12==5)||(i%12==11))
                             CoveragesALD_TiN[i]=0.;
                     model::TiN_ALD m(pIter->ModelParameters, pIter->ALDStep);
                     proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiN);
         	}
 #endif
-                
+
 #ifdef PROCESS_TiN_PEALD
 		if (pIter->ModelName == "TiN_PEALD") {
-                    for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++) 
+                    for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++)
                         if ((i%12==6*(pIter->ALDStep-1))||(i%12==6*(pIter->ALDStep-1)+1)||(i%12==5)||(i%12==11))
                             CoveragesPEALD_TiN[i]=0.;
                     model::TiN_PEALD m(pIter->ModelParameters, pIter->ALDStep);
@@ -584,6 +584,10 @@ void main_(const ParameterType2& p2) {
 	}
 	delete [] s;
 }
+
+/**
+*	Main function: Times the whole program and passes parameters to main_()
+*/
 
 int main(int argc, char *argv[]) {
 

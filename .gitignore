@@ -9,3 +9,5 @@ build
 nbproject
 *.job
 TCAD.sh
+/docs/manual/html/*
+/docs/manual/ViennaTS_Doc.html

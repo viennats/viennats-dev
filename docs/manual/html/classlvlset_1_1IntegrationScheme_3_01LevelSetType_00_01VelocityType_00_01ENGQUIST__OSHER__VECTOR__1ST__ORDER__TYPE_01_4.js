@@ -1,6 +1,0 @@
-var classlvlset_1_1IntegrationScheme_3_01LevelSetType_00_01VelocityType_00_01ENGQUIST__OSHER__VECTOR__1ST__ORDER__TYPE_01_4 =
-[
-    [ "IntegrationScheme", "classlvlset_1_1IntegrationScheme_3_01LevelSetType_00_01VelocityType_00_01ENGQUIST__OSHER__VECTOR__1ST__ORDER__TYPE_01_4.html#a0b4d99887f55ed871c17df655f9960e3", null ],
-    [ "operator()", "classlvlset_1_1IntegrationScheme_3_01LevelSetType_00_01VelocityType_00_01ENGQUIST__OSHER__VECTOR__1ST__ORDER__TYPE_01_4.html#aedb5784cbcf7bc90c0447a860108351d", null ],
-    [ "prepare_surface_levelset", "classlvlset_1_1IntegrationScheme_3_01LevelSetType_00_01VelocityType_00_01ENGQUIST__OSHER__VECTOR__1ST__ORDER__TYPE_01_4.html#aae3a6efbf35447e422f00bcc9989b190", null ]
-];

@@ -26,6 +26,10 @@
 #include "HDF.h"
 #endif
 
+/**
+*		Includes all Geometry In- and Output-related functions.
+*/
+
 namespace geometry {
 
 	template <int D> class geometry {
@@ -49,7 +53,7 @@ namespace geometry {
               std::vector<int>   & ignore_materials
              )
     {
-      std::cout << "Reading STR file!";
+      std::cout << "Reading STR file!" << std::endl;
 
 
       std::ifstream reader(FileName.c_str(), std::ios::binary);

@@ -48,9 +48,9 @@ CMAKE_BUILD_TYPE   = debug, (release) # Turn off/on optimizations (default: rele
 Authors and Contact
 ------------------------
 
-Current contributors: Lado Filipovic, Paul Manstetten, and Josef Weinbub
+Current contributors: Lado Filipovic, Paul Manstetten, Xaver Klemenschits and Josef Weinbub
 
-Contact us via: viennats AT iue DOT tuwien DOT ac DOT at
+Contact us via: viennats@iue.tuwien.ac.at
 
 Founder and initial developer was Otmar Ertl; not active anymore.
 

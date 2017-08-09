@@ -3,17 +3,17 @@ geometry_file  =   "SiO2_3d_etch.dx";
 
 receptor_radius=0.8;
 
-print_statistics=false;
+print_statistics=true;
 
 output_path = "./output_3d/";
 
-cfl_condition = 0.1;
+cfl_condition = 0.5;
 
 input_scale=1.5e-6;//2e-6;
 
 grid_delta = 0.9e-6;//2e-6;
 
-num_dimensions = 20;
+num_dimensions = 3;
 
 boundary_conditions = {
 	{PERIODIC,PERIODIC},
@@ -23,24 +23,24 @@ boundary_conditions = {
 
 
 
-omp_threads=3;
+omp_threads=5;
 
 default_disk_orientation={-1,1,0};
 
 processes = {
     {
 	output_times = {0};
-	output_times_period_length = 10;
-	output_times_periodicity=8;
+	output_times_period_length = 2;
+	output_times_periodicity=20;
 	final_output=true;
-        process_time= 80;
+        process_time= 40;
         model_name="SiO2_PlasmaEtching";
         add_layer=0;
         parameters= {
 
             direction={0,-1,0};
 
-	    statistical_accuracy=1000;
+	    statistical_accuracy=100;
             //min_ion_energy=100;
             //delta_ion_energy=40;
 
@@ -54,7 +54,7 @@ processes = {
 	temperature=298.;
 
         };
-        start_iteration_cycles=10;
+        start_iteration_cycles=0;
         iteration_cycles=0;
     }
 };
