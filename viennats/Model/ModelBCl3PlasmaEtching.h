@@ -8,6 +8,7 @@
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
 
+///Namespace containing all models.
 namespace model {
 
 ///SF6/O2 plasma etching model

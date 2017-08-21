@@ -17,6 +17,7 @@
 #include <cassert>
 #include <cmath>
 
+///Namespace for boundary condition related objects
 namespace bnc {
 
     //#############################################
@@ -31,12 +32,13 @@ namespace bnc {
     };
 
 
-
+    ///Stores and hangles boundary conditions of simulation domain
     class boundary_conditions_type {
     public:
         boundary_condition_type min;
         boundary_condition_type max;
 
+        ///maps coordinates into simulation domain so they do not go outside
         template <class T, class T2>
         T2 map_coordinate(T minCoord, T maxCoord, T2 Coord, bool &ReverseSign) const {
 

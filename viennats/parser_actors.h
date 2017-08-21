@@ -16,6 +16,7 @@
 
 #include <string>
 
+///Parsing definitions
 namespace parser_actors {
 
     class assign_bool {
@@ -27,7 +28,6 @@ namespace parser_actors {
         template <class iter>
         void operator()(const iter&  a, const iter& b ) const {
             bo=(std::string(a,b)=="true");
-
         }
     };
 

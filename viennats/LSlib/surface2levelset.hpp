@@ -29,6 +29,11 @@
 
 namespace lvlset {
 
+    ///this function checks if a line containing the point with coordinates "Point"
+    ///and parallel to axis "dir" (x=0, y=1, z=2) intersects the surface element given by the nodes "c"
+    ///additionally the normal-vector "SurfaceNormalVector" of this surface element has to be given
+    ///if there is an intersection this function returns true, otherwise false
+    ///the intersection coordinate is returned by "intersection"
     template <class T>
     int calculate_gridline_triangle_intersection(
                                         vec<T,3> Point,
@@ -37,11 +42,7 @@ namespace lvlset {
                                         T& intersection
                                     ) {
 
-        //this function checks if a line containing the point with coordinates "Point"
-        //and parallel to axis "dir" (x=0, y=1, z=2) intersects the surface element given by the nodes "c"
-        //additionally the normal-vector "SurfaceNormalVector" of this surface element has to be given
-        //if there is an intersection this function returns true, otherwise false
-        //the intersection coordinate is returned by "intersection"
+
 
         bool inside_pos=true;
         bool inside_neg=true;
@@ -88,7 +89,11 @@ namespace lvlset {
     }
 
 
-
+    ///this function checks if a line containing the point with coordinates "Point"
+    ///and parallel to axis "dir" (x=0, y=1) intersects the surface element given by the nodes "c"
+    ///additionally the normal-vector "SurfaceNormalVector" of this surface element has to be given
+    ///if there is an intersection this function returns true, otherwise false
+    ///the intersection coordinate is returned by "intersection"
     template <class T>
     int calculate_gridline_triangle_intersection(
                                         vec<T,2> Point,
@@ -96,12 +101,6 @@ namespace lvlset {
                                         int dir,
                                         T& intersection
                                     ) {
-
-        //this function checks if a line containing the point with coordinates "Point"
-        //and parallel to axis "dir" (x=0, y=1) intersects the surface element given by the nodes "c"
-        //additionally the normal-vector "SurfaceNormalVector" of this surface element has to be given
-        //if there is an intersection this function returns true, otherwise false
-        //the intersection coordinate is returned by "intersection"
 
         bool inside_pos=true;
         bool inside_neg=true;
@@ -135,6 +134,7 @@ namespace lvlset {
         }
     }
 
+    ///Initialise level set function
     template<class TriangulationType, class LevelSetType>
     void init(			LevelSetType& l,						//the level set function which should be initialized
                         const TriangulationType& srf,		//the triangulated surface
@@ -350,7 +350,7 @@ namespace lvlset {
             }
 
             std::sort(points.begin(),points.end());         //sort points lexicographically
-            
+
             //setup list of index/distance pairs for level set initialization
             typename point_vector::iterator it_points=points.begin();
             while(it_points!=points.end()) {

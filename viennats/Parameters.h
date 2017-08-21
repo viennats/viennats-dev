@@ -36,14 +36,15 @@
 
 #define BOOST_SPIRIT_DEBUG
 
-
+///Namespace for all parameter related tasks(parameter grammar and parameter storage).
 namespace par {
 
-
-
+	///Holds all the information about the parameters given to the program.
+	///Includes a list of ProcessParameterType
 	class Parameters {
 	public:
 
+		///Holds all the process specific information given to the program.
 	    class ProcessParameterType {
         public:
 
@@ -152,10 +153,6 @@ namespace par {
             }
         };
 
-		//parameters for random number generator
-//		static int RNG_Seed;
-//		static const int RNG_Type=SPRNG_MLFG;
-//		static const int RNG_Par=SPRNG_DEFAULT;
 
 		//dimension
 		int Dimensions;
@@ -276,6 +273,7 @@ namespace par {
 
 	using namespace boost::spirit::classic;
 
+	///Defines grammar for Parameters File
 	struct par_grammar : public grammar<par_grammar>
 	{
 	private:
@@ -702,12 +700,12 @@ namespace par {
 	        }
 	    }
 
-//----- Generate the output folder ---
+		//----- Generate the output folder ---
 
 	    struct stat st;
 	    if(stat(OutputPath.c_str(),&st) == -1) {
-		msg::print_message("Output directory not found! Creating new directory!\n");
-		mkdir(OutputPath.c_str(),mode_t(0777));
+					msg::print_message("Output directory not found! Creating new directory!\n");
+					mkdir(OutputPath.c_str(),mode_t(0777));
 	    }
 
 		//test boundary condtions for periodicity, and check conformity

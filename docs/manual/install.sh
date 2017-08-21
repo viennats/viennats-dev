@@ -16,21 +16,24 @@ commands[0]="USE_MDFILE_AS_MAINPAGE"
 commands[1]="INPUT"
 commands[2]="EXCLUDE"
 commands[3]="PROJECT_LOGO"
+commands[4]="STRIP_FROM_PATH"
 
 argument[0]="$viennaTSdir\/README.md"
 argument[1]="$viennaTSdir" 
 argument[2]="$viennaTSdir\/build $viennaTSdir\/tools $viennaTSdir\/examples"
 argument[3]="$viennaTSdir\/docs\/manual\/logo_px55.png"
+argument[4]="$viennaTSdir"
 
-
+#change the doxygen config file to the new parameters
 for i in `seq 0 $(( ${#commands[*]} - 1 ))`; do
 	command='sed -i "s/\(.*'${commands[$i]}' *=\).*/\1 '${argument[$i]}'/" '$configfile
 	eval $command
 done
 
-#run doxygen to make the page & make shortcut outside
+#run doxygen to make the page
 doxygen ViennaTS
 
+#if shortcut outside the html folder does not exist, create it
 if [ -e $docmainfile ]
 then
 	echo "$docmainfile already exists: Not creating."
@@ -49,5 +52,6 @@ echo '<!DOCTYPE HTML>
         If you are not redirected automatically, follow this <a href="html/index.html">link to example</a>.
     </body>
 </html>' > $docmainfile
+echo "Created shortcut: $docmainfile"
 fi
 

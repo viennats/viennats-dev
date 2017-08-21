@@ -14,7 +14,7 @@
 
 //COMPILE OPTIONS#####################################
 #define TEST_MODE
-#define VERBOSE
+//#define VERBOSE
 
 //Dimensions
 #define DIMENSION_3
@@ -182,7 +182,7 @@ public:
 	}
 };
 
-///Defines the zise_type (unsigned int) and value_type (double) for the level set function
+///Defines the size_type (unsigned int) and value_type (double) for the level set function
 class LevelSetTraitsType {
 public:
 	typedef unsigned int size_type;
@@ -221,6 +221,7 @@ public:
 	}
 };
 
+/// Dimension specific main function reading input and starting correct process
 template<int D, class ParameterType2>
 void main_(const ParameterType2& p2) {
 
@@ -304,8 +305,8 @@ void main_(const ParameterType2& p2) {
 	//level set grid
 
 #ifdef VERBOSE
-//		std::cout << "dim " << h << " min=" << grid_min[h] << " max="
-//				<< grid_max[h] << std::endl;
+		//std::cout << "dim " << h << " min=" << grid_min[h] << " max="
+		//		<< grid_max[h] << std::endl;
 #endif
 //	}
 
@@ -431,14 +432,6 @@ void main_(const ParameterType2& p2) {
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
-
-
-//#ifdef PROCESS_TIN_ALD
-//		if (pIter->ModelName == "TiNAtomicLayerDeposition") {
-//			model::TiNAtomicLayerDeposition m(pIter->ModelParameters);
-//			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
-//		}
-//#endif
 
 #ifdef PROCESS_SF6_O2_PLASMA_ETCHING
 		if (pIter->ModelName == "SF6_O2PlasmaEtching") {
@@ -606,14 +599,6 @@ int main(int argc, char *argv[]) {
 	if (p.OpenMP_threads>0) omp_set_num_threads(p.OpenMP_threads);
 #endif
 
-//---- Removed use of SPRNG for random number generation; opted for <random> isntead ----
-	//!Initialize Random-Generators
-//	int my_rank = 0;
-//	int num_nodes = 1;
-//	my::stat::InitRandomGenerator(my_rank, num_nodes, p.RNG_Seed, p.RNG_Type,
-//			p.RNG_Par);
-//---------------------------------------------------------------------------------------
-
 //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
 #ifdef DIMENSION_2
 	if (p.Dimensions == 2)
@@ -624,11 +609,6 @@ int main(int argc, char *argv[]) {
 	if (p.Dimensions == 3)
 		main_<3, par::Parameters> (p);
 #endif
-
-//---- Removed use of SPRNG for random number generation; opted for <random> isntead ----
-	//!Finalize Random-Generators
-//	my::stat::FreeRandomGenerator();
-//---------------------------------------------------------------------------------------
 
   double exec_time = my::time::GetTime()-timer;
   std::stringstream ss;

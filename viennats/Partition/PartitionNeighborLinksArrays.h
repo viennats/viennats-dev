@@ -499,7 +499,7 @@ namespace partition {
 
 			if (Boundaries[dim]==PERIODIC) {
 
-				for (IntLinkType pos_border=0;pos_border<this->AreaSize(dim);++pos_border) {
+				for (IntLinkType pos_border=0;pos_border < this->AreaSize(dim);++pos_border) {
 
 					leaf& cl_a=LeafList[AccessList[dim][pos_border]];
 					leaf& cl_b=LeafList[AccessList[dim+D][pos_border]];

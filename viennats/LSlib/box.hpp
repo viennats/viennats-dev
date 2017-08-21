@@ -20,6 +20,7 @@
 
 namespace lvlset {
 
+    /// Class defining a box used in ray tracing optimisation
     template<class T,int D> class box {
         vec<T,D> xMin,xMax;
     public:
@@ -34,14 +35,14 @@ namespace lvlset {
 
         box<T,D>& operator=(const box<T,D>&);
 
+        ///Checks whether there are points in the box and returns result.
         bool is_empty() const {
             for (int i=0;i<D;i++) if (xMax[i]<xMin[i]) return true;
             return false;
         }
 
-
+        ///Iterator over all grid points, contained by a box.
         class iterator {
-            //iterator over all grid points, contained by a box
             vec<T,D> pos;
             const box<T,D>& b;
 
@@ -79,25 +80,29 @@ namespace lvlset {
 
         };
 
+        ///Returns vector of lowest point of box in each dimension.
         const vec<T,D>& min() const {
             return xMin;
         }
+        ///Returns vector of highest point of box in each dimension.
         const vec<T,D>& max() const {
             return xMax;
         }
     };
 
-
+    ///Sets xMin, xMax to the lowest and highest value of the two vectors for each dimension respectively.
     template<class T,int D> inline box<T,D>::box(const vec<T,D>& idx0,const vec<T,D>& idx1) {
         xMin=Min(idx0,idx1);
         xMax=Max(idx0,idx1);
     }
 
+    ///Creates a copy of the passed box.
     template<class T,int D> inline box<T,D>::box(const box<T,D>& box) {
         xMin=box.xMin;
         xMax=box.xMax;
     }
 
+    ///Sets both xMin and Xmax to the passed vector.
     template<class T,int D> inline box<T,D>::box(const vec<T,D>& idx) {
         xMin=idx;
         xMax=idx;

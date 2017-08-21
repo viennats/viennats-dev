@@ -26,10 +26,8 @@
 #include "HDF.h"
 #endif
 
-/**
-*		Includes all Geometry In- and Output-related functions.
-*/
 
+///	Includes all Geometry In- and Output-related functions.
 namespace geometry {
 
 	template <int D> class geometry {

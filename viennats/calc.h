@@ -35,6 +35,7 @@
 #include <cassert>
 #include "../LSlib/math.hpp"
 
+///Namespace for calculation helpers.
 namespace calc {
 
     template <int Dimensions> class Make3DVector {
@@ -49,21 +50,21 @@ namespace calc {
 
 
     template <class ParameterType> class PartitionTraits {
-  public:
-    typedef int IntCoordType;
-    typedef unsigned int IntLinkType;
-    //typedef const geom::cell<D>* CellRefType;
-    typedef unsigned int CellRefType;
+    public:
+        typedef int IntCoordType;
+        typedef unsigned int IntLinkType;
+        //typedef const geom::cell<D>* CellRefType;
+        typedef unsigned int CellRefType;
 
-    static inline CellRefType UndefinedCellRef() {  return std::numeric_limits<CellRefType>::max();}//return 0;}
-    static inline IntLinkType UndefinedLink() { return std::numeric_limits<IntLinkType>::max();}
+        static inline CellRefType UndefinedCellRef() {  return std::numeric_limits<CellRefType>::max();}//return 0;}
+        static inline IntLinkType UndefinedLink() { return std::numeric_limits<IntLinkType>::max();}
 
-    //static const double SurfaceAreaHeuristicLambda=ParameterType::SurfaceAreaHeuristicLambda;
-    //static const partition::SplittingModeType PartitionMode=ParameterType::PartitionMode;
+        //static const double SurfaceAreaHeuristicLambda=ParameterType::SurfaceAreaHeuristicLambda;
+        //static const partition::SplittingModeType PartitionMode=ParameterType::PartitionMode;
 
-    static const int Dimension=ParameterType::Dimension;
+        static const int Dimension=ParameterType::Dimension;
 
-  };
+    };
 
   template<int D, class LS, class NormalVectorVectorClass, class DistancesVectorClass>
   void SetupCells(   const LS& l,geom::cells<D> &Cells,
@@ -486,7 +487,7 @@ namespace calc {
 
            //for each involved particle type do
           for (unsigned int ParticleType=0;ParticleType<Model.NumberOfParticleTypes;++ParticleType) {
-//              if (ParticleType==1) //std::cout << "AH!!!\n";
+              //if (ParticleType==1) //std::cout << "AH!!!\n";
 
               //determine the number of particles which have to be simulated
              const unsigned int NumOfParticles=(ModelType::SpatiallyEqualDistributedFlux)?
@@ -504,7 +505,7 @@ namespace calc {
             //typename ModelType::TipHeightType dist;
 
             Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
-//std::cout << "\nparticlegeneration\n";
+            //std::cout << "\nparticlegeneration\n";
             //if particle is not moving downwards
             if (Parameter.is_open_boundary_negative) {
                 if(p.Direction[Parameter.open_boundary_direction]<=0.) continue;
@@ -517,7 +518,7 @@ namespace calc {
 //            //std::cout<<"p.Flux1="<<p.Flux<<"\n";
             p.Flux/=RecepterArea;
 //            //std::cout<<"p.Flux2="<<p.Flux<<"\n";
-            
+
             //determine starting position and starting subbox
             ClusterPositionType cp;
 
@@ -1081,7 +1082,7 @@ namespace calc {
   }
 
 //  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, const ModelType& Model) {
-  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages, 
+  template<class ModelType> void UpdateCoverages(const std::vector<double>& Rates, std::vector<double>& Coverages,
           const ModelType& Model, double &time_step) {//, double &current_time) {
     double* c=&Coverages[0];
     const double* r=&Rates[0];

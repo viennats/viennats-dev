@@ -17,7 +17,9 @@
 #include <cmath>
 //#include <boost/static_assert.hpp>
 
+///Namespace for all custom mathematical and statistical tools.
 namespace my {
+	///Includes mathematical functions like equation solvers, root finders and vector arithmetic.
 	namespace math {
 
 		const double Pi1_2   =1*std::asin(1.);

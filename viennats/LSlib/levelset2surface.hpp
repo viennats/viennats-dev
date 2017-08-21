@@ -21,6 +21,7 @@
 #include "vector.hpp"
 #include "math.hpp"
 
+///Includes all level set operations and surface conersion tools.
 namespace lvlset {
 
     namespace {

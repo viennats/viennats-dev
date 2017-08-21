@@ -37,6 +37,7 @@
 #include "./LSlib/vector.hpp"
 #include "boundaries.h"
 
+///Process related objects and methods.
 namespace proc {
 
 	template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
@@ -89,32 +90,6 @@ namespace proc {
 			}
 		}
 
-/*
-        #pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
-        for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
-
-
-            typename LevelSetType::point_type  begin_v=(p==0)?LS.back().grid().min_point_index():segmentation[p-1];
-            typename LevelSetType::point_type  end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:LS.back().grid().increment_indices(LS.back().grid().max_point_index());
-
-            //iterator necessary to access
-            std::vector< typename LevelSetType::const_iterator_runs> ITs;
-            for (typename LevelSetsType::const_iterator it=LS.begin();&(*it)!=&(LS.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(*it,begin_v));
-
-            for (typename LevelSetType::const_iterator_runs it(LS.back(),begin_v );it.start_indices()<end_v;it.next()) {
-                if (!it.is_active()) continue;
-
-                const typename LevelSetType::value_type d=it.value2();
-
-                int z=LS.size()-1;
-                for (;z>0;z--) {
-                    ITs[z-1].go_to_indices_sequential(it.start_indices());
-                    if (d<ITs[z-1].value()) break;
-                }
-
-                PointMaterials[it.active_pt_id2()]=LS.size()-1-z;
-            }
-        } */
         }
 
 	namespace {
@@ -298,7 +273,7 @@ namespace proc {
     }
 
 	namespace {
-
+		///Holds information about the velocities of grid points
 		template <class ModelType, int Dimensions> class VelocityClass {
             const ModelType& Model;
             const double* NormalVector;
@@ -319,7 +294,6 @@ namespace proc {
 
 			double operator()(unsigned int active_pt,int matnum) const {
                 double v;
-               // double s=0.;
 
                 Model.CalculateVelocity(
                         v,
@@ -334,6 +308,7 @@ namespace proc {
             }
         };
 
+		///Holds information about velocities of grid points.
 		template <class ModelType, int Dimensions> class VelocityClass2 {
 			const ModelType& Model;
 			const double* NormalVector;
@@ -376,6 +351,7 @@ namespace proc {
 			}
 		};
 
+		///Holds all information about simulation in series data.
         template <class ModelType, int Dimensions>
         class DataAccessClass {
             const ModelType& Model;
@@ -509,7 +485,6 @@ namespace proc {
 	    LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.GridDelta, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative));
 
 	    for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
-            //*it = max(*it, LevelSets.back());
 	        it->max(LevelSets.back());         //adjust all level set functions below the plane
             it->thin_out();                    //remove grid points which do not have at least one opposite signed neighbor
         }
@@ -1065,9 +1040,10 @@ namespace proc {
                                                                         );
 
                 {
-                    std::ostringstream oss;
-                    oss<<"Write " << output_info.output_counter << "-th output (time = " << RelativeTime << ")...";
-                    msg::print_start(oss.str());
+									std::ostringstream oss;
+									oss << "Writing output " << output_info.output_counter;
+									oss << " (time = " << RelativeTime << ")...";
+									msg::print_start(oss.str());
                 }
 
                 typename LevelSetsType::iterator it=LevelSets.begin();
@@ -1249,6 +1225,7 @@ namespace proc {
 		}
 	}
 
+	///Includes loop over full process time to run the simulation.
 	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
 				LevelSetsType& LevelSets,
 				const ModelType& Model,
@@ -1371,8 +1348,8 @@ namespace proc {
 		    if (!MakeOutput) if (RelativeTime==ProcessTime) break;
 
 		    //###########################
-            // smooth surface level set
-            //###########################
+        // smooth surface level set
+        //###########################
 
 		    if (ProcessParameter.smoothing_material_level>0) {
 #ifdef VERBOSE
@@ -1396,7 +1373,7 @@ namespace proc {
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
-					counter++;
+										counter++;
 		        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
 
 		        if (time_step!=std::numeric_limits<double>::max()) {
@@ -1451,9 +1428,9 @@ namespace proc {
             }
 
             if ((Model.CalculateNormalVectors) || (Model.NumberOfParticleTypes>0)){
-#ifdef VERBOSE
-				msg::print_message("calculate normal vectors");
-#endif
+// #ifdef VERBOSE
+// 				msg::print_message("calculate normal vectors");
+// #endif
 
 #ifdef VERBOSE
 				msg::print_message("expansion");
@@ -1478,11 +1455,11 @@ namespace proc {
                 TimeExpansion-=my::time::GetTime();
                 LevelSets.back().add_voxel_corners();
                 TimeExpansion+=my::time::GetTime();
-                
+
                 TimeCells-=my::time::GetTime();
                 calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.ReceptorRadius);
                 TimeCells+=my::time::GetTime();
-                
+
                 typedef typename calc::PartitionTraits<ParameterType> tmp_type;
 #ifdef COMPILE_PARTITION_NEIGHBOR_LINKS_ARRAYS
                 if (ProcessParameter.partition_data_structure==partition::NEIGHBOR_LINKS_ARRAYS) {
@@ -1496,7 +1473,7 @@ namespace proc {
                         Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
-                    
+
                     TimeRates-=my::time::GetTime();
                     do {
 //                        std::cout << "calculate rates!\n";
@@ -1592,9 +1569,10 @@ namespace proc {
                                                                         );
 
                 {
-                    std::ostringstream oss;
-                    oss<<"Write " << output_info.output_counter << "-th output (time = " << RelativeTime << ")...";
-                    msg::print_start(oss.str());
+					std::ostringstream oss;
+					oss << "Writing output " << output_info.output_counter;
+					oss << " (time = " << RelativeTime << ")...";
+					msg::print_start(oss.str());
                 }
 
                 typename LevelSetsType::iterator it=LevelSets.begin();

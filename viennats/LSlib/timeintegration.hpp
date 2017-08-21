@@ -879,7 +879,7 @@ namespace lvlset {
 
         return time_integrate( tmp,
                                 //VelocityAdapter<VelocitiesClass, LevelSetType>(Velocities)
-								Velocities,
+								                Velocities,
                                 integration_scheme,
                                 CFL,
                                 MaxTimeStep,

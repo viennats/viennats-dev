@@ -17,6 +17,7 @@
 #include <string>
 #include <ostream>
 
+///Namespace for all stdout related output to the user
 namespace msg {
 
     const int width=60;

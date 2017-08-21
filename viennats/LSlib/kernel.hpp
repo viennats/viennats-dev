@@ -181,7 +181,7 @@ namespace lvlset {
                                             //(the level set value is in the range [-0.5,0.5])
                                             //this vector keeps the active point id
                                             //the active point ids are given to the active grid points in lexicographical order starting with index 0
-                                            //therefore the largest active point ID eqauls the number of active grid points-1
+                                            //therefore the largest active point ID equals the number of active grid points-1
                                             //if the grid point is not active, its value is set to the constant INACTIVE
 
 
@@ -2293,10 +2293,14 @@ namespace lvlset {
     }
 
 
+    /*
+    //this function expands the level set functions to 5 layers, in addition it adds defined grid points, so that
+    //each voxel (grid cell) which has at least one active grid point as corner, has all its corner grid points defined
+    */
+
     template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::add_voxel_corners() {
 
-       //this function expands the level set functions to 5 layers, in addition it adds defined grid points, so that
-       //each voxel (grid cell) which has at least one active grid point as corner, has all its corner grid points defined
+
 
         expand(5);
 

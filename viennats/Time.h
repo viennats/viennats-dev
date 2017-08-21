@@ -17,7 +17,7 @@
 #include <omp.h>
 
 namespace my {
-
+	///Namespace for time or timing related methods.
 	namespace time {
 
 		double GetTime() {

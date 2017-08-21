@@ -28,6 +28,7 @@
 #include <iostream>
 
 namespace my {
+	///Contains Random number generation algorythms and other statistical tools.
 	namespace stat {
 
         static const double epsilon=1e-10;
@@ -42,33 +43,7 @@ namespace my {
 
 		inline double RandomNumber() {
 		    return distribution(generator);
-//		    return sprng(rng);
 		}
-
-/*		inline void InitRandomGenerator(unsigned int my_rank, unsigned int size, int seed, int rng_type, int rng_par) {
-
-            #pragma omp parallel
-            {
-                int nstreams=size*MAX_NUM_THREADS;
-                int streamnum=MAX_NUM_THREADS*my_rank;
-
-                #ifdef _OPENMP
-                streamnum+=omp_get_thread_num();
-                #endif
-
-                rng= init_sprng(rng_type,streamnum,nstreams,seed,rng_par);
-
-            }
-        }
-
-        inline void FreeRandomGenerator() {
-            #pragma omp parallel
-            {
-                free_sprng(rng);
-            }
-        }
-*/
-
 
        inline void PickRandomPointOnUnitCircle(double& a, double& b) {        //better on AMD
             double x,y,x2,y2,x2py2;

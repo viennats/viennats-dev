@@ -1,11 +1,11 @@
 //89 degrees
-geometry_file  =   "SiO2_3d_etch.dx";
+geometry_file  =   "geometry.dx";
 
 receptor_radius=0.8;
 
 print_statistics=true;
 
-output_path = "./output_3d/";
+output_path = "./output_geometry/";
 
 cfl_condition = 0.5;
 
@@ -30,10 +30,10 @@ default_disk_orientation={-1,1,0};
 processes = {
     {
 	output_times = {0};
-	output_times_period_length = 5;
-	output_times_periodicity=20;
+	output_times_period_length = 2;
+	output_times_periodicity=10;
 	final_output=true;
-        process_time= 100;
+        process_time= 20;
         model_name="SiO2_PlasmaEtching";
         add_layer=0;
         parameters= {
