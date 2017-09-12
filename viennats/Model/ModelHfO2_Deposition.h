@@ -7,8 +7,8 @@
 #include "../message.h"
 
 // This model was presented in:
-// T.S. Yang et al, 
-//"Chemical Vapor Deposition of HfO2 Thin Films Using the Novel Single Precursor Hafnium 3-Methyl-3-pentoxide, Hf(mp)4", 
+// T.S. Yang et al,
+//"Chemical Vapor Deposition of HfO2 Thin Films Using the Novel Single Precursor Hafnium 3-Methyl-3-pentoxide, Hf(mp)4",
 //Chem. Mater. 2005, 17, 6713-6718
 
 namespace model {
@@ -25,10 +25,10 @@ namespace model {
 		double StartDirection[3];
 
 	public:
-            
-        static constexpr double rate0=6514.006606266484;
-        static constexpr double E=68.14;
-        static constexpr double kB=0.0083144621;
+
+        static constexpr double rate0=6514.006606266484;		//nm/s
+        static constexpr double E=68.14;						//in kJ/mol
+        static constexpr double kB=0.0083144621;				//in 1000/mol*J/K
         static constexpr double rho_HfO2 = 9680;
         static constexpr double M_HfO2 = 0.21049;
         static constexpr double M_gas = 0.58315728;
@@ -129,7 +129,7 @@ namespace model {
 //                        std::cout << "p.Probability = " << p.Probability << "\n";
 			Rates[0]+=p.Flux*p.Probability;
 //                        Rates[0]+=p.Probability;
-                        
+
 		}
 
 		template <class PT, class VecType> void ParticleReflexion(
