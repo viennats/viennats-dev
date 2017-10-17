@@ -18,7 +18,7 @@ namespace model{
         double flux;
 
         double const stickingCoeff = 5e-9;     //just test different values
-        double const Flux_ev = 1e16;            //evaporation flux of SiN from surface
+        double Flux_ev = 1e16;            //evaporation flux of SiN from surface
         double const rho_CF = 1.27e22;          //particles/cm^3
         double const rho_N2 = 2.69e19;
         double const kB_over_m_N2 = 593.878;
@@ -70,12 +70,14 @@ namespace model{
 
             NumberOfParticleClusters[0]=static_cast<unsigned int>(Accuracy);
 
+            Flux_ev = 5e17*std::exp(-0.1/(8.617e-5*temperature));
+
         }
 
         template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
             if(Material==0){
-                Velocity = -100*Rates[0]*Coverages[0]/rho_CF;        //m/s
+                Velocity = -Rates[0]*Coverages[0]/(rho_CF*100);        //m/s
             }
             else{
                 Velocity = 0;
@@ -102,7 +104,7 @@ namespace model{
             my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
             p.Energy=1.;
             p.Probability=1.;
-            p.Flux=rho_N2*std::sqrt(2*kB_over_m_N2*temperature);        //flux just by thermal energy
+            p.Flux=0.25*rho_N2*std::sqrt(3*kB_over_m_N2*temperature);        //flux just by thermal energy TODO: add pressure dependent rho_N2
         }
 
         template <class PT, class NormVecType> void ParticleCollision(
