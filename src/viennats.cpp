@@ -34,6 +34,7 @@
 //#define PROCESS_CFx_DEPOSITION
 //#define PROCESS_HfO2_DEPOSITION
 #define PROCESS_HBr_O2_PLASMA_ETCHING
+#define PROCESS_N2_PLASMA_ETCHING
 //#define PROCESS_NONLINEAR_DEPOSITION
 //#define PROCESS_TWOSPECIES_DEPOSITION
 //#define PROCESS_WET_ETCHING
@@ -97,6 +98,9 @@
 #endif
 #ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
 #include "Model/ModelSF6_CH2F2PlasmaEtching.h"
+#endif
+#ifdef PROCESS_N2_PLASMA_ETCHING
+#include "Model/ModelN2_Flash.h"
 #endif
 #ifdef PROCESS_HBr_O2_PLASMA_ETCHING
 #include "Model/ModelHBr_O2PlasmaEtching.h"
@@ -464,6 +468,13 @@ void main_(const ParameterType2& p2) {
 #ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
 		if (pIter->ModelName == "SF6_CH2F2PlasmaEtching") {
 			model::SF6_CH2F2_PlasmaEtching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_N2_PLASMA_ETCHING
+		if(pIter->ModelName == "N2_Flash"){
+			model::N2_FLASH m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
