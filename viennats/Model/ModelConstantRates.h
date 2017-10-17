@@ -137,9 +137,7 @@ namespace model {
 				int Material,
 				bool connected,
 				bool visible
-				) const {
-
-		}
+				) const {}
 
 		static void UpdateCoverage(double *Coverages, const double *Rates) {}
 

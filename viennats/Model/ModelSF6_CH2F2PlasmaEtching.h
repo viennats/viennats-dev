@@ -14,10 +14,10 @@ namespace model {
 //A. LaMagna and G. Garozzo "Factors affecting profile evolution in plasma etching of SiO2
 //modelling and experimental verification" Journal of the Electrochemical Society 150(10)
 //2003 pp. 1896-1902
-// AND    
+// AND
 //O. Luere et al., "Etch mechanisms of silicon gate structures patterned in SF6/CH2F2/Ar inductively coupled plasmas"
 //Journal of Vacuum Science & Technology B 29, 011028 (2011)
-    
+
 	class SF6_CH2F2_PlasmaEtching {
 
 		static const double kB;	// m2 kg s-2 K-1
@@ -139,7 +139,7 @@ namespace model {
 					Velocity=0;
 				}
 			} else { 			//Etching
-				if (Material==0) {	//Si
+				if (Material<=1) {	//Si
 					Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
 				} else {
 					Velocity = 0;
@@ -229,7 +229,7 @@ namespace model {
 					Rates[1]+=p.Flux*Ye_ei;
 					Rates[2]+=p.Flux*Yp_ei;
 
-					Rates[6]=0.0027*p.Flux*std::exp(-0.168/(kB*temperature));
+					Rates[6]=Flux_ev;//0.0027*p.Flux*std::exp(-0.168/(kB*temperature));
 
 					break;
 				}

@@ -192,7 +192,7 @@ namespace model {
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
 			//Velocity=-1.;
 			//return;
-			if (Material==1) {	//Si
+			if (Material==0) {	//Si
 				Velocity=(-(k_Sigma_Si*Coverages[1]/4.+Rates[0]+Rates[1]*Coverages[1])/rho_TiN);	//in cm/s      //TODO
 				if (Coverages[1]>1) std::cout << "Coverages[1]= " << Coverages[1] << ", Rates[0]= " << Rates[0] << ", Rates[1]= " << Rates[1] << "\n";
 			} else if (Material==2) {
