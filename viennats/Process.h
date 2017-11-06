@@ -52,6 +52,7 @@ namespace proc {
         }
 	}
 
+
 	template <class LevelSetsType> void DetermineTopMostLayer(
 			const LevelSetsType& LS,
 			std::vector<unsigned int>& PointMaterials) {
@@ -604,6 +605,7 @@ namespace proc {
             		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
         }
 
+
         typedef std::list<geometry::surface<D> > SurfacesType;
         SurfacesType Surfaces;
 
@@ -655,17 +657,17 @@ namespace proc {
             }
         } else {                        //Model.level()<0
 
-            if (!Model.invert()) boolop_ls.invert();
+            if (Model.invert()) boolop_ls.invert();
 
             int j=0;
             typename LevelSetsType::iterator ls_it_old  =   LevelSets.begin();
             typename LevelSetsType::iterator ls_it      =   LevelSets.begin();
 
             for (;j<static_cast<int>(LevelSets.size())+Model.level();++j) {
-
                 ls_it_old=ls_it;
                 ++ls_it;
             }
+			if(!Model.wrap_surface()) j=0;
 
             while (ls_it!=LevelSets.end()) {
                 ls_it->max(boolop_ls);
@@ -674,8 +676,45 @@ namespace proc {
                 ++ls_it;
             }
         }
+		//Write one output if there is any output time or there is final output
+		if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
 
+		{
+							std::ostringstream oss;
+							oss << "Writing output " << output_info.output_counter;
+							//oss << " (time = " << RelativeTime << ")...";
+							msg::print_start(oss.str());
+		}
 
+		typename LevelSetsType::iterator it=LevelSets.begin();
+		for (unsigned int i=0;i<LevelSets.size();i++) {
+
+			if (Parameter.print_dx) {
+				std::ostringstream oss;
+				oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+#ifdef VERBOSE
+				msg::print_message("print dx");
+#endif
+
+				write_explicit_surface_opendx(*it,oss.str());
+
+			}
+			if (Parameter.print_vtk) {
+				std::ostringstream oss;
+				oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+#ifdef VERBOSE
+				msg::print_message("print vtk");
+#endif
+
+				write_explicit_surface_vtk(*it,oss.str());
+
+			}
+			it++;
+		}
+
+		output_info.output_counter++;
+
+		msg::print_done();
 
 /*
 

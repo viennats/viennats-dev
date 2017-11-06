@@ -56,6 +56,7 @@ namespace par {
 	        double Masks;
 
             int AddLayer;                   //the number of level set layers which should be added to the geometry before the process is started
+			std::vector<int> MapMaterials;
 
             double ProcessTime;             //the process time in seconds
             unsigned int ALDStep;
@@ -347,6 +348,7 @@ namespace par {
 								rule_process_MaxTimeStep,
 								rule_process,
 								rule_process_addlayer,
+								rule_process_material_mapping,
 								rule_process_IterationCycles,
 								rule_process_StartIterationCycles,
 								rule_process_model_name,
@@ -443,6 +445,7 @@ namespace par {
 				rule_process_smoothing_material_level = str_p("smoothing_material_level")  >> '='  >> int_p[assign_a(tmp_process.smoothing_material_level)]  >> ';';
 				rule_process_smoothing_max_iterations = str_p("smoothing_max_iterations")  >> '='  >> int_p[assign_a(tmp_process.smoothing_max_iterations)]  >> ';';
 				rule_process_addlayer = str_p("add_layer")  >> '='  >>int_p[assign_a(tmp_process.AddLayer)]  >> ';';
+				rule_process_material_mapping = str_p("material_mapping") >> '=' >>  '{' >> (int_p[push_back_a(tmp_process.MapMaterials)] % ',') >> '}'  >> ';';
 				rule_process_output_times_periodicity=str_p("output_times_periodicity") >> '=' >> int_p[assign_a(tmp_process.output_times_periodicity)]  >> ';';
                 rule_process_output_times_period_length=str_p("output_times_period_length") >> '=' >> real_p[assign_a(tmp_process.output_times_period_length)]  >> ';';
                 rule_process_initial_output = (str_p("initial_output")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.initial_output)]) >> ';');
@@ -515,6 +518,7 @@ namespace par {
 									//			rule_process_Iterations |
 									//			rule_process_TotalTime |
 												rule_process_addlayer |
+												rule_process_material_mapping |
 												rule_process_MaxTimeStep |
 												rule_process_model_name |
 												rule_process_initial_output |
@@ -681,7 +685,7 @@ namespace par {
 
 //----- Section to parse through the file name(s) and determine input format ---
 		std::size_t start = str.find("ile=\"");
-		if (start>str.length()) {
+		if (start>str.find("iles=\"")) {
 			start = str.find("iles=\"");
 			start++;
 		}

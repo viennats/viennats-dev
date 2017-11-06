@@ -561,35 +561,7 @@ namespace geometry {
             }
 
       //map materials - this is the same regardless of the input file format
-      if (!MapMaterials.empty())
-      {
-        std::vector<lvlset::vec<unsigned int, D+1> > oldElements;
-        std::vector<int> oldMaterials;
-
-        std::swap(oldElements, Elements);
-        std::swap(oldMaterials, Materials);
-
-        for (unsigned int a=0;a<oldElements.size();++a)
-        {
-          bool add=true;
-          int mat=oldMaterials[a];
-          if (mat<static_cast<int>(MapMaterials.size()+1))
-          {
-            mat=MapMaterials[mat-1];
-            if (mat<=0) add=false;
-          }
-          else
-          {
-            assert(0);  //Material mapping failed
-            mat=false;
-          }
-          if (add)
-          {
-            Elements.push_back(oldElements[a]);
-            Materials.push_back(mat);
-          }
-        }
-      }
+      if (!MapMaterials.empty()) MaterialMapping(MapMaterials);
 
       //determine min and max of geometry (bounding box)
       CalculateExtensions();
@@ -646,6 +618,35 @@ namespace geometry {
 					Max=lvlset::Max(Max,Nodes[Elements[a][i]]);
 				}
 			}
+		}
+
+		void MaterialMapping(std::vector<int> MapMaterials){
+			std::vector<lvlset::vec<unsigned int, D+1> > oldElements;
+	        std::vector<int> oldMaterials;
+
+	        std::swap(oldElements, Elements);
+	        std::swap(oldMaterials, Materials);
+
+	        for (unsigned int a=0;a<oldElements.size();++a)
+	        {
+	          bool add=true;
+	          int mat=oldMaterials[a];
+	          if (mat<static_cast<int>(MapMaterials.size()+1))
+	          {
+	            mat=MapMaterials[mat-1];
+	            if (mat<=0) add=false;
+	          }
+	          else
+	          {
+	            assert(0);  //Material mapping failed
+	            mat=false;
+	          }
+	          if (add)
+	          {
+	            Elements.push_back(oldElements[a]);
+	            Materials.push_back(mat);
+	          }
+	        }
 		}
 	};
 

@@ -31,6 +31,7 @@
 //#define PROCESS_BCl3_PLASMA_ETCHING
 //#define PROCESS_SiO2_PLASMA_ETCHING
 #define PROCESS_SF6_CH2F2_PLASMA_ETCHING
+#define PROCESS_Cl2_N2_ETCHING
 //#define PROCESS_CFx_DEPOSITION
 //#define PROCESS_HfO2_DEPOSITION
 #define PROCESS_HBr_O2_PLASMA_ETCHING
@@ -98,6 +99,9 @@
 #endif
 #ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
 #include "Model/ModelSF6_CH2F2PlasmaEtching.h"
+#endif
+#ifdef PROCESS_Cl2_N2_ETCHING
+#include "Model/ModelCl2_N2Etching.h"
 #endif
 #ifdef PROCESS_N2_PLASMA_ETCHING
 #include "Model/ModelN2_Flash.h"
@@ -420,6 +424,10 @@ void main_(const ParameterType2& p2) {
 			msg::print_message(oss.str());
 		}
 		output_info.end_time += pIter->ProcessTime;
+
+		//map materials if specified in process
+		if(!pIter->MapMaterials.empty()) g.MaterialMapping(pIter->MapMaterials);
+
 		std::cout << "AddLayer = " << pIter->AddLayer << "\n";
 		proc::AddLayer(LevelSets, pIter->AddLayer);
 
@@ -441,6 +449,13 @@ void main_(const ParameterType2& p2) {
 		if (pIter->ModelName == "SF6_O2PlasmaEtching") {
 			model::SF6_O2PlasmaEtching m(pIter->ModelParameters);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+		}
+#endif
+
+#ifdef PROCESS_Cl2_N2_ETCHING
+		if(pIter->ModelName == "Cl2_N2Etching"){
+			model::Cl2_N2Etching m(pIter->ModelParameters);
+			proc::ExecuteProcess(LevelSets, m, p,*pIter, output_info);
 		}
 #endif
 

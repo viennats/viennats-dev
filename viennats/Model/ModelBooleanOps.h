@@ -29,6 +29,8 @@ namespace model {
 
         bool surf;
 
+        bool wrap;
+
     public:
 
         const std::string & file_name() const {
@@ -51,7 +53,11 @@ namespace model {
         	return surf;
         }
 
-        BooleanOps(const std::string & Parameters):lvl(0),inv(false)  {
+        const bool wrap_surface() const{
+            return wrap;
+        }
+
+        BooleanOps(const std::string & Parameters):lvl(0),inv(false),wrap(false)  {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
@@ -66,7 +72,8 @@ namespace model {
                             (str_p("level")  >> '='  >> int_p[assign_a(lvl)]  >> ';') |
                             (str_p("invert")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(inv)]) >> ';') |
                             (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(surf)]) >> ';') |
-                            (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';')
+                            (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';') |
+                            (str_p("wrap_lower_surface") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(wrap)]) >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
