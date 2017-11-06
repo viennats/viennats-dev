@@ -134,13 +134,15 @@ namespace model {
 
 			if (Coverages[1]>1) {	//Deposition
 				if (Material==0) {	//Si
-					Velocity = (DR_p - ER_p);
+					Velocity = 1e-3*(DR_p - ER_p);		//m/s
+					//std::cout << Velocity << std::endl;
 				} else {
 					Velocity=0;
 				}
 			} else { 			//Etching
 				if (Material<=1) {	//Si
-					Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
+					Velocity = -1e-1*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;	//m/s
+					//std::cout << "Etch: " << Velocity << std::endl;
 				} else {
 					Velocity = 0;
 				}

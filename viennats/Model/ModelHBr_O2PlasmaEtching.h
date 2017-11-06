@@ -125,6 +125,7 @@ public:
 
 		double ER_p = (Rates[2]*Coverages[0])/rho_p;
 		double DR_p = (Rates[3])/rho_p;
+		//std::cout << ER_p << " " << DR_p << std::endl;
 
 		if (Coverages[1]>1) {	//Deposition
 			if (Material==0) {	//Si
@@ -133,7 +134,7 @@ public:
 				Velocity=0;
 			}
 		} else { 			//Etching
-			if (Material<=2) {	//Si
+			if (Material<=1) {	//Si
 				Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
 			} else {
 				Velocity = 0;
@@ -269,13 +270,13 @@ double const HBr_O2_PlasmaEtching::rho_p=4.8e21;         //density of SiBr_xO_y 
 double const HBr_O2_PlasmaEtching::k_ei=2;
 double const HBr_O2_PlasmaEtching::k_ev=2;
 
-double const HBr_O2_PlasmaEtching::Gamma_ee=0.6;		//Belen2006
-double const HBr_O2_PlasmaEtching::Gamma_p=0.1;
-double const HBr_O2_PlasmaEtching::Gamma_ep=0.5;
+double const HBr_O2_PlasmaEtching::Gamma_ee=0.04;		//Belen2006
+double const HBr_O2_PlasmaEtching::Gamma_p=0.05;
+double const HBr_O2_PlasmaEtching::Gamma_ep=0.05;
 
 //		double const SiO2_PlasmaEtching::A_p=0.0337;
 double const HBr_O2_PlasmaEtching::Ae_ei=0.015;//0.0361;
-double const HBr_O2_PlasmaEtching::Ae_sp=0.03;//0.06;
+double const HBr_O2_PlasmaEtching::Ae_sp=0.005;//0.06;
 double const HBr_O2_PlasmaEtching::Ap_ei=0.1;//0.1444;
 
 double const HBr_O2_PlasmaEtching::B_sp=9.3;
