@@ -231,9 +231,9 @@ public:
 
 /// Dimension specific main function reading input and starting correct process
 template<int D, class ParameterType2>
-void main_(const ParameterType2& p2) {
+void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
-	const ParameterDimType<ParameterType2, D> p = p2;
+	ParameterDimType<ParameterType2, D> p = p2;		//TODO changed to not const
 
 	int grid_min[D]={ };
 	int grid_max[D]={ };
@@ -389,6 +389,7 @@ void main_(const ParameterType2& p2) {
 
 	msg::print_done();
 
+
 	msg::print_start("Add Initial Layers...");
 	proc::AddLayer(LevelSets, p.AddLayer);
 	msg::print_done();
@@ -413,7 +414,7 @@ void main_(const ParameterType2& p2) {
             for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++) CoveragesPEALD_TiN[i]=(i%12==10)?1.:0.;
 #endif
 
-	for (typename std::list<typename ParameterType2::ProcessParameterType>::const_iterator
+	for (typename std::list<typename ParameterType2::ProcessParameterType>::iterator
 			pIter = p.ProcessParameters.begin(); pIter
 			!= p.ProcessParameters.end(); ++pIter) {
 		{
@@ -425,11 +426,81 @@ void main_(const ParameterType2& p2) {
 		}
 		output_info.end_time += pIter->ProcessTime;
 
-		//map materials if specified in process
-		if(!pIter->MapMaterials.empty()) g.MaterialMapping(pIter->MapMaterials);
+		//Reassign Active layers to correspond to kernel layer numbering
+		if(pIter->ActiveLayers.size()>LevelSets.size()) assert(0);
+
+		LevelSetsType temp_levelSets;
+
+		std::vector<int> layer_order;
+		for(unsigned int i=0; i<pIter->ActiveLayers.size(); i++){
+			layer_order.push_back(pIter->ActiveLayers[i]-1);
+			pIter->ActiveLayers[i] = LevelSets.size() - pIter->ActiveLayers[i];	//reorder for model use
+		}
+		//if(pIter->ActiveLayers.empty()) temp_levelSets = LevelSets;	//if no materials specified, etch highest one
+
+		//put inactive layers to new levelset ordering
+		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
+
+		std::cout << "Added Inactive: ";
+		for(unsigned int i=0; i<LevelSets.size(); ++i){
+			if(!my::stat::AnyElement<int>(layer_order, i) && (pIter->MaskLayers.empty() || pIter->MaskLayers[0] != int(i+1))){	//neither mask nor active
+				std::cout << i << " ";
+				temp_levelSets.push_back(*LSIter);
+			}
+			++LSIter;
+		}
+		std::cout << std::endl;
+
+		//add mask layers on top of inactive
+		if(!pIter->MaskLayers.empty()){
+			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i) pIter->MaskLayers[i] -= 1;	//kernel numbering
+			LSIter = LevelSets.begin();
+			for(int a=0; a<pIter->MaskLayers[0]; a++)	LSIter++;	// advance iterator to first mask layer
+			temp_levelSets.push_back(*LSIter); 		//this is now the only mask layer, all the other ones are AND'ed onto it
+			std::cout << "Added Mask: " << pIter->MaskLayers[0];
+			for(unsigned int i=1; i<pIter->MaskLayers.size(); i++){
+				std::cout << " " << pIter->MaskLayers[i];
+				if((unsigned int)pIter->MaskLayers[i]>LevelSets.size()) assert(0);
+				LSIter = LevelSets.begin();
+				for(int a=0; a<pIter->MaskLayers[i]; a++)	LSIter++;		//Advance iterator to corresponding levelset
+				temp_levelSets.back().min(*LSIter);			// AND second mask levelset with first
+				temp_levelSets.back().thin_out();
+			}
+			std::cout << std::endl;
+		}
+
+		if(!layer_order.empty()){
+			std::cout << "Added Active: ";
+			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder Levelsets for next step
+				std::cout << layer_order[i] << " ";
+				if((unsigned int)layer_order[i]>LevelSets.size()) assert(0);
+				LSIter = LevelSets.begin();
+				for(int a=0; a<layer_order[i]; a++)	LSIter++;	//Advance iterator to corresponding levelset
+				temp_levelSets.push_back(*LSIter);			//push levelset to temporary list
+			}
+			std::cout  << std::endl;
+		}
+
+		//wrap new top levelset around lower layers
+		LSIter = temp_levelSets.begin();	//Advance iterator to first reassigned LS
+		for(unsigned int i=0; i<temp_levelSets.size()-layer_order.size(); i++){
+			LSIter_old=LSIter;
+			++LSIter;
+		}
+
+		while(LSIter!=temp_levelSets.end()){		//wrap new top levelset around lower layers
+			LSIter->min(*LSIter_old);
+			LSIter->thin_out();
+			++LSIter;
+		}
+
+		std::swap(LevelSets, temp_levelSets);
 
 		std::cout << "AddLayer = " << pIter->AddLayer << "\n";
 		proc::AddLayer(LevelSets, pIter->AddLayer);
+		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
+		std::cout << "Active/Total Layers:" << pIter->ActiveLayers.size() << "/" << LevelSets.size() << std::endl;
+
 
 #ifdef PROCESS_CONSTANT_RATES
 		if (pIter->ModelName == "ConstantRates") {
@@ -454,14 +525,14 @@ void main_(const ParameterType2& p2) {
 
 #ifdef PROCESS_Cl2_N2_ETCHING
 		if(pIter->ModelName == "Cl2_N2Etching"){
-			model::Cl2_N2Etching m(pIter->ModelParameters);
+			model::Cl2_N2Etching<typename ParameterType2::ProcessParameterType> m(pIter);
 			proc::ExecuteProcess(LevelSets, m, p,*pIter, output_info);
 		}
 #endif
 
 #ifdef PROCESS_Cl2_CH4_PLASMA_ETCHING
 		if (pIter->ModelName == "Cl2_CH4PlasmaEtching") {
-			model::Cl2_CH4PlasmaEtching m(pIter->ModelParameters);
+			model::Cl2_CH4PlasmaEtching<typename ParameterType2::ProcessParameterType> m(pIter);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
@@ -482,7 +553,7 @@ void main_(const ParameterType2& p2) {
 
 #ifdef PROCESS_SF6_CH2F2_PLASMA_ETCHING
 		if (pIter->ModelName == "SF6_CH2F2PlasmaEtching") {
-			model::SF6_CH2F2_PlasmaEtching m(pIter->ModelParameters);
+			model::SF6_CH2F2_PlasmaEtching<typename ParameterType2::ProcessParameterType> m(pIter);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
@@ -496,7 +567,7 @@ void main_(const ParameterType2& p2) {
 
 #ifdef PROCESS_HBr_O2_PLASMA_ETCHING
 		if (pIter->ModelName == "HBr_O2PlasmaEtching") {
-			model::HBr_O2_PlasmaEtching m(pIter->ModelParameters);
+			model::HBr_O2_PlasmaEtching<typename ParameterType2::ProcessParameterType> m(pIter);
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
 		}
 #endif
@@ -578,7 +649,7 @@ void main_(const ParameterType2& p2) {
                             CoveragesALD_TiN[i]=0.;
                     model::TiN_ALD m(pIter->ModelParameters, pIter->ALDStep);
                     proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiN);
-        	}
+        }
 #endif
 
 #ifdef PROCESS_TiN_PEALD

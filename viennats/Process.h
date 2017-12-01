@@ -52,7 +52,6 @@ namespace proc {
         }
 	}
 
-
 	template <class LevelSetsType> void DetermineTopMostLayer(
 			const LevelSetsType& LS,
 			std::vector<unsigned int>& PointMaterials) {
@@ -1656,7 +1655,6 @@ namespace proc {
 
 //            //std::cout << "Relative Time: " << RelativeTime << "\n";
             bool is_finished=(RelativeTime==ProcessTime);
-
 
             //#######################################
             // time integration

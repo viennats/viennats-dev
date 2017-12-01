@@ -11,39 +11,39 @@
 namespace model {
 
 ///HBr/O2 plasma etching model
-
+template<class PPT>
 class HBr_O2_PlasmaEtching {
 
-	static const double kB;	// m2 kg s-2 K-1
-	static const double rho_polySi; // 	//in atoms/cm^3 //2.6e22
-	static const double rho_p;	//in atoms/cm^3
+	double const kB=0.000086173324;    // m2 kg s-2 K-1
+	double const rho_polySi=2.328e22;  //in atoms/cm^3 //2.6e22
+	double const rho_p=4.8e21;         //density of SiBr_xO_y in atoms/cm^3
 
-	static const double k_ei;
-	static const double k_ev;
+	constexpr static double const k_ei=2;
+	constexpr static double const k_ev=2;
 
-	static const double Gamma_ee;
-	static const double Gamma_p;
-	static const double Gamma_ep;
+	double const Gamma_ee=0.9;		//Belen2006
+	double const Gamma_p=0.05;
+	double const Gamma_ep=0.6;
 
-//		static const double A_p=0.0337;
-	static const double Ae_ei;
-	static const double Ae_sp;
-	static const double Ap_ei;
+	//		double const SiO2_PlasmaEtching::A_p=0.0337;
+	double const Ae_ei=0.0361;
+	double const Ae_sp=0.0139;
+	double const Ap_ei=0.1444;
 
-	static const double B_sp;
+	double const B_sp=9.3;
 
-	static const double Eth_e_e;
-	static const double Eth_e_p;
-	static const double Eth_e_sp;//
+	double const Eth_e_e=4;
+	double const Eth_e_p=4;
+	double const Eth_e_sp=30;
+
+	double const ion_exponent=1000.;
+
+	double const Phi_min=1.3962634;
 
 	double min_ion_energy;
 	double delta_ion_energy;
 
 	double temperature;
-
-	static const double ion_exponent;
-
-	static const double Phi_min;
 
 	double StartDirection[3];
 
@@ -52,6 +52,8 @@ class HBr_O2_PlasmaEtching {
 	double FluxBr;
 
 	double Flux_ev;
+
+	std::vector<int> ActiveLayers;
 
 
 
@@ -86,7 +88,9 @@ public:
 //        int stacked_mat;
 
 
-	HBr_O2_PlasmaEtching(const std::string & Parameters) {//, int stacked_material) {
+	HBr_O2_PlasmaEtching(typename std::list<PPT>::const_iterator p) {//, int stacked_material) {
+
+		ActiveLayers = p->ActiveLayers;
 
 		using namespace boost::spirit::classic;
 //		    stacked_mat=stacked_material;
@@ -94,8 +98,8 @@ public:
 		double Accuracy;
 
 		bool b = parse(
-				Parameters.begin(),
-				Parameters.end(),
+				p->ModelParameters.begin(),
+				p->ModelParameters.end(),
 				*(
 						(str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
 						(str_p("flux_ion")  >> '='  >> real_p[assign_a(FluxIon)]  >> ';') |
@@ -129,13 +133,13 @@ public:
 
 		if (Coverages[1]>1) {	//Deposition
 			if (Material==0) {	//Si
-				Velocity = (DR_p - ER_p);
+				Velocity = 1*(DR_p - ER_p);
 			} else {
 				Velocity=0;
 			}
 		} else { 			//Etching
-			if (Material<=1) {	//Si
-				Velocity = -(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
+			if (Material<(int)ActiveLayers.size()){//}<(int)ActiveLayers.size()){//Material<=2){//my::stat::AnyElement<int>(ActiveLayers,  Material)) {	//Si
+				Velocity = -0.1*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
 			} else {
 				Velocity = 0;
 			}
@@ -263,31 +267,7 @@ public:
 
 };
 
-double const HBr_O2_PlasmaEtching::kB=0.000086173324;    // m2 kg s-2 K-1
-double const HBr_O2_PlasmaEtching::rho_polySi=2.328e22;  //in atoms/cm^3 //2.6e22
-double const HBr_O2_PlasmaEtching::rho_p=4.8e21;         //density of SiBr_xO_y in atoms/cm^3
 
-double const HBr_O2_PlasmaEtching::k_ei=2;
-double const HBr_O2_PlasmaEtching::k_ev=2;
-
-double const HBr_O2_PlasmaEtching::Gamma_ee=0.04;		//Belen2006
-double const HBr_O2_PlasmaEtching::Gamma_p=0.05;
-double const HBr_O2_PlasmaEtching::Gamma_ep=0.05;
-
-//		double const SiO2_PlasmaEtching::A_p=0.0337;
-double const HBr_O2_PlasmaEtching::Ae_ei=0.015;//0.0361;
-double const HBr_O2_PlasmaEtching::Ae_sp=0.005;//0.06;
-double const HBr_O2_PlasmaEtching::Ap_ei=0.1;//0.1444;
-
-double const HBr_O2_PlasmaEtching::B_sp=9.3;
-
-double const HBr_O2_PlasmaEtching::Eth_e_e=4;
-double const HBr_O2_PlasmaEtching::Eth_e_p=4;
-double const HBr_O2_PlasmaEtching::Eth_e_sp=30;
-
-double const HBr_O2_PlasmaEtching::ion_exponent=1000.;
-
-double const HBr_O2_PlasmaEtching::Phi_min=1.3962634;
 
 }
 

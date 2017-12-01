@@ -12,36 +12,42 @@ namespace model {
 
 ///SF6/O2 plasma etching model
 
+	template<class PPT>
 	class Cl2_CH4PlasmaEtching {
 
-		static const double rho_TiN;//=5e22; 		//in atoms/cm^3
-		static const double rho_SiO2; 	//in atoms/cm^3
+		double const rho_TiN = 0.084365*6.022e23;//5e22;
+		double const rho_SiO2=2.6e22; 	//in atoms/cm^3
 
-		static const double k_Sigma_Si;	//in cm^-2*s^-1
-		static const double beta_Sigma_Si;	//in cm^-2*s^-1
+		constexpr static double const k_Sigma_Si=3e17;	//in cm^-2*s^-1
+		constexpr static double const beta_Sigma_Si=4e13;	//in cm^-2*s^-1
 
 
 
-		static const double MinEnergy;	//TODO //in eV
-		static const double end_probability;
+		double const MinEnergy=1.;	//TODO //in eV
+		double const end_probability=0.001;
 
-		static const double Gamma_O;
-		static const double Gamma_F;
+		double const Gamma_O=1.;
+		double const Gamma_F=0.015;
 
-		static const double Eref_max;
-		static const double Phi_inflect;
-		static const double n_r;
-		static const double n_l;
+		double const Eref_max=1.;
+		double const Phi_inflect=1.55334303;
+		double const n_r=1.;
+		double const n_l=10.;
 
-		static const double A_Si;
+		double const A_Si=7.;
+		double const A_p=0.0337;
+		double const A_SiO2=0.2;
+
+		double const Eth_Si=15.;
+		double const Eth_O=10.;
+		double const Eth_p=20.;
+		double const Eth_SiO2=8.;
+
+		double const ion_exponent=1000.;
+
+		double const Phi_min=1.3962634;
+
 		double A_O;
-		static const double A_p;
-		static const double A_SiO2;
-
-		static const double Eth_Si;
-		static const double Eth_O;
-		static const double Eth_p;
-		static const double Eth_SiO2;
 
 		double min_ion_energy;
 		double delta_ion_energy;
@@ -50,17 +56,13 @@ namespace model {
 		//static const double min_ion_energy=100;
 		//static const double delta_ion_energy=40;
 
-		static const double ion_exponent;
-		static const double Phi_min;
-
 		double StartDirection[3];
 
 		double FluxIon;
 		double FluxO;
 		double FluxCl;
 
-
-
+		std::vector<int> ActiveLayers;
 
 	public:
 
@@ -91,7 +93,9 @@ namespace model {
         static const bool ReemissionIsMaterialDependent=true;
 //        int stacked_mat;
 
-		Cl2_CH4PlasmaEtching(const std::string & Parameters) {//, int stacked_material) {
+		Cl2_CH4PlasmaEtching(typename std::list<PPT>::const_iterator p) {//, int stacked_material) {
+
+			ActiveLayers = p->ActiveLayers;
 
 		    using namespace boost::spirit::classic;
 //		    stacked_mat=stacked_material;
@@ -99,8 +103,8 @@ namespace model {
 		    double Accuracy;
 
             bool b = parse(
-                    Parameters.begin(),
-                    Parameters.end(),
+                    p->ModelParameters.begin(),
+                    p->ModelParameters.end(),
                     *(
                     		(str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("flux_ion")  >> '='  >> real_p[assign_a(FluxIon)]  >> ';') |
@@ -192,11 +196,11 @@ namespace model {
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
 			//Velocity=-1.;
 			//return;
-			if (Material<=4) {	//Si
-				Velocity=(-(k_Sigma_Si*Coverages[1]/4.+Rates[0]+Rates[1]*Coverages[1])/rho_TiN)/10;	//in cm/s      //TODO
-				if (Coverages[1]>1) std::cout << "Coverages[1]= " << Coverages[1] << ", Rates[0]= " << Rates[0] << ", Rates[1]= " << Rates[1] << "\n";
+			if (Material<(int)ActiveLayers.size()) {	//Si
+				Velocity=(-(k_Sigma_Si*Coverages[1]/4.+Rates[0]+Rates[1]*Coverages[1])/rho_TiN);	//in cm/s      //TODO
+				//if (Coverages[1]>1) std::cout << "Coverages[1]= " << Coverages[1] << ", Rates[0]= " << Rates[0] << ", Rates[1]= " << Rates[1] << "\n";
 			//} else if (Material==2) {
-			//	Velocity=(-Rates[5]*Coverages[1]/rho_SiO2);										//in cm/s     //TODO
+				// Velocity=(-Rates[5]*Coverages[1]/rho_SiO2);										//in cm/s     //TODO
 			} else Velocity=0.;
 //assert(0);
 
@@ -395,37 +399,7 @@ namespace model {
 		}
 
 	};
-	double const Cl2_CH4PlasmaEtching::rho_TiN = 0.084365*6.022e23;//5e22;
-	double const Cl2_CH4PlasmaEtching::rho_SiO2=2.6e22; 	//in atoms/cm^3
 
-	double const Cl2_CH4PlasmaEtching::k_Sigma_Si=3e17;	//in cm^-2*s^-1
-	double const Cl2_CH4PlasmaEtching::beta_Sigma_Si=4e13;	//in cm^-2*s^-1
-
-
-
-	double const Cl2_CH4PlasmaEtching::MinEnergy=1.;	//TODO //in eV
-	double const Cl2_CH4PlasmaEtching::end_probability=0.001;
-
-	double const Cl2_CH4PlasmaEtching::Gamma_O=1.;
-	double const Cl2_CH4PlasmaEtching::Gamma_F=0.015;
-
-	double const Cl2_CH4PlasmaEtching::Eref_max=1.;
-	double const Cl2_CH4PlasmaEtching::Phi_inflect=1.55334303;
-	double const Cl2_CH4PlasmaEtching::n_r=1.;
-	double const Cl2_CH4PlasmaEtching::n_l=10.;
-
-	double const Cl2_CH4PlasmaEtching::A_Si=7.;
-	double const Cl2_CH4PlasmaEtching::A_p=0.0337;
-	double const Cl2_CH4PlasmaEtching::A_SiO2=0.2;
-
-	double const Cl2_CH4PlasmaEtching::Eth_Si=15.;
-	double const Cl2_CH4PlasmaEtching::Eth_O=10.;
-	double const Cl2_CH4PlasmaEtching::Eth_p=20.;
-	double const Cl2_CH4PlasmaEtching::Eth_SiO2=8.;
-
-	double const Cl2_CH4PlasmaEtching::ion_exponent=1000.;
-
-	double const Cl2_CH4PlasmaEtching::Phi_min=1.3962634;
 
 //	const double Cl2_CH4PlasmaEtching::Phi_min;
 

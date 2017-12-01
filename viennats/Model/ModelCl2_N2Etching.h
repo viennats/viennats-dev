@@ -10,7 +10,7 @@
 
 
 namespace model{
-
+    template<class PPT>
     class Cl2_N2Etching {
         double StartDirection[3];
         double temperature;
@@ -22,6 +22,8 @@ namespace model{
         double const rho_TiN = 5.0804e22;          //particles/cm^3
         double const rho_Cl = 4.2399e19;
         double const kB_over_m_Cl = 234.6938;
+
+        std::vector<int> ActiveLayers;
 
     public:
         static const int CoverageStorageSize=1;
@@ -49,14 +51,16 @@ namespace model{
             int Type;
         };
 
-        Cl2_N2Etching(const std::string & Parameters){
+        Cl2_N2Etching(typename std::list<PPT>::const_iterator p){
+            ActiveLayers = p->ActiveLayers;
+
             using namespace boost::spirit::classic;
 
             double Accuracy;
 
             bool b = parse(
-                Parameters.begin(),
-                Parameters.end(),
+                p->ModelParameters.begin(),
+                p->ModelParameters.end(),
                 *(
                     (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                     (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';') |
@@ -77,11 +81,11 @@ namespace model{
 
         template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-            if(Material<=2){
+            if(Material<(int)ActiveLayers.size()){
                 Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100);        //m/s
                 //std::cout << Velocity << std::endl;
             }
-            else if(Material==3) Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100)/5;
+            //else if(Material==(int)ActiveLayers.size()) Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100)/5;
             else{
                 Velocity = 0;
             }

@@ -23,7 +23,7 @@
 #include <random>
 
 #include "message.h"
-
+#include <vector>
 #include <fstream>
 #include <iostream>
 
@@ -1182,6 +1182,16 @@ namespace my {
 			position[1] = 0;//d.Position[1];
 			position[2] = 2*d.Radius*v1+d.Position[2];
 		}
+
+		template<class DataType> bool AnyElement(typename std::vector<DataType> vec, DataType check){
+			typename std::vector<DataType>::iterator first = vec.begin(), last = vec.end();
+			while(first!=last){
+				if(*first==check) return true;
+				++first;
+			}
+			return false;
+		}
+
 	}
 }
 
