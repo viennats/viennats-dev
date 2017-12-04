@@ -1,0 +1,32 @@
+providers: [
+  {
+    key: "bt"
+    config:
+      commands: [
+        {
+          project: "/home/klemenschits/Code/ViennaTS/viennats-dev"
+          source: "/home/klemenschits/Code/ViennaTS/viennats-dev/.build-tools.cson"
+          name: "Build ViennaTS"
+          command: "/home/klemenschits/Aliases/makeTS.sh"
+          wd: "/home/klemenschits/Code/ViennaTS/viennats-dev"
+          env: {}
+          modifier: {}
+          environment:
+            name: "child_process"
+            config:
+              stdoe: "both"
+          stdout:
+            pipeline: []
+          stderr:
+            pipeline: []
+          output:
+            console:
+              close_success: true
+              queue_in_buffer: true
+              colors: false
+              stdin: false
+          version: 2
+        }
+      ]
+  }
+]
