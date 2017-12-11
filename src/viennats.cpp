@@ -21,7 +21,7 @@
 #define DIMENSION_2
 
 //Processes
-//#define PROCESS_CONSTANT_RATES
+#define PROCESS_CONSTANT_RATES
 //#define PROCESS_SIMPLE_DEPOSITION
 //#define PROCESS_TiN_ALD
 //#define PROCESS_TiN_PEALD
@@ -40,6 +40,7 @@
 //#define PROCESS_TWOSPECIES_DEPOSITION
 //#define PROCESS_WET_ETCHING
 //#define PROCESS_FIB
+//#define VERBOSE
 
 //LS Processes
 #define PROCESS_PLANARIZATION
@@ -441,15 +442,14 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		//put inactive layers to new levelset ordering
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
-		std::cout << "Added Inactive: ";
+		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
 			if(!my::stat::AnyElement<int>(layer_order, i) && (pIter->MaskLayers.empty() || pIter->MaskLayers[0] != int(i+1))){	//neither mask nor active
-				std::cout << i << " ";
+				std::cout << i << ",";
 				temp_levelSets.push_back(*LSIter);
 			}
 			++LSIter;
 		}
-		std::cout << std::endl;
 
 		//add mask layers on top of inactive
 		if(!pIter->MaskLayers.empty()){
@@ -457,22 +457,21 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 			LSIter = LevelSets.begin();
 			for(int a=0; a<pIter->MaskLayers[0]; a++)	LSIter++;	// advance iterator to first mask layer
 			temp_levelSets.push_back(*LSIter); 		//this is now the only mask layer, all the other ones are AND'ed onto it
-			std::cout << "Added Mask: " << pIter->MaskLayers[0];
+			std::cout << "/" << pIter->MaskLayers[0];
 			for(unsigned int i=1; i<pIter->MaskLayers.size(); i++){
-				std::cout << " " << pIter->MaskLayers[i];
+				std::cout << "," << pIter->MaskLayers[i];
 				if((unsigned int)pIter->MaskLayers[i]>LevelSets.size()) assert(0);
 				LSIter = LevelSets.begin();
 				for(int a=0; a<pIter->MaskLayers[i]; a++)	LSIter++;		//Advance iterator to corresponding levelset
 				temp_levelSets.back().min(*LSIter);			// AND second mask levelset with first
 				temp_levelSets.back().thin_out();
 			}
-			std::cout << std::endl;
 		}
 
 		if(!layer_order.empty()){
-			std::cout << "Added Active: ";
+			std::cout << "/";
 			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder Levelsets for next step
-				std::cout << layer_order[i] << " ";
+				std::cout << layer_order[i] << ",";
 				if((unsigned int)layer_order[i]>LevelSets.size()) assert(0);
 				LSIter = LevelSets.begin();
 				for(int a=0; a<layer_order[i]; a++)	LSIter++;	//Advance iterator to corresponding levelset
@@ -499,7 +498,7 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		std::cout << "AddLayer = " << pIter->AddLayer << "\n";
 		proc::AddLayer(LevelSets, pIter->AddLayer);
 		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
-		std::cout << "Active/Total Layers:" << pIter->ActiveLayers.size() << "/" << LevelSets.size() << std::endl;
+		std::cout << "Active/Total Layers:" << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
 
 
 #ifdef PROCESS_CONSTANT_RATES

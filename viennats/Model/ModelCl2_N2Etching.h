@@ -38,7 +38,7 @@ namespace model{
 		static const bool CalculateVisibilities=false;
         static const bool CalculateConnectivities=false;
 
-        static const bool CalculateNormalVectors=true;
+        static const bool CalculateNormalVectors=false;
 
         static const bool ReemissionIsMaterialDependent=true;
 
@@ -83,7 +83,6 @@ namespace model{
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
             if(Material<(int)ActiveLayers.size()){
                 Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100);        //m/s
-                //std::cout << Velocity << std::endl;
             }
             //else if(Material==(int)ActiveLayers.size()) Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100)/5;
             else{
@@ -103,7 +102,7 @@ namespace model{
 				) const {}
 
         static void UpdateCoverage(double *Coverages, const double *Rates) {
-            Coverages[0] = Rates[0]/(Rates[0]+Rates[1]);
+            Coverages[0] = Rates[0]==0?0:Rates[0]/(Rates[0]+Rates[1]);
         }
 
         template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position) const {

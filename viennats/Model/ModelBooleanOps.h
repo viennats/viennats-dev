@@ -23,6 +23,7 @@ namespace model {
 
         int lvl;
 
+
         bool inv;
 
         bool remove;
@@ -32,6 +33,7 @@ namespace model {
         bool wrap;
 
     public:
+        int lvlset = -1;
 
         const std::string & file_name() const {
             return fn;
@@ -73,7 +75,8 @@ namespace model {
                             (str_p("invert")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(inv)]) >> ';') |
                             (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(surf)]) >> ';') |
                             (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';') |
-                            (str_p("wrap_lower_surface") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(wrap)]) >> ';')
+                            (str_p("wrap_lower_surface") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(wrap)]) >> ';') |
+                            (str_p("levelset") >> '=' >> int_p[assign_a(lvlset)] >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 

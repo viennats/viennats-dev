@@ -397,10 +397,14 @@ namespace calc {
     //Initialize Rates
     unsigned int  num_active_points=SurfaceLevelSet.num_active_pts();
     Rates.clear();
-    //std::cout << "assert normal vector size \n";
-    assert(NormalVectors.size()==num_active_points*D);
-    //std::cout << "assert coverages size \n";
-    assert(Coverages.size()>=num_active_points*Model.CoverageStorageSize);
+    if(NormalVectors.size()!=num_active_points*D){
+        std::cout << "Assert normal vector size: " << NormalVectors.size() << " = " << num_active_points*D << "\n";
+        assert(0);
+    }
+    if(Coverages.size()<num_active_points*Model.CoverageStorageSize){
+        std::cout << "Assert Coverage size: " << Coverages.size() << " >= " << num_active_points*Model.CoverageStorageSize << "\n";
+        assert(0);
+    }
 
         #ifdef _OPENMP
     const int max_threads=omp_get_max_threads();
