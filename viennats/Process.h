@@ -640,7 +640,7 @@ namespace proc {
 			init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
 			boolop_ls = &dummy_ls;
 		}
-		else{			//TODO: CHECK IF IT WORKS
+		else{
 			typename LevelSetsType::iterator it = LevelSets.begin();
 			for(int i=0; i<Model.lvlset; ++i) ++it;
 			boolop_ls = &(*it);

@@ -110,7 +110,7 @@ namespace model{
             my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
             p.Energy=1.;
             p.Probability=1.;
-            p.Flux=0.25*rho_Cl*std::sqrt(3*kB_over_m_Cl*temperature);        //flux just by thermal energy TODO: add pressure dependent rho_Cl
+            p.Flux=0.25*rho_Cl*std::sqrt(3*kB_over_m_Cl*temperature);        //flux just by thermal energy TODO: add pressure dependence rho_Cl
         }
 
         template <class PT, class NormVecType> void ParticleCollision(
@@ -128,7 +128,16 @@ namespace model{
         							std::stack<PT>& particle_stack,
         							const VecType& NormalVector,
         							const double* Coverages,
-        							int Material) const {}
+        							int Material) const {
+            double new_probability = p.Probability*(1.-stickingCoeff);
+            if(new_probability >= (1.-stickingCoeff)){
+                std::cout << p.Probability;
+                particle_stack.push(p);
+				PT& p_new = particle_stack.top();
+				p_new.Probability=0.;
+				my::stat::CosineNDistributedRandomDirection(1.,NormalVector,p_new.Direction);
+            }
+        }
 
 
     };

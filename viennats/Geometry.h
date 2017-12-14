@@ -592,7 +592,7 @@ namespace geometry {
       //determine min and max of geometry (bounding box)
       CalculateExtensions();
 
-                }
+    }
 
 		void WriteVTK(const std::string& FileName) const {
 			std::ofstream f(FileName.c_str());
