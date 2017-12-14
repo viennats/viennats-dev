@@ -640,7 +640,7 @@ namespace proc {
 			init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
 			boolop_ls = &dummy_ls;
 		}
-		else{
+		else{			//If internal levelset should be used
 			typename LevelSetsType::iterator it = LevelSets.begin();
 			for(int i=0; i<Model.lvlset; ++i) ++it;
 			boolop_ls = &(*it);
@@ -663,7 +663,7 @@ namespace proc {
                 ++ls_it;
             }
 
-			if (Model.invert()) boolop_ls->invert();		//Invert again so that the original levelset is not changed
+			if (Model.invert() && Model.lvlset>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
         } else {                        //Model.level()<0
 
             if (Model.invert()) boolop_ls->invert();
@@ -684,7 +684,7 @@ namespace proc {
                 ls_it->thin_out();
                 ++ls_it;
             }
-			if (Model.invert()) boolop_ls->invert();
+			if (Model.invert() && Model.lvlset>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
         }
 		//Write one output if there is any output time or there is final output
 		if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
