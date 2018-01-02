@@ -277,6 +277,11 @@ namespace lvlset {
                 }
             }
 
+            index_type getRunBreak(int dim, int runbreak = std::numeric_limits<int>::max()) const{
+                if(runbreak==std::numeric_limits<int>::max()) return runbreaks[dim].back();
+                return runbreaks[dim][runbreak];
+            }
+
             unsigned long int used_memory() const {
                 //this function gives an estimation of the used memory of the level
                 //set function. however, the allocated memory is much higher because the
@@ -319,6 +324,8 @@ namespace lvlset {
 
                 return x;
             }
+
+
 
 
             size_type num_pts() const {
@@ -1011,6 +1018,10 @@ namespace lvlset {
 
         typename sub_levelsets_type::size_type number_of_segments() const {
             return sub_levelsets.size();
+        }
+
+        index_type get_runbreak(int dim, int runbreak = std::numeric_limits<int>::max()) const{
+            return sub_levelsets[0].getRunBreak(dim, runbreak);
         }
 
 
@@ -2807,6 +2818,46 @@ namespace lvlset {
             return l.sub_levelsets[sub].distances[current_run_code()];
         }
 
+        value_type value_p() const{
+            //returns the level set value for the current run
+            //if the run is undefined positive, POS_VALUE is returned, else NEG_VALUE
+            if (is_defined()) {
+                return value2();
+            } else if (current_run_code()==POS_PT) {
+                return POS_VALUE;
+            } else {
+                //assert(current_run_code()==NEG_PT);
+                if(any(abs_coords, l.Grid.max_point_index())){
+                    return -0.5;             //TODO: add border checking
+                }
+                else if(any(abs_coords, l.Grid.min_point_index())){
+                    return -0.5;             //TODO: add border checking
+                }
+                return NEG_VALUE;
+            }
+        }
+
+        value_type value_n() const{
+            //returns the level set value for the current run
+            //if the run is undefined positive or negative and point is on grid border, POS_VALUE is returned, else NEG_VALUE
+            if (is_defined()) {
+                return value2();
+            } else if (current_run_code()==POS_PT) {
+                return POS_VALUE;
+            } else {
+                //assert(current_run_code()==NEG_PT);
+                if(abs_coords>=l.Grid.max_point_index()){
+                    std::cout << "Adding border point!" << std::endl;
+                    return 0.;             //TODO: add border checking
+                }
+                else if(abs_coords<=l.Grid.min_point_index()){
+                    std::cout << "Adding min border point!" << std::endl;
+                    return 0.;             //TODO: add border checking
+                }
+                return NEG_VALUE;
+            }
+        }
+
         bool is_active() const {
             //this function returns if a grid point is active or not
             return (active_pt_id()!=INACTIVE);
@@ -2828,6 +2879,14 @@ namespace lvlset {
             //the same as "sign", however it is assumed that the current run
             //is defined
             return l.sign(value2());
+        }
+
+        sign_type sign_p() const{
+            return l.sign(value_p());
+        }
+
+        sign_type sign_n() const{
+            return l.sign(value_n());
         }
 
 

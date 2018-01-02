@@ -99,6 +99,7 @@ namespace par {
 
             //Outputtimes
             std::vector<double> output_times;
+			std::vector<double> output_volume;
             int output_times_periodicity;
             double output_times_period_length;
             bool initial_output;
@@ -367,6 +368,7 @@ namespace par {
 								rule_processes,
 								rule_process_finite_difference_scheme,
 								rule_process_lax_friedrichs_dissipation_coefficient,
+								rule_process_output_volume,
 								rule_process_output_times;
 
 	        definition(par_grammar const& self)	{
@@ -472,7 +474,7 @@ namespace par {
 
 				                                                    	)
 				                                                	>> '}' >> ';';
-
+				rule_process_output_volume = str_p("output_volume") >> '=' >> '{' >> (real_p[push_back_a(tmp_process.output_volume)] % ',' >> '}' >> ';');
 				rule_process_output_times  = str_p("output_times")  >> '='  >>  '{' >> (real_p[push_back_a(tmp_process.output_times)] % ',') >> '}'  >> ';';
 
 
@@ -530,6 +532,7 @@ namespace par {
 												rule_process_final_output |
 												rule_process_output_times_periodicity       |
 												rule_process_output_times_period_length     |
+												rule_process_output_volume |
 												rule_process_output_times |
                                                 rule_process_parameters |
                                                 rule_process_print_velocities |

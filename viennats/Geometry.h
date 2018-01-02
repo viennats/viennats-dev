@@ -2,15 +2,15 @@
 #define GEOMETRY_H_
 
 /* =========================================================================
-   Copyright (c)    2008-2015, Institute for Microelectronics, TU Wien.
+Copyright (c)    2008-2015, Institute for Microelectronics, TU Wien.
 
-                            -----------------
-                 ViennaTS - The Vienna Topography Simulator
-                            -----------------
+-----------------
+ViennaTS - The Vienna Topography Simulator
+-----------------
 
-   Contact:         viennats@iue.tuwien.ac.at
+Contact:         viennats@iue.tuwien.ac.at
 
-   License:         MIT (X11), see file LICENSE in the base directory
+License:         MIT (X11), see file LICENSE in the base directory
 ============================================================================= */
 
 
@@ -41,220 +41,220 @@ namespace geometry {
 
 		geometry()  {}
 
-    // Silvaco Structure Reader
-                void ReadSTR(std::string   const& FileName,
-              double               scale,//=1.,
-              std::vector<int>   & InputTransformationDirections,//=std::vector<int>(),
-              std::vector<bool>  & InputTransformationSigns,//=std::vector<bool>(),
-              bool                change_input_parity,//=false,
-              std::vector<double>& shift,//=std::vector<double>()
-              std::vector<int>   & ignore_materials
-             )
-    {
-      std::cout << "Reading STR file!" << std::endl;
+		// Silvaco Structure Reader
+		void ReadSTR(std::string   const& FileName,
+			double               scale,//=1.,
+			std::vector<int>   & InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool>  & InputTransformationSigns,//=std::vector<bool>(),
+			bool                change_input_parity,//=false,
+			std::vector<double>& shift,//=std::vector<double>()
+			std::vector<int>   & ignore_materials
+		)
+		{
+			std::cout << "Reading STR file!" << std::endl;
 
 
-      std::ifstream reader(FileName.c_str(), std::ios::binary);
+			std::ifstream reader(FileName.c_str(), std::ios::binary);
 
-      if (!reader)
-        throw std::runtime_error("Cannot open file: "+FileName+" - Aborting!");
+			if (!reader)
+			throw std::runtime_error("Cannot open file: "+FileName+" - Aborting!");
 
-      std::string line;
-      std::string dump;
+			std::string line;
+			std::string dump;
 
-      int dim_geometry;
-      int dim_topology;
-      int number_of_points;
-      int number_of_triangles;
-      int number_of_tetrahedrons;
+			int dim_geometry;
+			int dim_topology;
+			int number_of_points;
+			int number_of_triangles;
+			int number_of_tetrahedrons;
 
 
-      while(1)
-      {
-        std::getline(reader, line);
+			while(1)
+			{
+				std::getline(reader, line);
 
-        if(!line.empty() && line.at(0) == 'k')
-        {
-          // traverse the line via stringstream
-          std::stringstream ss(line);
-          ss >> dump;
-          ss >> dim_geometry;
-          ss >> number_of_points;
-          ss >> dim_topology;
-          ss >> number_of_triangles;
-          ss >> number_of_tetrahedrons;
-          break;
-        }
-      }
+				if(!line.empty() && line.at(0) == 'k')
+				{
+					// traverse the line via stringstream
+					std::stringstream ss(line);
+					ss >> dump;
+					ss >> dim_geometry;
+					ss >> number_of_points;
+					ss >> dim_topology;
+					ss >> number_of_triangles;
+					ss >> number_of_tetrahedrons;
+					break;
+				}
+			}
 
-      std::cout << "dim geometry: " << dim_geometry << std::endl;
-      std::cout << "dim topology: " << dim_topology << std::endl;
-      std::cout << "number of points: " << number_of_points << std::endl;
-      std::cout << "number of triangles: " << number_of_triangles << std::endl;
-      std::cout << "number of tetrahedrons: " << number_of_tetrahedrons << std::endl;
+			std::cout << "dim geometry: " << dim_geometry << std::endl;
+			std::cout << "dim topology: " << dim_topology << std::endl;
+			std::cout << "number of points: " << number_of_points << std::endl;
+			std::cout << "number of triangles: " << number_of_triangles << std::endl;
+			std::cout << "number of tetrahedrons: " << number_of_tetrahedrons << std::endl;
 
-      if(D != dim_geometry)
-        throw std::runtime_error("Geometry dimension of reader does not fit input file - Aborting!");
+			if(D != dim_geometry)
+			throw std::runtime_error("Geometry dimension of reader does not fit input file - Aborting!");
 
-      // read one more dummy line, won't need this one, this is just to advance the file pointer
-      std::getline(reader, line);
+			// read one more dummy line, won't need this one, this is just to advance the file pointer
+			std::getline(reader, line);
 
-      // -------------------------------
-      // import points
-      //
-      Nodes.resize(number_of_points);
-      for (int i=0;i<number_of_points;i++)
-      {
-        double coords[D];
+			// -------------------------------
+			// import points
+			//
+			Nodes.resize(number_of_points);
+			for (int i=0;i<number_of_points;i++)
+			{
+				double coords[D];
 
-        // c - ignored
-        reader >> dump;
-        // point-id - ignored
-        reader >> dump;
+				// c - ignored
+				reader >> dump;
+				// point-id - ignored
+				reader >> dump;
 
-        // x y z
-        reader >> coords[0];
-        reader >> coords[1];
-        if(D == 3) reader >> coords[2];
+				// x y z
+				reader >> coords[0];
+				reader >> coords[1];
+				if(D == 3) reader >> coords[2];
 
-        for (int j=0;j<D;j++)
-        {
-          Nodes[i][j]=coords[InputTransformationDirections[j]];
-          int shift_size=shift.size();
-          if (shift_size>j) Nodes[i][j]+=shift[j];
-          if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
-          Nodes[i][j]*=scale;
-        }
-      }
+				for (int j=0;j<D;j++)
+				{
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+					Nodes[i][j]*=scale;
+				}
+			}
 
-      // -------------------------------
-      // import elements (+materials), i.e., triangles (2D) or tetrahedrons (3D)
-      //
-      int region_id;
-      lvlset::vec<unsigned int, D+1>  cell_indices;
-      bool ignore;
-      if(D == 3)
-      {
-        // in the 3D case, we need to skip the triangles which are also
-        // provided in the input file. Therefore we have to advance the file pointer
-        // by the number of triangles - the '+1' is required to move the file poiniter
-        // into the first 'tetrahedron' line
-        for (int i=0;i<number_of_triangles+1;i++)
-          std::getline(reader, line);
+			// -------------------------------
+			// import elements (+materials), i.e., triangles (2D) or tetrahedrons (3D)
+			//
+			int region_id;
+			lvlset::vec<unsigned int, D+1>  cell_indices;
+			bool ignore;
+			if(D == 3)
+			{
+				// in the 3D case, we need to skip the triangles which are also
+				// provided in the input file. Therefore we have to advance the file pointer
+				// by the number of triangles - the '+1' is required to move the file poiniter
+				// into the first 'tetrahedron' line
+				for (int i=0;i<number_of_triangles+1;i++)
+				std::getline(reader, line);
 
-        for (int i=0;i<number_of_tetrahedrons;i++)
-        {
-          reader >> dump;
-          reader >> dump;
-          reader >> region_id;
+				for (int i=0;i<number_of_tetrahedrons;i++)
+				{
+					reader >> dump;
+					reader >> dump;
+					reader >> region_id;
 
-          if(std::find(ignore_materials.begin(), ignore_materials.end(), region_id) != ignore_materials.end())
-          {
-            ignore = true;
-          }
-          else ignore = false;
+					if(std::find(ignore_materials.begin(), ignore_materials.end(), region_id) != ignore_materials.end())
+					{
+						ignore = true;
+					}
+					else ignore = false;
 
-          if(!ignore)
-            Materials.push_back(region_id);
+					if(!ignore)
+					Materials.push_back(region_id);
 
-          // tetrahedron vertex ids
-          for (int j=0;j<D+1;j++)
-          {
-            reader >> cell_indices[j];
+					// tetrahedron vertex ids
+					for (int j=0;j<D+1;j++)
+					{
+						reader >> cell_indices[j];
 
-            cell_indices[j]--;
-          }
+						cell_indices[j]--;
+					}
 
-          if(!ignore)
-          {
-            if (change_input_parity) std::swap(cell_indices[0], cell_indices[1]);
-            Elements.push_back(cell_indices);
-          }
+					if(!ignore)
+					{
+						if (change_input_parity) std::swap(cell_indices[0], cell_indices[1]);
+						Elements.push_back(cell_indices);
+					}
 
-          // advance file pointer, omitting the additional meta data for each tetrahedron
-          for (int j=0;j<D+1;j++) reader >> dump;
-        }
-      }
-      else
-        throw std::runtime_error("2D files are currently not supported - Aborting!");
+					// advance file pointer, omitting the additional meta data for each tetrahedron
+					for (int j=0;j<D+1;j++) reader >> dump;
+				}
+			}
+			else
+			throw std::runtime_error("2D files are currently not supported - Aborting!");
 
-      // correct material IDs
-      // note: material IDs need to start with 1 and have a 1-increment ID
-      // if we ignored some materials, having a small ID, e.g., 1, we need to decrement all other
-      // material ids accordingly
-      // we start from the largest region to be ignored and process the material set one after another
-      for(std::vector<int>::reverse_iterator rit = ignore_materials.rbegin(); rit != ignore_materials.rend(); ++rit)
-      {
-        for(std::vector<int>::iterator it = Materials.begin(); it != Materials.end(); ++it)
-        {
-          if(*it > *rit) --(*it);
-        }
-      }
+			// correct material IDs
+			// note: material IDs need to start with 1 and have a 1-increment ID
+			// if we ignored some materials, having a small ID, e.g., 1, we need to decrement all other
+			// material ids accordingly
+			// we start from the largest region to be ignored and process the material set one after another
+			for(std::vector<int>::reverse_iterator rit = ignore_materials.rbegin(); rit != ignore_materials.rend(); ++rit)
+			{
+				for(std::vector<int>::iterator it = Materials.begin(); it != Materials.end(); ++it)
+				{
+					if(*it > *rit) --(*it);
+				}
+			}
 
-      reader.close();
-    }
+			reader.close();
+		}
 
-#ifdef USE_HDF5
+		#ifdef USE_HDF5
 
 		void ReadTDR(	const std::string& FileName,
-						double scale,//=1.,
-						std::vector<int> InputTransformationDirections,//=std::vector<int>(),
-						std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
-						bool change_input_parity,//=false,
-						std::vector<double> shift//=std::vector<double>()
-				) {
+			double scale,//=1.,
+			std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+			bool change_input_parity,//=false,
+			std::vector<double> shift//=std::vector<double>()
+		) {
 
 			H5File* file = new H5File(FileName.c_str(), H5F_ACC_RDWR);
 
 			tdr_geometry geometry;
-            geometry.read_collection(file->openGroup("collection"));
+			geometry.read_collection(file->openGroup("collection"));
 
-		if (D!=geometry.dim) msg::print_error("Dimension in parameters file does not match geometry!");
-            delete file;
+			if (D!=geometry.dim) msg::print_error("Dimension in parameters file does not match geometry!");
+			delete file;
 
 			Nodes.resize(geometry.nvertices);
-            for (unsigned int i=0;i<geometry.nvertices;i++){
-			    double coords[D];
+			for (unsigned int i=0;i<geometry.nvertices;i++){
+				double coords[D];
 
 				for (int j=0;j<D;j++) coords[j]=geometry.vertex[geometry.dim*i+j];
 
 				for (int j=0;j<D;j++) {
-				    Nodes[i][j]=coords[InputTransformationDirections[j]];
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
 
-				    int shift_size=shift.size();
-				    if (shift_size>j) Nodes[i][j]+=shift[j];
-                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
-                    Nodes[i][j]*=scale;
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+					Nodes[i][j]*=scale;
 				}
-            }
+			}
 
-            int num_elems=0;
-            for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) num_elems+=S->second.nelements;
+			int num_elems=0;
+			for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) num_elems+=S->second.nelements;
 
 			Elements.resize(num_elems);
 			Materials.resize(num_elems);
 
 			int i=0;
-            for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) {
+			for (map<string,region_t>::iterator S=geometry.region.begin(); S!=geometry.region.end(); S++) {
 
-          	  vector<vector<int> > &elements = S->second.elements;
-          	  for (vector<vector<int> >::iterator E=elements.begin(); E!=elements.end(); E++) {
-          		  std::vector<int> e=*E;
-          		  for (int j=0;j<D+1;j++) Elements[i][j]=e[j];
-          		  Materials[i]=2-S->second.regnr;
-          		  i++;
-          	  }
-            }
+				vector<vector<int> > &elements = S->second.elements;
+				for (vector<vector<int> >::iterator E=elements.begin(); E!=elements.end(); E++) {
+					std::vector<int> e=*E;
+					for (int j=0;j<D+1;j++) Elements[i][j]=e[j];
+					Materials[i]=2-S->second.regnr;
+					i++;
+				}
+			}
 		}
-#endif
+		#endif
 
 		void ReadGRD(	const std::string& FileName,
-							double scale,//=1.,
-							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
-							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
-							bool change_input_parity,//=false,
-							std::vector<double> shift//=std::vector<double>()
-						) {
+			double scale,//=1.,
+			std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+			bool change_input_parity,//=false,
+			std::vector<double> shift//=std::vector<double>()
+		) {
 			std::ifstream f(FileName.c_str());
 
 			if (!f) msg::print_error("Failed reading geometry file!");
@@ -275,36 +275,36 @@ namespace geometry {
 			unsigned int num_faces;
 			while (c.find("nb_vertices")>=c.npos) std::getline(f,c);
 			num_nodes=atoi(&c[14+c.find("nb_vertices")]);
-//			std::cout << "num_nodes = " << num_nodes << "\n";
+			//			std::cout << "num_nodes = " << num_nodes << "\n";
 			while (c.find("nb_edges")>=c.npos) std::getline(f,c);
 			num_edges=atoi(&c[14+c.find("nb_edges")]);
-//			std::cout << "num_edges = " << num_edges << "\n";
+			//			std::cout << "num_edges = " << num_edges << "\n";
 			while (c.find("nb_faces")>=c.npos) std::getline(f,c);
 			num_faces=atoi(&c[14+c.find("nb_faces")]);
-//			std::cout << "num_faces = " << num_faces << "\n";
+			//			std::cout << "num_faces = " << num_faces << "\n";
 			while (c.find("nb_elements")>=c.npos) std::getline(f,c);
 			num_elems=atoi(&c[14+c.find("nb_elements")]);
-//			std::cout << "num_elems = " << num_elems << "\n";
+			//			std::cout << "num_elems = " << num_elems << "\n";
 			Elements.resize(num_elems);
 			Materials.resize(num_elems);
 			while (c.find("nb_regions")>=c.npos) std::getline(f,c);
 			num_mater=atoi(&c[14+c.find("nb_regions")]);
-//			std::cout << "num_mater = " << num_mater << "\n";
+			//			std::cout << "num_mater = " << num_mater << "\n";
 
 			while (c.find("Vertices")>=c.npos) std::getline(f,c);
 			Nodes.resize(num_nodes);
 			for (int i=0;i<num_nodes;i++) {
-			    double coords[D];
+				double coords[D];
 
 				for (int j=0;j<D;j++) f>>coords[j];
 
 				for (int j=0;j<D;j++) {
-				    Nodes[i][j]=coords[InputTransformationDirections[j]];
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
 
-				    int shift_size=shift.size();
-				    if (shift_size>j) Nodes[i][j]+=shift[j];
-                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
-                    Nodes[i][j]*=scale;
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+					Nodes[i][j]*=scale;
 				}
 			}
 
@@ -378,12 +378,12 @@ namespace geometry {
 		}
 
 		void ReadDX(	const std::string& FileName,
-							double scale,//=1.,
-							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
-							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
-							bool change_input_parity,//=false,
-							std::vector<double> shift//=std::vector<double>()
-						) {
+			double scale,//=1.,
+			std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+			bool change_input_parity,//=false,
+			std::vector<double> shift//=std::vector<double>()
+		) {
 			std::ifstream f(FileName.c_str());
 
 			if (!f) msg::print_error("Failed reading geometry file!");
@@ -401,17 +401,17 @@ namespace geometry {
 
 			Nodes.resize(num_nodes);
 			for (int i=0;i<num_nodes;i++) {
-			    double coords[D];
+				double coords[D];
 
 				for (int j=0;j<D;j++) f>>coords[j];
 
 				for (int j=0;j<D;j++) {
-				    Nodes[i][j]=coords[InputTransformationDirections[j]];
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
 
-				    int shift_size=shift.size();
-				    if (shift_size>j) Nodes[i][j]+=shift[j];
-                    if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
-                    Nodes[i][j]*=scale;
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];
+					Nodes[i][j]*=scale;
 				}
 			}
 
@@ -442,12 +442,12 @@ namespace geometry {
 		}
 
 		void ReadVTK(	const std::string& FileName,
-							double scale,//=1.,
-							std::vector<int> InputTransformationDirections,//=std::vector<int>(),
-							std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
-							bool change_input_parity,//=false,
-							std::vector<double> shift//=std::vector<double>()
-						) {
+			double scale,//=1.,
+			std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+			bool change_input_parity,//=false,
+			std::vector<double> shift//=std::vector<double>()
+		) {
 			std::ifstream f(FileName.c_str());
 
 			if (!f) msg::print_error("Failed reading geometry file!");
@@ -513,86 +513,86 @@ namespace geometry {
 
 		}
 
-                void Read(std::string  const& FileName,
-              double              scale,//=1.,
-              std::vector<int>    InputTransformationDirections,//=std::vector<int>(),
-              std::vector<bool>   InputTransformationSigns,//=std::vector<bool>(),
-              bool                change_input_parity,//=false,
-              std::vector<int>    MapMaterials,//=std::vector<int>(),
-              std::vector<double> shift,//=std::vector<double>()
-              std::vector<int>    ignore_materials
-             )
-    {
+		void Read(std::string  const& FileName,
+			double              scale,//=1.,
+			std::vector<int>    InputTransformationDirections,//=std::vector<int>(),
+			std::vector<bool>   InputTransformationSigns,//=std::vector<bool>(),
+			bool                change_input_parity,//=false,
+			std::vector<int>    MapMaterials,//=std::vector<int>(),
+			std::vector<double> shift,//=std::vector<double>()
+			std::vector<int>    ignore_materials
+		)
+		{
 
 
-      // make sure that the material IDs to be ignored are sorted
-      std::sort(ignore_materials.begin(), ignore_materials.end());
+			// make sure that the material IDs to be ignored are sorted
+			std::sort(ignore_materials.begin(), ignore_materials.end());
 
-      //input transformation
-      while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());        //TODO test if directions are unique
-      while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
+			//input transformation
+			while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());        //TODO test if directions are unique
+			while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
 
-      if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
+			if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
 
-      for (int i=0;i<D;++i)
-        if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
+			for (int i=0;i<D;++i)
+			if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
 
-            //Check if the file is of format .tdr, .grd, .dx, or .vtk
-            std::string GeometryFile=FileName.c_str();
-#ifdef USE_HDF5
-            if (GeometryFile.find(".tdr") == (GeometryFile.size()-4)) {
-            	ReadTDR(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-            } else
-#endif
-	    if (FileName.substr(FileName.find_last_of(".") + 1) == "str") {
-		ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
-	    } else if (GeometryFile.find(".grd") == (GeometryFile.size()-4)) {
-            	ReadGRD(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-            } else if (GeometryFile.find(".dx") == (GeometryFile.size()-3)) {
-            	ReadDX(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-            } else if (GeometryFile.find(".vtk") == (GeometryFile.size()-4)) {
-            	ReadVTK(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
-            } else {
-#ifdef USE_HDF5
-            	msg::print_error("This software accepts only STR, TDR, GRD, DX and VTK geometry files!");
-#else
-            	msg::print_error("This software accepts only STR, GRD, DX and VTK geometry files!");
-#endif
-            }
-
-      //map materials - this is the same regardless of the input file format
-      if (!MapMaterials.empty()){
-		  std::vector<lvlset::vec<unsigned int, D+1> > oldElements;
-		  std::vector<int> oldMaterials;
-
-		  std::swap(oldElements, Elements);
-		  std::swap(oldMaterials, Materials);
-
-		  for (unsigned int a=0;a<oldElements.size();++a)
-		  {
-			bool add=true;
-			int mat=oldMaterials[a];
-			if (mat<static_cast<int>(MapMaterials.size()+1))
-			{
-			  mat=MapMaterials[mat-1];
-			  if (mat<=0) add=false;
+			//Check if the file is of format .tdr, .grd, .dx, or .vtk
+			std::string GeometryFile=FileName.c_str();
+			#ifdef USE_HDF5
+			if (GeometryFile.find(".tdr") == (GeometryFile.size()-4)) {
+				ReadTDR(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+			} else
+			#endif
+			if (FileName.substr(FileName.find_last_of(".") + 1) == "str") {
+				ReadSTR(FileName, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift, ignore_materials);
+			} else if (GeometryFile.find(".grd") == (GeometryFile.size()-4)) {
+				ReadGRD(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+			} else if (GeometryFile.find(".dx") == (GeometryFile.size()-3)) {
+				ReadDX(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+			} else if (GeometryFile.find(".vtk") == (GeometryFile.size()-4)) {
+				ReadVTK(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+			} else {
+				#ifdef USE_HDF5
+				msg::print_error("This software accepts only STR, TDR, GRD, DX and VTK geometry files!");
+				#else
+				msg::print_error("This software accepts only STR, GRD, DX and VTK geometry files!");
+				#endif
 			}
-			else
-			{
-			  assert(0);  //Material mapping failed
-			  mat=false;
-			}
-			if (add)
-			{
-			  Elements.push_back(oldElements[a]);
-			  Materials.push_back(mat);
-			}
-		  }
-	  }
-      //determine min and max of geometry (bounding box)
-      CalculateExtensions();
 
-    }
+			//map materials - this is the same regardless of the input file format
+			if (!MapMaterials.empty()){
+				std::vector<lvlset::vec<unsigned int, D+1> > oldElements;
+				std::vector<int> oldMaterials;
+
+				std::swap(oldElements, Elements);
+				std::swap(oldMaterials, Materials);
+
+				for (unsigned int a=0;a<oldElements.size();++a)
+				{
+					bool add=true;
+					int mat=oldMaterials[a];
+					if (mat<static_cast<int>(MapMaterials.size()+1))
+					{
+						mat=MapMaterials[mat-1];
+						if (mat<=0) add=false;
+					}
+					else
+					{
+						assert(0);  //Material mapping failed
+						mat=false;
+					}
+					if (add)
+					{
+						Elements.push_back(oldElements[a]);
+						Materials.push_back(mat);
+					}
+				}
+			}
+			//determine min and max of geometry (bounding box)
+			CalculateExtensions();
+
+		}
 
 		void WriteVTK(const std::string& FileName) const {
 			std::ofstream f(FileName.c_str());
@@ -696,9 +696,9 @@ namespace geometry {
 			}
 
 			if (D==2)
-				f << "attribute \"element type\" string \"lines\"" << std::endl;
+			f << "attribute \"element type\" string \"lines\"" << std::endl;
 			else if (D==3)
-				f << "attribute \"element type\" string \"triangles\"" << std::endl;
+			f << "attribute \"element type\" string \"triangles\"" << std::endl;
 			f << "attribute \"ref\" string \"positions\"" << std::endl;
 
 			//! print profile
@@ -741,23 +741,23 @@ namespace geometry {
 		}
 
 		void ReadVTK(	std::string FileName,
-						double scale,
-						std::vector<int> InputTransformationDirections,
-	                    std::vector<bool> InputTransformationSigns,
-	                    bool change_input_parity,
-	                    std::vector<double> shift
-	                    ) {
+			double scale,
+			std::vector<int> InputTransformationDirections,
+			std::vector<bool> InputTransformationSigns,
+			bool change_input_parity,
+			std::vector<double> shift
+		) {
 			//Assign desired transformation:
-//-------------------------------------------------------------------------------------------------------------------------
+			//-------------------------------------------------------------------------------------------------------------------------
 			while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());        //TODO test if directions are unique
-            while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
+			while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
 
-            if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
+			if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
 
-            for (int i=0;i<D;++i) {
-                if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
-            }
-//-------------------------------------------------------------------------------------------------------------------------
+			for (int i=0;i<D;++i) {
+				if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
+			}
+			//-------------------------------------------------------------------------------------------------------------------------
 			std::ifstream f(FileName.c_str());
 
 			std::string c;
@@ -777,10 +777,10 @@ namespace geometry {
 				for (int j=0;j<3;j++) f>>coords[j];
 
 				for (int j=0;j<D;j++) {
-						Nodes[i][j]=coords[InputTransformationDirections[j]];
-						int shift_size=shift.size();
-						if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
-						if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+					Nodes[i][j]=coords[InputTransformationDirections[j]];
+					int shift_size=shift.size();
+					if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
+					if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
 					Nodes[i][j]*=scale;//Scale the geometry according to parameters file
 				}
 			}
@@ -823,118 +823,156 @@ namespace geometry {
 
 
 	template <int D, class SurfacesType> void TransformGeometryToSurfaces(
-	        const geometry<D>& Geometry,
-	        SurfacesType &Surfaces,
-	        std::bitset<2*D> remove_flags,
-	        double eps,
-	        bool report_import_errors) {
+		const geometry<D>& Geometry,
+		SurfacesType &Surfaces,
+		std::bitset<2*D> remove_flags,
+		double eps,
+		bool report_import_errors) {
 
 
-		//determine maximum number of materials
-		unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
-		if (report_import_errors) assert(max_mat>=1);
+			//determine maximum number of materials
+			unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
+			if (report_import_errors) assert(max_mat>=1);
 
 
-		typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;
-		triangle_map Triangles;
+			typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;
+			triangle_map Triangles;
 
-		for (unsigned int i=0;i<Geometry.Elements.size();++i) {
+			for (unsigned int i=0;i<Geometry.Elements.size();++i) {
 
-			lvlset::vec<unsigned int,D> tmp;
+				lvlset::vec<unsigned int,D> tmp;
 
-			for (int j=0;j<D+1;j++) {
+				for (int j=0;j<D+1;j++) {
 
-				for (int k=0;k<D;k++) tmp[k]=Geometry.Elements[i][(j+k)%(D+1)];
+					for (int k=0;k<D;k++) tmp[k]=Geometry.Elements[i][(j+k)%(D+1)];
 
-				std::bitset<2*D> flags;
-				flags.set();
+					std::bitset<2*D> flags;
+					flags.set();
 
-				//if triangle at border skip
+					//if triangle at border skip
 
-				for (int k=0;k<D;k++) {
-					for (int l=0;l<D;l++) {
-						if (Geometry.Nodes[tmp[k]][l]<Geometry.Max[l]-eps) {
-							flags.reset(l+D);
+					for (int k=0;k<D;k++) {
+						for (int l=0;l<D;l++) {
+							if (Geometry.Nodes[tmp[k]][l]<Geometry.Max[l]-eps) {
+								flags.reset(l+D);
+							}
+							if (Geometry.Nodes[tmp[k]][l]>Geometry.Min[l]+eps) {
+								flags.reset(l);
+							}
 						}
-						if (Geometry.Nodes[tmp[k]][l]>Geometry.Min[l]+eps) {
-                            flags.reset(l);
-                        }
 					}
-				}
 
-				flags &=remove_flags;
+					flags &=remove_flags;
 
-				//if (is_open_boundary_negative) flags.reset(open_boundary_direction); else flags.reset(open_boundary_direction+D);
+					//if (is_open_boundary_negative) flags.reset(open_boundary_direction); else flags.reset(open_boundary_direction+D);
 
-				if (flags.any()) continue;
+					if (flags.any()) continue;
 
-				tmp.sort();
+					tmp.sort();
 
-				lvlset::vec<double,D> pts[D+1];
-				for (int k=0;k<D;k++) pts[k]=Geometry.Nodes[tmp[k]];
+					lvlset::vec<double,D> pts[D+1];
+					for (int k=0;k<D;k++) pts[k]=Geometry.Nodes[tmp[k]];
 
-				pts[D]=Geometry.Nodes[Geometry.Elements[i][(j+D)%(D+1)]];
+					pts[D]=Geometry.Nodes[Geometry.Elements[i][(j+D)%(D+1)]];
 
-				typename triangle_map::iterator it=Triangles.lower_bound(tmp);
-				if ((it!=Triangles.end()) && (it->first==tmp)) {
-					if (lvlset::Orientation(pts)) {
-						if (report_import_errors) assert(it->second.second==max_mat+1);
-						it->second.second=Geometry.Materials[i];
+					typename triangle_map::iterator it=Triangles.lower_bound(tmp);
+					if ((it!=Triangles.end()) && (it->first==tmp)) {
+						if (lvlset::Orientation(pts)) {
+							if (report_import_errors) assert(it->second.second==max_mat+1);
+							it->second.second=Geometry.Materials[i];
+						} else {
+							if (report_import_errors) assert(it->second.first==max_mat+1);
+							it->second.first=Geometry.Materials[i];
+						}
+
+						if (it->second.first==it->second.second) Triangles.erase(it);
+
 					} else {
-						if (report_import_errors) assert(it->second.first==max_mat+1);
-						it->second.first=Geometry.Materials[i];
-					}
-
-					if (it->second.first==it->second.second) Triangles.erase(it);
-
-				} else {
-					if (lvlset::Orientation(pts)) {
-						Triangles.insert(it,std::make_pair(tmp,std::make_pair(max_mat+1,Geometry.Materials[i])));
-					} else {
-						Triangles.insert(it,std::make_pair(tmp,std::make_pair(Geometry.Materials[i],max_mat+1)));
+						if (lvlset::Orientation(pts)) {
+							Triangles.insert(it,std::make_pair(tmp,std::make_pair(max_mat+1,Geometry.Materials[i])));
+						} else {
+							Triangles.insert(it,std::make_pair(tmp,std::make_pair(Geometry.Materials[i],max_mat+1)));
+						}
 					}
 				}
 			}
-		}
 
 
-		Surfaces.resize(max_mat);
+			Surfaces.resize(max_mat);
 
-		//for all materials/for each surface
-		typename SurfacesType::iterator srf_it=Surfaces.begin();
-		for (unsigned int m=0;m<max_mat;++m) {
+			//for all materials/for each surface
+			typename SurfacesType::iterator srf_it=Surfaces.begin();
+			for (unsigned int m=0;m<max_mat;++m) {
 
-			for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-				if ((m>=it->second.first-1) && (m<it->second.second-1)) {
-					srf_it->Elements.push_back(it->first);
-				} else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
-					srf_it->Elements.push_back(it->first);
-					std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
-				}
-			}
-
-			//replace Nodes of Geometry by Nodes of individual surface
-
-			const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
-			std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
-			unsigned int NodeCounter=0;
-
-			for (unsigned int k=0;k<srf_it->Elements.size();++k) {
-
-				for (int h=0;h<D;h++) {
-					unsigned int origin_node=srf_it->Elements[k][h];
-					if (NodeReplacements[origin_node]==undefined_node) {
-						NodeReplacements[origin_node]=NodeCounter++;
-						srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
-
+				for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
+					if ((m>=it->second.first-1) && (m<it->second.second-1)) {
+						srf_it->Elements.push_back(it->first);
+					} else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
+						srf_it->Elements.push_back(it->first);
+						std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
 					}
-					srf_it->Elements[k][h]=NodeReplacements[origin_node];
 				}
+
+				//replace Nodes of Geometry by Nodes of individual surface
+
+				const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
+				std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
+				unsigned int NodeCounter=0;
+
+				for (unsigned int k=0;k<srf_it->Elements.size();++k) {
+
+					for (int h=0;h<D;h++) {
+						unsigned int origin_node=srf_it->Elements[k][h];
+						if (NodeReplacements[origin_node]==undefined_node) {
+							NodeReplacements[origin_node]=NodeCounter++;
+							srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
+
+						}
+						srf_it->Elements[k][h]=NodeReplacements[origin_node];
+					}
+				}
+				++srf_it;
 			}
-			++srf_it;
+
+			// srf_it IS NOW ON THE LAST ELEMENT SO IT IS USED TO ASSIGN THE BORDER DO NOT ADD CODE BETWEEN THIS AND MATERIAL LOOP
+			// Make boundary surface to be used for volume exports
+			// const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
+			// std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
+			// unsigned int NodeCounter=0;
+			// std::cout << Geometry.Elements.size() << std::endl;
+			//
+			// for(unsigned int i=0; i<Geometry.Elements.size(); ++i){	//iterate through all elements(tetrahedrons)
+			//
+			// 	for(unsigned int j=0; j<D+1; ++j){
+			// 		bool bordernode=false;
+			// 		std::vector<unsigned int> elems;
+			// 		std::vector<lvlset::vec<double,D> > nodes;
+			// 		for(int k=0; k<D; ++k){
+			// 			elems.push_back(Geometry.Elements[i][(j+k)%(D+1)]);
+			// 			nodes.push_back(Geometry.Nodes[elems[k]]);
+			// 		}
+			//
+			// 		for(int a=0; a<D; ++a){
+			// 			double average=0;
+			// 			for(int k=0; k<D; ++k) average += nodes[k][a];
+			// 			if((average/D) >= Geometry.Max[a]-eps) bordernode=remove_flags[a+D];
+			// 			else if((average/D) <= Geometry.Min[a]+eps) bordernode=remove_flags[a];
+			// 		}
+			// 		if(bordernode){
+			// 			for(int k=0; k<D; ++k){
+			// 				unsigned int origin_node=elems[k];
+			// 				if(NodeReplacements[origin_node] == undefined_node){
+			// 					NodeReplacements[origin_node] = NodeCounter++;
+			// 					srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
+			// 				}
+			// 				elems[k] = NodeReplacements[origin_node];
+			// 			}
+			// 			srf_it->Elements.push_back(lvlset::vec<unsigned int, D>(&elems[0]));
+			// 		}
+			// 	}
+			// }
 		}
 	}
-}
 
 
-#endif /*GEOMETRY_H_*/
+	#endif /*GEOMETRY_H_*/

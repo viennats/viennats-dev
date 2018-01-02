@@ -1286,9 +1286,11 @@ namespace proc {
 
 
 	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
+		const std::vector<double> & OutputVolume=ProcessParameter.output_volume; //vector of times for volume output
 
 
 	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
+		std::vector<double>::const_iterator OutputVolumeIter = OutputVolume.begin();
 
 	    //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
 
@@ -1390,10 +1392,20 @@ namespace proc {
 		        }
 		    }
 
+			//VOLUME OUTPUT
+			bool VolumeOutput=false;
+			if(OutputVolumeIter!=OutputVolume.end()){
+				assert(RelativeTime<=*OutputVolumeIter);
+				if(RelativeTime==*OutputVolumeIter){
+					VolumeOutput=true;
+					OutputVolumeIter++;
+				}
+			}
+
 		    //if ((RelativeTime==EndTime) && (ProcessParameter.final_output)) MakeOutput=true;
 		    //if ((RelativeTime==StartTime) && (ProcessParameter.initial_output)) MakeOutput=true;
 
-		    if (!MakeOutput) if (RelativeTime==ProcessTime) break;
+		    if (!MakeOutput && !VolumeOutput) if (RelativeTime==ProcessTime) break;
 
 		    //###########################
         // smooth surface level set
@@ -1659,6 +1671,43 @@ namespace proc {
 
                 msg::print_done();
             }
+
+			if(VolumeOutput){
+				if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
+				else{
+					{
+						std::ostringstream oss;
+						oss << "Writing volume " << output_info.output_counter;
+						oss << " (time = " << RelativeTime << ")...";
+						msg::print_start(oss.str());
+					}
+					int counter=0;
+					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+						typename LevelSetsType::value_type LS(*it);
+						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						LS.invert();
+						for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
+							if(dummy_it!=it){
+								LS.min(*dummy_it);
+								//LS.thin_out();
+							}
+						}
+						LS.invert();
+						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+
+						//print surface
+						std::ostringstream oss;
+						oss << Parameter.OutputPath << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
+						write_explicit_hollow_surface_vtk(LS, oss.str());
+
+						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+
+						++counter;
+					}
+
+					msg::print_done();
+				}
+			}
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();

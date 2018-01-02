@@ -74,6 +74,7 @@ namespace lvlset {
 
         template<class V> vec<T,D>& operator=(const V&);
 
+        T size() const;      //TODO: remove
         void sort();
         void reverse_sort();
 
@@ -97,6 +98,7 @@ namespace lvlset {
     }
 
     template <class T, int D> inline  vec<T,D>::vec(const vec<T,D>& v) {
+        //std::cout << v << std::endl; //TODO: remove
         for (int i=0;i<D;i++) x[i]=v[i];
     }
 
@@ -204,6 +206,10 @@ namespace lvlset {
 
     template <class T,int D> template<class V> inline bool vec<T,D>::operator>=(const V& v) const {
         return !(*this<v);
+    }
+
+    template <class T, int D> inline T vec<T,D>::size() const{
+        return (sizeof(x)/sizeof(*x));        //TODO: remove
     }
 
     //###################################################################
@@ -420,6 +426,13 @@ namespace lvlset {
             if (v1[i]<v2[i]) return -1;
         }
         return 0;
+    }
+
+    template <class T, int D> bool any(const vec<T,D>& v1, const vec<T,D>& v2){
+        for(int i=0; i<D-1; ++i){
+            if(v1[i]==v2[i]) return true;
+        }
+        return false;
     }
 
     /*template <class T> inline const vec<T,3>& Normal(const vec<T,3>* v) {

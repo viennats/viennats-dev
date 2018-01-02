@@ -59,9 +59,8 @@ namespace lvlset {
     void extract(   const LevelSetType& l,                          //the level set function
                     SurfaceInserterType& srf,                       //the surface inserter type
                     typename LevelSetType::value_type eps,         //eps can be used to avoid degenerated triangles
-                    ActivePointListType& pt_lst                     //returns for each node of the surface mesh the nearest active grid point
-
-                                                                    //which can occur for the marching cubes algorithm
+                    ActivePointListType& pt_lst,                     //returns for each node of the surface mesh the nearest active grid point
+                    bool add_border = false                                                //which can occur for the marching cubes algorithm
                                                                     //the gridedge-surface intersection points are always set
                                                                     //at least a distance eps
                                                                     //away from both grid points of that grid edge
@@ -112,7 +111,6 @@ namespace lvlset {
     	};*/
 
 
-
     	const unsigned int corner0[12]   ={0,1,2,0,4,5,6,4,0,1,3,2};
     	const unsigned int corner1[12]   ={1,3,3,2,5,7,7,6,4,5,7,6};
     	const unsigned int direction[12] ={0,1,0,1,0,1,0,1,2,2,2,2};
@@ -140,12 +138,14 @@ namespace lvlset {
 //        index_type old_idx[D];
 //        for (int i=0;i<D;++i) old_idx[i]=l.grid().min_point_index(i);
 
-        for (typename LevelSetType::template const_iterator_cells_filtered<typename LevelSetType::filter_active> it_c(l);
+        //iterate over all active points
+        for (typename LevelSetType::template const_iterator_cells_filtered<typename LevelSetType::filter_all> it_c(l);
             !it_c.is_finished();it_c.next()) {
 
         	//assert(l.grid().is_cell_member(it_c.indices()));
 
         	//std::cout << "cell_index = " << it_c.indices() << std::endl;
+
 
         	for (int u=0;u<D;u++) {
 				while (!nodes[u].empty() && nodes[u].begin()->first < vec<index_type,D>(it_c.indices())) nodes[u].erase(nodes[u].begin());
@@ -153,7 +153,8 @@ namespace lvlset {
 
             unsigned int signs=0;
             for(int i=0;i<(1<<D);i++) {
-                if (it_c.corner(i).sign()==POS_SIGN) signs|=(1<<i);
+                if(it_c.corner(i).sign_p()==POS_SIGN) signs|=(1<<i);
+                if(add_border && it_c.corner(i).sign_n()==POS_SIGN) signs |=(1<<i);//this defaults to positive sign for negative undefined runs on border
             }
 
             if (signs==0) continue;
@@ -233,8 +234,14 @@ namespace lvlset {
                             if (z!=dir) {
                                 cc[z]=value_type(it_c.indices(z)+get_corner<D,index_type>(p0)[z]);
                             } else {
-                                value_type d0=it_c.corner(p0).value();
-                                value_type d1=it_c.corner(p1).value();
+                                value_type d0, d1;
+                                if(add_border){
+                                    d0=it_c.corner(p0).value_n();
+                                    d1=it_c.corner(p1).value_n();
+                                }else{
+                                    d0=it_c.corner(p0).value();
+                                    d1=it_c.corner(p1).value();
+                                }
 
                                 //calculate the surface-grid intersection point
                                 if (d0==-d1) { //includes case where d0=d1=0
@@ -280,6 +287,78 @@ namespace lvlset {
 
 		}
     }
+    template<class LevelSetType, class SurfaceInserterType, class ActivePointListType>
+    void extract_hollow(   const LevelSetType& l,                          //the level set function
+                    SurfaceInserterType& srf,                       //the surface inserter type
+                    typename LevelSetType::value_type eps,         //eps can be used to avoid degenerated triangles
+                    ActivePointListType& pt_lst                     //returns for each node of the surface mesh the nearest active grid point
+                                                                    //which can occur for the marching cubes algorithm
+                                                                    //the gridedge-surface intersection points are always set
+                                                                    //at least a distance eps
+                                                                    //away from both grid points of that grid edge
+                ) {
+
+        typedef typename LevelSetType::index_type index_type;
+        typedef typename LevelSetType::value_type value_type;
+        const int D=LevelSetType::dimensions;
+        LevelSetType LS(l.grid());
+
+
+        // Add borderpoints to levelset before extracting the surface
+        std::vector< std::pair< vec<index_type, D>, value_type> > points;
+
+        //read in all old active points
+        // for (typename LevelSetType::template const_iterator_cells_filtered<typename LevelSetType::filter_active> it(l);
+        //     !it.is_finished();it.next()) {
+        //     // Distance to local grid point as in surface2levelset
+        //     points.push_back(std::make_pair(it.indices(), l.value(l.pt_id(it.indices()))));
+        // }
+
+        // add points on simulation boundary
+        vec<index_type,D> unity[3]= {vec<index_type,D>(1,0,0), vec<index_type,D>(0,1,0), vec<index_type,D>(0,0,1)};
+        for(int i=0; i<D; ++i){
+            std::cout << i << std::endl;
+            if(l.grid().boundary_conditions(i)== INFINITE_BOUNDARY) continue;
+            vec<index_type,D> index;
+            int y=(i+1)%D, z=(i+2)%D;
+
+            for(int j=l.get_runbreak(y, 0); j<=l.get_runbreak(y); ++j){
+                //std::cout << j;
+                for(int k=l.get_runbreak(z, 0); k<=l.get_runbreak(z); ++k){
+                    //std::cout << " - " << k << std::endl;
+                    index[y] = j;
+                    index[z] = k;
+
+                    index[i] = l.grid().min_grid_index(i);
+                    if(l.grid().boundary_conditions(i) != POS_INFINITE_BOUNDARY && l.value(l.pt_id(index))==l.NEG_VALUE){
+                        points.push_back(std::make_pair(index, 0.5));
+                        points.push_back(std::make_pair(index+unity[i], -0.5));
+                    }
+
+                    index[i] = l.grid().max_grid_index(i);
+                    if(l.grid().boundary_conditions(i) != NEG_INFINITE_BOUNDARY && l.value(l.pt_id(index))==l.NEG_VALUE){
+                        points.push_back(std::make_pair(index, -0.5));
+                        points.push_back(std::make_pair(index-unity[i], -0.5));
+                    }
+                }
+            }
+            break;
+        }
+
+        std::cout << "Sorting:" << std::endl;
+
+        std::sort(points.begin(), points.end());
+        typename std::vector< std::pair< vec<index_type, D>, value_type> >::iterator it = std::unique(points.begin(), points.end());
+        points.resize(std::distance(points.begin(), it));
+
+        //put into levelset
+        LS.insert_points(points);
+        LS.thin_out();
+
+        // extract as usual
+        extract(LS, srf, eps, pt_lst);
+    }
+
 }
 
 #endif /*LEVELSET2SURFACE_HPP_*/

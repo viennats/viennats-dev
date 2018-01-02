@@ -158,6 +158,14 @@ namespace lvlset {
             return Max_[dim];
         }
 
+        inline const vec<index_type,D>& min_grid_index() const {
+            return Min_;
+        }
+
+        inline const vec<index_type,D>& max_grid_index() const {
+            return Max_;
+        }
+
         inline const vec<boundary_type,D> & boundary_conditions() const {
             return BoundaryConditions_;
         }
@@ -325,8 +333,8 @@ namespace lvlset {
             coord_type uc=std::ceil(c);
 
             if (lc!=uc) {
-                return (    grid_position_of_local_index(dir, static_cast<index_type>(lc))*((uc-c)/(uc-lc))+    //TODO
-                            grid_position_of_local_index(dir, static_cast<index_type>(uc))*((c-lc)/(uc-lc))        );
+                return (    grid_position_of_local_index(dir, static_cast<index_type>(lc))*((uc-c))+    //TODO
+                            grid_position_of_local_index(dir, static_cast<index_type>(uc))*((c-lc))        );
             } else {
                 return grid_position_of_local_index(dir,  static_cast<index_type>(lc));
             }

@@ -27,20 +27,19 @@
 //#define PROCESS_TiN_PEALD
 //#define PROCESS_TiO2_ALD
 //#define PROCESS_SF6_O2_PLASMA_ETCHING
-#define PROCESS_Cl2_CH4_PLASMA_ETCHING
+//#define PROCESS_Cl2_CH4_PLASMA_ETCHING
 //#define PROCESS_BCl3_PLASMA_ETCHING
 //#define PROCESS_SiO2_PLASMA_ETCHING
-#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
-#define PROCESS_Cl2_N2_ETCHING
+//#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
+//#define PROCESS_Cl2_N2_ETCHING
 //#define PROCESS_CFx_DEPOSITION
 //#define PROCESS_HfO2_DEPOSITION
-#define PROCESS_HBr_O2_PLASMA_ETCHING
-#define PROCESS_N2_PLASMA_ETCHING
+//#define PROCESS_HBr_O2_PLASMA_ETCHING
+//#define PROCESS_N2_PLASMA_ETCHING
 //#define PROCESS_NONLINEAR_DEPOSITION
 //#define PROCESS_TWOSPECIES_DEPOSITION
 //#define PROCESS_WET_ETCHING
 //#define PROCESS_FIB
-//#define VERBOSE
 
 //LS Processes
 #define PROCESS_PLANARIZATION
@@ -362,6 +361,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		}
 	}
 	msg::print_done();
+	std::cout << "Surface size: " << Surfaces.size() << std::endl;		//TODO: remove --------------------------------
+	std::cout << "Max: " << g.Max << "Min: " << g.Min << std::endl;
 
 	//Output of initial surfaces
 	int SurfaceCounter = 0;
@@ -477,7 +478,6 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 				for(int a=0; a<layer_order[i]; a++)	LSIter++;	//Advance iterator to corresponding levelset
 				temp_levelSets.push_back(*LSIter);			//push levelset to temporary list
 			}
-			std::cout  << std::endl;
 		}
 
 		//wrap new top levelset around lower layers
@@ -495,7 +495,7 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		std::swap(LevelSets, temp_levelSets);
 
-		std::cout << "AddLayer = " << pIter->AddLayer << "\n";
+		std::cout << std::endl << "AddLayer = " << pIter->AddLayer << "\n";
 		proc::AddLayer(LevelSets, pIter->AddLayer);
 		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
 		std::cout << "Active/Total Layers:" << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
