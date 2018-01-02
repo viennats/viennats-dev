@@ -282,6 +282,14 @@ namespace lvlset {
                 return runbreaks[dim][runbreak];
             }
 
+            index_type getMaxRunBreak(int dim) const{
+                return *std::max_element(runbreaks[dim].begin(), runbreaks[dim].end());
+            }
+
+            index_type getMinRunBreak(int dim) const{
+                return *std::min_element(runbreaks[dim].begin(), runbreaks[dim].end());
+            }
+
             unsigned long int used_memory() const {
                 //this function gives an estimation of the used memory of the level
                 //set function. however, the allocated memory is much higher because the
@@ -1024,7 +1032,17 @@ namespace lvlset {
             return sub_levelsets[0].getRunBreak(dim, runbreak);
         }
 
+        index_type get_max_runbreak(int dim) const{
+            index_type maxBreak = sub_levelsets[0].getMaxRunBreak(dim);
+            for(unsigned int i=1; i<number_of_segments(); ++i) maxBreak = std::max(maxBreak, sub_levelsets[i].getMaxRunBreak(dim));
+            return maxBreak;
+        }
 
+        index_type get_min_runbreak(int dim) const{
+            index_type minBreak = sub_levelsets[0].getMinRunBreak(dim);
+            for(unsigned int i=1; i<number_of_segments(); ++i) minBreak = std::min(minBreak, sub_levelsets[i].getMinRunBreak(dim));
+            return minBreak;
+        }
 
         const grid_type<GridTraitsType>& grid() const {
             //this function returns a constant reference to the grid,
@@ -2837,27 +2855,6 @@ namespace lvlset {
             }
         }
 
-        value_type value_n() const{
-            //returns the level set value for the current run
-            //if the run is undefined positive or negative and point is on grid border, POS_VALUE is returned, else NEG_VALUE
-            if (is_defined()) {
-                return value2();
-            } else if (current_run_code()==POS_PT) {
-                return POS_VALUE;
-            } else {
-                //assert(current_run_code()==NEG_PT);
-                if(abs_coords>=l.Grid.max_point_index()){
-                    std::cout << "Adding border point!" << std::endl;
-                    return 0.;             //TODO: add border checking
-                }
-                else if(abs_coords<=l.Grid.min_point_index()){
-                    std::cout << "Adding min border point!" << std::endl;
-                    return 0.;             //TODO: add border checking
-                }
-                return NEG_VALUE;
-            }
-        }
-
         bool is_active() const {
             //this function returns if a grid point is active or not
             return (active_pt_id()!=INACTIVE);
@@ -2883,10 +2880,6 @@ namespace lvlset {
 
         sign_type sign_p() const{
             return l.sign(value_p());
-        }
-
-        sign_type sign_n() const{
-            return l.sign(value_n());
         }
 
 

@@ -1684,7 +1684,7 @@ namespace proc {
 					int counter=0;
 					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
 						typename LevelSetsType::value_type LS(*it);
-						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
 						LS.invert();
 						for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
 							if(dummy_it!=it){
@@ -1693,14 +1693,15 @@ namespace proc {
 							}
 						}
 						LS.invert();
-						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						LS.thin_out();
+						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
 
 						//print surface
 						std::ostringstream oss;
 						oss << Parameter.OutputPath << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
 						write_explicit_hollow_surface_vtk(LS, oss.str());
 
-						std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
 
 						++counter;
 					}

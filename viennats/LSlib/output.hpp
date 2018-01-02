@@ -391,7 +391,7 @@ namespace lvlset {
         typename GetActivePointType<typename LevelSetTraitsType::size_type, DataType>::result ActivePointList;
         Surface<D> s;
 
-        extract(l, s, eps, ActivePointList, true);
+        extract_hollow(l, s, eps, ActivePointList);
 
         std::ofstream f(filename.c_str());
 
