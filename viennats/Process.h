@@ -1667,7 +1667,7 @@ namespace proc {
                     it++;
                 }
 
-                output_info.output_counter++;
+                if(!VolumeOutput) output_info.output_counter++;
 
                 msg::print_done();
             }
@@ -1681,16 +1681,14 @@ namespace proc {
 						oss << " (time = " << RelativeTime << ")...";
 						msg::print_start(oss.str());
 					}
+
 					int counter=0;
 					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
 						typename LevelSetsType::value_type LS(*it);
 						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
 						LS.invert();
 						for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
-							if(dummy_it!=it){
-								LS.min(*dummy_it);
-								//LS.thin_out();
-							}
+							LS.min(*dummy_it);
 						}
 						LS.invert();
 						LS.thin_out();
@@ -1705,8 +1703,9 @@ namespace proc {
 
 						++counter;
 					}
-
+					output_info.output_counter++;
 					msg::print_done();
+
 				}
 			}
 

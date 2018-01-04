@@ -346,7 +346,7 @@ namespace lvlset {
         //put into levelset
         LS.insert_points(points);
 
-        LS.max(l);          // Logic AND with original levelset
+        LS.max(l);          // Logic AND(intersect) with original levelset
         LS.thin_out();
 
         // extract as usual

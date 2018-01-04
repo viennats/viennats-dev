@@ -131,7 +131,7 @@ namespace model{
         							int Material) const {
             double new_probability = p.Probability*(1.-stickingCoeff);
             if(new_probability >= (1.-stickingCoeff)){
-                std::cout << p.Probability;
+                //std::cout << p.Probability;
                 particle_stack.push(p);
 				PT& p_new = particle_stack.top();
 				p_new.Probability=0.;

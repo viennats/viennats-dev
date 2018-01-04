@@ -74,7 +74,7 @@ namespace lvlset {
 
         template<class V> vec<T,D>& operator=(const V&);
 
-        T size() const;      //TODO: remove
+        T size() const;
         void sort();
         void reverse_sort();
 
@@ -98,7 +98,6 @@ namespace lvlset {
     }
 
     template <class T, int D> inline  vec<T,D>::vec(const vec<T,D>& v) {
-        //std::cout << v << std::endl; //TODO: remove
         for (int i=0;i<D;i++) x[i]=v[i];
     }
 
@@ -209,7 +208,7 @@ namespace lvlset {
     }
 
     template <class T, int D> inline T vec<T,D>::size() const{
-        return (sizeof(x)/sizeof(*x));        //TODO: remove
+        return (sizeof(x)/sizeof(*x));
     }
 
     //###################################################################
