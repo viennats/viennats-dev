@@ -379,64 +379,6 @@ namespace lvlset {
     }
 
     template <class GridTraitsType, class LevelSetTraitsType>
-    void write_explicit_hollow_surface_vtk(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, typename LevelSetTraitsType::value_type eps=0.){
-        write_explicit_hollow_surface_vtk(l, filename, DefaultDataType(), eps);
-    }
-
-    template <class GridTraitsType, class LevelSetTraitsType, class DataType>
-    void write_explicit_hollow_surface_vtk(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, const DataType& Data, typename LevelSetTraitsType::value_type eps=0.){
-
-        const int D=levelset<GridTraitsType, LevelSetTraitsType>::dimensions;
-
-        typename GetActivePointType<typename LevelSetTraitsType::size_type, DataType>::result ActivePointList;
-        Surface<D> s;
-
-        extract_hollow(l, s, eps, ActivePointList);
-
-        std::ofstream f(filename.c_str());
-
-        f << "# vtk DataFile Version 2.0" << std::endl;
-        f << D << "D Surface" << std::endl;
-        f << "ASCII" << std::endl;
-        f << "DATASET UNSTRUCTURED_GRID" << std::endl;
-        f << "POINTS " << s.Nodes.size() << " float" << std::endl;
-
-        //!print positions
-        for (unsigned int i=0;i<s.Nodes.size();i++) {
-            for (int j=0;j<D;j++) f << static_cast<float>(s.Nodes[i][j]) << " ";
-            if (D==2) f << "0. ";
-            f<< std::endl;
-        }
-        f << "CELLS " << s.Elements.size() << " " << ((D+1)*s.Elements.size()) << std::endl;
-        for (unsigned int i=0;i<s.Elements.size();i++) {
-            f << D << " ";
-            for (int j=0;j<D;j++) f<< s.Elements[i][j] << " ";
-            f << std::endl;
-        }
-
-        f << "CELL_TYPES " << s.Elements.size() << std::endl;
-        for (unsigned int i=0;i<s.Elements.size();i++) {
-            f<< ((D==3)?"5":"3") << std::endl;
-        }
-
-        //output data
-        f << "POINT_DATA " << s.Nodes.size() << std::endl;
-
-        for (int k=0;k<Data.number_of_series();++k) {
-            if (Data.get_series_output(k)) {
-                f << "SCALARS " << Data.get_series_label(k) << " " << Data.get_series_type(k) << " 1" << std::endl;
-                f << "LOOKUP_TABLE default" << std::endl;
-                for (unsigned int i=0;i<s.Nodes.size();i++) {
-                    f << Data.get_series_data(ActivePointList[i],k) << std::endl;
-                }
-            }
-        }
-
-
-        f.close();
-    }
-
-    template <class GridTraitsType, class LevelSetTraitsType>
     void write_levelset_opendx(const levelset<GridTraitsType, LevelSetTraitsType>& l, std::string FileName,  bool only_defined_grid_points, float limit, bool only_signs) {
         //this functions writes all defined grid points including their level set values
         //      to file using the OpenDX (Open Data Explorer)-file format

@@ -760,6 +760,11 @@ namespace par {
             std::vector<double>::iterator it=std::unique(pIter->output_times.begin(),pIter->output_times.end());
             pIter->output_times.resize(it-pIter->output_times.begin());
 
+			// Sort Volume Output
+			std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
+			it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
+			pIter->output_volume.resize(it-pIter->output_volume.begin());
+
 //            int this_size_here2 = pIter->output_times.size();
 //            msg::print_message("output_times.size() after: ", this_size_here2);
 		}

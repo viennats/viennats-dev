@@ -1681,6 +1681,23 @@ namespace proc {
 						oss << " (time = " << RelativeTime << ")...";
 						msg::print_start(oss.str());
 					}
+					//make box around whole simulation domain
+					typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
+
+					lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
+					for(int i=0; i<D; ++i){
+						for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+							if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
+								start[i] = std::min(start[i], it->get_min_runbreak(i));
+								end[i] = std::max(end[i], it->get_max_runbreak(i));
+							}else{
+								start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
+								end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
+							}
+						}
+					}
+					std::cout << start << ", " << end << std::endl;
+					lvlset::make_box(boundaryBox, start, end);
 
 					int counter=0;
 					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
@@ -1691,18 +1708,18 @@ namespace proc {
 							LS.min(*dummy_it);
 						}
 						LS.invert();
+						LS.max(boundaryBox);		// Logic AND(intersect) boundary with levelset
 						LS.thin_out();
-						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
 
 						//print surface
 						std::ostringstream oss;
 						oss << Parameter.OutputPath << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
-						write_explicit_hollow_surface_vtk(LS, oss.str());
-
-						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						lvlset::write_explicit_surface_vtk(LS, oss.str());
 
 						++counter;
+
 					}
+
 					output_info.output_counter++;
 					msg::print_done();
 

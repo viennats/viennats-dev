@@ -470,15 +470,15 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		if(!layer_order.empty()){
 			std::cout << "/";
-			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder Levelsets for next step
+			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder active Levelsets for next step
 				std::cout << layer_order[i] << ",";
 				if((unsigned int)layer_order[i]>LevelSets.size()) assert(0);
 				LSIter = LevelSets.begin();
 				for(int a=0; a<layer_order[i]; a++)	LSIter++;	//Advance iterator to corresponding levelset
 				temp_levelSets.push_back(*LSIter);			//push levelset to temporary list
 			}
+			std::cout << '\b' << " ";
 		}
-		std::cout << '\b' << " ";
 
 		//wrap new top levelset around lower layers
 		LSIter = temp_levelSets.begin();	//Advance iterator to first reassigned LS

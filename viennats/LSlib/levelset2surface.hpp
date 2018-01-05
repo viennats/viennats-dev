@@ -282,57 +282,43 @@ namespace lvlset {
 
 		}
     }
-    template<class LevelSetType, class SurfaceInserterType, class ActivePointListType>
-    void extract_hollow(   const LevelSetType& l,                          //the level set function
-                    SurfaceInserterType& srf,                       //the surface inserter type
-                    typename LevelSetType::value_type eps,         //eps can be used to avoid degenerated triangles
-                    ActivePointListType& pt_lst                     //returns for each node of the surface mesh the nearest active grid point
-                                                                    //which can occur for the marching cubes algorithm
-                                                                    //the gridedge-surface intersection points are always set
-                                                                    //at least a distance eps
-                                                                    //away from both grid points of that grid edge
-                ) {
+
+    ///
+    ///     This function takes an empty LevelSet and fills it with a box with lower corner at start and upper corner at end
+    ///
+    template <class LevelSetType>
+    void make_box(LevelSetType &LS,
+            vec<typename LevelSetType::index_type,LevelSetType::dimensions> start,
+            vec<typename LevelSetType::index_type,LevelSetType::dimensions> end){
 
         typedef typename LevelSetType::index_type index_type;
         typedef typename LevelSetType::value_type value_type;
         const int D=LevelSetType::dimensions;
-        LevelSetType LS(l.grid());
-
 
         // Add borderpoints to levelset before extracting the surface
         std::vector< std::pair< vec<index_type, D>, value_type> > points;
+        //points.reserve();      //TODO: resize to something useful to stop many reallocs
 
         // add points on simulation boundary
         vec<index_type,D> unity[3]= {vec<index_type,D>(1,0,0), vec<index_type,D>(0,1,0), vec<index_type,D>(0,0,1)};
 
         for(int i=0; i<D; ++i){
             vec<index_type,D> index;
-            int y=(i+1)%D, z=(i+2)%D;
+            int y=(i+1)%D, z=(i+2)%D;   //permutation of other dimensions
 
-            int jmin=l.grid().min_grid_index(y), jmax = l.grid().max_grid_index(y);
-            int kmin=l.grid().min_grid_index(z), kmax = l.grid().max_grid_index(z);
-
-            if(l.grid().boundary_conditions(y) == INFINITE_BOUNDARY){
-                jmin = l.get_min_runbreak(y);
-                jmax = l.get_max_runbreak(y);
-            }else if(l.grid().boundary_conditions(z) == INFINITE_BOUNDARY){
-                kmin = l.get_min_runbreak(z);
-                kmax = l.get_max_runbreak(z);
-            }
+            int jmin=start[y], jmax = end[y];
+            int kmin=start[z], kmax = end[z];
 
             for(int j=jmin+1; j<jmax; ++j){
                 for(int k=kmin+1; k<kmax; ++k){
                     index[y] = j;
                     index[z] = k;
 
-                    if(l.grid().boundary_conditions(i) == INFINITE_BOUNDARY) index[i] = l.get_min_runbreak(i);
-                    else index[i] = l.grid().min_grid_index(i);
+                    index[i] = start[i];
                     points.push_back(std::make_pair(index+unity[i], -1.));
                     points.push_back(std::make_pair(index, 0.));
 
-                    if(l.grid().boundary_conditions(i) == INFINITE_BOUNDARY) index[i] = l.get_max_runbreak(i);
-                    else index[i] = l.grid().max_grid_index(i);
-
+                    index[i] = end[i];
                     points.push_back(std::make_pair(index-unity[i], -1.));
                     points.push_back(std::make_pair(index, 0.));
                 }
@@ -340,17 +326,11 @@ namespace lvlset {
         }
 
         std::sort(points.begin(), points.end());
-        typename std::vector< std::pair< vec<index_type, D>, value_type> >::iterator it = std::unique(points.begin(), points.end());
-        points.resize(std::distance(points.begin(), it));
+        // typename std::vector< std::pair< vec<index_type, D>, value_type> >::iterator it = std::unique(points.begin(), points.end());
+        // points.resize(std::distance(points.begin(), it));
 
         //put into levelset
         LS.insert_points(points);
-
-        LS.max(l);          // Logic AND(intersect) with original levelset
-        LS.thin_out();
-
-        // extract as usual
-        extract(LS, srf, eps, pt_lst);
     }
 
 }
