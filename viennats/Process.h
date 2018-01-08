@@ -1696,7 +1696,7 @@ namespace proc {
 							}
 						}
 					}
-					std::cout << start << ", " << end << std::endl;
+
 					lvlset::make_box(boundaryBox, start, end);
 
 					int counter=0;
