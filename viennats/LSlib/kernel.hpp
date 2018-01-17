@@ -29,6 +29,8 @@
 #include "vector.hpp"
 #include "grid.hpp"
 #include "math.hpp"
+//Exporting the levelset to a file specfic for the levelset structure
+//#include "import_export.hpp"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -97,6 +99,16 @@ namespace lvlset {
 
         typedef vec<index_type,D> point_type;
         typedef std::vector<point_type> points_type;
+
+	//the method that exports the levelset
+	void exportLevelSet(std::string path)//;
+	{
+		std::ofstream fout(path);//, ios_base::out );//| ios_base::binary);
+		if(!fout.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return; }
+		fout << *this;
+		if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << "\n";
+		fout.close();
+	}
 
     private:
 
@@ -566,6 +578,71 @@ namespace lvlset {
                 }
             }
 
+	    //overloading the << operator
+	    friend std::ofstream & operator<<(std::ofstream & os, const sub_levelset_type & sub_lvlset){
+		os << "SUCCESSFUL sublvlset!\n";
+		os << "levelset data structure" << std::endl << std::endl;
+
+                for (int dim=D-1;dim>=0;--dim) {
+
+                    os <<  dim <<  " start_indices";
+
+                    int c=0;
+                    for (typename std::vector<size_type>::const_iterator it=sub_lvlset.start_indices[dim].begin();it!=sub_lvlset.start_indices[dim].end();++it) {
+                        if (c%10==0) os << std::endl;
+                        ++c;
+                        os << std::setw(6) << *it << " ";
+
+                    }
+                    os << std::endl;
+
+                    os << dim << " run_types";
+
+                    c=0;
+                    for (typename std::vector<size_type>::const_iterator it=sub_lvlset.runtypes[dim].begin();it!=sub_lvlset.runtypes[dim].end();++it) {
+                        if (c%10==0) std::cout << std::endl;
+                        ++c;
+                        if ((*it)==POS_PT) {
+                            os << std::setw(6) << "+oo" << " ";
+                        } else if ((*it)==NEG_PT) {
+                            os << std::setw(6) << "-oo" << " ";
+                        } else if ((*it)==UNDEF_PT) {
+                            os << std::setw(6) << "UND" << " ";
+                        } else if (!is_defined(*it)) {
+                            os << "S" << std::setw(5) << ((*it) - SEGMENT_PT) << " ";
+                        } else {
+                            os << std::setw(6) << (*it) << " ";
+                        }
+
+                    }
+                    os << std::endl;
+
+                    os << dim << " run_breaks";
+
+                    c=0;
+                    for (typename std::vector<index_type>::const_iterator it=sub_lvlset.runbreaks[dim].begin();it!=sub_lvlset.runbreaks[dim].end();++it) {
+                        if (c%10==0) os << std::endl;
+                        ++c;
+                        os << std::setw(6) << *it << " ";
+
+                    }
+                    os << std::endl;
+
+                }
+
+                os << "distances";
+
+                int c=0;
+                for (typename std::vector<value_type>::const_iterator it=sub_lvlset.distances.begin();it!=sub_lvlset.distances.end();++it) {
+                    if (c%10==0) os << std::endl;
+                    ++c;
+                    os.precision(3);
+                    os << std::setw(6) << *it << " ";
+
+                }
+		return os;	
+	    }
+
             //TODO
             void print() const {
 
@@ -647,6 +724,14 @@ namespace lvlset {
             const sub_levelsets_type& operator=(const sub_levelsets_type& s) {}
 
         public:
+
+	    //overloading the << operator
+	    friend std::ofstream & operator<<(std::ofstream & os, const sub_levelsets_type & sub_lvlsets){
+		for (typename sub_levelsets_type::size_type i=0;i!=sub_lvlsets.size();++i) {
+           	    os << *(sub_lvlsets.subs[i]);
+            	}
+		return os;	
+	    }
 
             typedef typename sub_levelsets_intern_type::size_type size_type;
 
@@ -953,6 +1038,13 @@ namespace lvlset {
                 std::cout << std::endl;
             }
         }
+
+	//overloading the << operator
+	friend std::ofstream & operator<<(std::ofstream & os, const levelset & ls)//;
+	{
+                os << ls.sub_levelsets;
+		return os;	
+	}
 
         void swap(levelset<GridTraitsType, LevelSetTraitsType>& l) {
             //this function swaps the level set function with another level set function "l"

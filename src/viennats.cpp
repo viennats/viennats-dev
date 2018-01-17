@@ -21,6 +21,7 @@
 #define DIMENSION_2
 
 //Processes
+/* Processes are not needed for testing file io
 #define PROCESS_CONSTANT_RATES
 #define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_TiN_ALD
@@ -40,6 +41,7 @@
 #define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
 #define PROCESS_FIB
+*/
 
 //LS Processes
 #define PROCESS_PLANARIZATION
@@ -441,6 +443,12 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		//put inactive layers to new levelset ordering
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
+		//print levelset
+		typedef typename LevelSetsType::iterator LevelSetsIteratorType;
+		//typename LevelSetsType::iterator exportIter = LevelSets.begin();
+		LevelSetsIteratorType exportIter = LevelSets.begin();
+		exportIter->exportLevelSet("./exportedLVLSET.txt");
+
 		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
 			if(!my::stat::AnyElement<int>(layer_order, i) && (pIter->MaskLayers.empty() || pIter->MaskLayers[0] != int(i+1))){	//neither mask nor active
@@ -450,7 +458,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 			++LSIter;
 		}
 		std::cout << '\b' << " ";
-
+	/*test*/	LevelSetsIteratorType temp_levelSets_iter = temp_levelSets.begin();
+			temp_levelSets_iter->exportLevelSet("./tmplvlset.txt");
 		//add mask layers on top of inactive
 		if(!pIter->MaskLayers.empty()){
 			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i) pIter->MaskLayers[i] -= 1;	//kernel numbering
