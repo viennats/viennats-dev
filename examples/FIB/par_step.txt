@@ -1,0 +1,50 @@
+geometry_file  =   "./FIB_step.dx";
+
+output_path = "./output_step/";
+
+cfl_condition = 0.1;
+
+omp_threads=2;
+
+input_scale=2e-9;
+grid_delta = 4e-9;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{EXTENDED,EXTENDED},
+	{INFINITE, INFINITE},
+	{EXTENDED,EXTENDED}
+};
+
+open_boundary="+y";
+
+default_disk_orientation={-1,1,0};
+
+processes = {
+    {
+	process_time= 200e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={2,-1,0};
+		position={300e-9,400e-9,300e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	
+	output_times={0.001};
+	output_times_periodicity=100;
+	output_times_period_length=0.001;
+	initial_output = true;
+	final_output=true;
+  }
+};

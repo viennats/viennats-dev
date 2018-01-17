@@ -1,0 +1,3831 @@
+geometry_file  =   "./Fib.dx";
+
+output_path = "./output_burst/";
+
+cfl_condition = 0.1;
+
+add_layer = 0;
+
+omp_threads=2;
+
+input_scale=2e-9;
+grid_delta = 4e-9;
+
+num_dimensions = 3;
+
+boundary_conditions = {
+	{EXTENDED,EXTENDED},
+	{INFINITE, INFINITE},
+	{EXTENDED,EXTENDED}
+};
+
+open_boundary="+y";
+
+default_disk_orientation={-1,1,0};
+
+processes = {
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={698.179e-9,1000e-9,433.002e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={692.738914788231e-9,1000e-9,465.604327361913e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={683.74517251019e-9,1000e-9,497.409840761405e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={671.307148209273e-9,1000e-9,528.032930648921e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={655.575822651498e-9,1000e-9,557.101874196363e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={636.742152818918e-9,1000e-9,584.2638138069e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={615.034753950535e-9,1000e-9,609.189040328199e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={590.71712446299e-9,1000e-9,631.574995274896e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={564.084447436728e-9,1000e-9,651.149943478759e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={535.460007493267e-9,1000e-9,667.676271585518e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={505.191266557826e-9,1000e-9,680.953372359116e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={473.64564614224e-9,1000e-9,690.820079781799e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={441.206067345522e-9,1000e-9,697.156625391251e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={408.266302710449e-9,1000e-9,699.886092107485e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={375.2261963583e-9,1000e-9,698.975347902001e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={342.486810422878e-9,1000e-9,694.435447975725e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={310.445556699492e-9,1000e-9,686.321500563852e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={279.491372604109e-9,1000e-9,674.731997996517e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={250e-9,1000e-9,659.807621135332e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={222.329424200506e-9,1000e-9,641.729531698294e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={196.815528512278e-9,1000e-9,620.71717320194e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={173.768017066931e-9,1000e-9,597.02560721432e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={153.466655432427e-9,1000e-9,570.94241725308e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={136.157874638053e-9,1000e-9,542.784217911122e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={122.051779835559e-9,1000e-9,512.892811584351e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={111.319599907225e-9,1000e-9,481.631039453601e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={104.091608979183e-9,1000e-9,449.37837708422e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={100.455545070005e-9,1000e-9,416.52632810676e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={100.455545070005e-9,1000e-9,383.47367189324e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={104.091608979183e-9,1000e-9,350.62162291578e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={111.319599907225e-9,1000e-9,318.368960546399e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={122.05177983556e-9,1000e-9,287.107188415649e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={136.157874638053e-9,1000e-9,257.215782088878e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={153.466655432427e-9,1000e-9,229.05758274692e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={173.768017066931e-9,1000e-9,202.974392785679e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={196.815528512278e-9,1000e-9,179.28282679806e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={222.329424200506e-9,1000e-9,158.270468301706e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={250.000000000001e-9,1000e-9,140.192378864668e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={279.49137260411e-9,1000e-9,125.268002003483e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={310.445556699492e-9,1000e-9,113.678499436148e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={342.486810422879e-9,1000e-9,105.564552024275e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={375.226196358301e-9,1000e-9,101.024652097999e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={408.26630271045e-9,1000e-9,100.113907892515e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={441.206067345523e-9,1000e-9,102.843374608749e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={473.645646142241e-9,1000e-9,109.179920218201e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={505.191266557827e-9,1000e-9,119.046627640884e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={535.460007493268e-9,1000e-9,132.323728414482e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={564.084447436729e-9,1000e-9,148.850056521242e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={590.717124462991e-9,1000e-9,168.425004725104e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={615.034753950536e-9,1000e-9,190.810959671802e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={636.742152818919e-9,1000e-9,215.736186193101e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={655.575822651499e-9,1000e-9,242.898125803637e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={671.307148209274e-9,1000e-9,271.96706935108e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={683.745172510191e-9,1000e-9,302.590159238596e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={692.738914788231e-9,1000e-9,334.395672638088e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 1e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={698.179203195385e-9,1000e-9,366.997533701777e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+
+
+
+
+
+
+
+
+
+
+
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={669.590009436995e-9,1000e-9,414.873695296084e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={665.600043363444e-9,1000e-9,448.544999385487e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={657.421405944275e-9,1000e-9,481.450719835203e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={645.183079177271e-9,1000e-9,513.071913776817e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={629.07806878637e-9,1000e-9,542.909896092284e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={609.360360406102e-9,1000e-9,570.494103976141e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={586.340914076413e-9,1000e-9,595.389517992053e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={560.382760217072e-9,1000e-9,617.203522589191e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={531.895274421091e-9,1000e-9,635.592097884002e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={501.327721357072e-9,1000e-9,650.265245059284e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={469.162169597005e-9,1000e-9,660.991559818771e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={435.905889106916e-9,1000e-9,667.601881771115e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={402.083351296472e-9,1000e-9,669.991962190313e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={368.227957791549e-9,1000e-9,668.12410808039e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={334.873628371952e-9,1000e-9,662.02777661646e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={302.546380737537e-9,1000e-9,651.799110587482e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={271.756034894862e-9,1000e-9,637.599422167042e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={242.988172991126e-9,1000e-9,619.652648924012e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={216.696481393639e-9,1000e-9,598.241822193319e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={193.295595784789e-9,1000e-9,573.704603502713e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={173.154562109638e-9,1000e-9,546.427959448768e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={156.591016500915e-9,1000e-9,516.842059002494e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={143.866175967451e-9,1000e-9,485.413489487687e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={135.18071884591e-9,1000e-9,452.637898220114e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={130.67161998354e-9,1000e-9,419.032175853254e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={130.409990563005e-9,1000e-9,385.126304703917e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={134.399956636556e-9,1000e-9,351.455000614514e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={142.578594055725e-9,1000e-9,318.549280164797e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={154.816920822729e-9,1000e-9,286.928086223183e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={170.92193121363e-9,1000e-9,257.090103907717e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={190.639639593898e-9,1000e-9,229.50589602386e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={213.659085923587e-9,1000e-9,204.610482007947e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={239.617239782927e-9,1000e-9,182.796477410809e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={268.104725578908e-9,1000e-9,164.407902115999e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={298.672278642927e-9,1000e-9,149.734754940716e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={330.837830402994e-9,1000e-9,139.008440181229e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={364.094110893084e-9,1000e-9,132.398118228885e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={397.916648703527e-9,1000e-9,130.008037809687e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={431.77204220845e-9,1000e-9,131.87589191961e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={465.126371628047e-9,1000e-9,137.97222338354e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={497.453619262462e-9,1000e-9,148.200889412518e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={528.243965105137e-9,1000e-9,162.400577832958e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={557.011827008873e-9,1000e-9,180.347351075987e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={583.30351860636e-9,1000e-9,201.75817780668e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={606.70440421521e-9,1000e-9,226.295396497286e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={626.845437890361e-9,1000e-9,253.572040551231e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={643.408983499085e-9,1000e-9,283.157940997506e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={656.133824032549e-9,1000e-9,314.586510512312e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={664.81928115409e-9,1000e-9,347.362101779885e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 2e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={669.32838001646e-9,1000e-9,380.967824146745e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+
+
+
+
+
+
+
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={638.543362556308e-9,1000e-9,426.401973038579e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={632.547430490512e-9,1000e-9,459.343850332283e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={622.025227209e-9,1000e-9,491.130667081899e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={607.181555429818e-9,1000e-9,521.143729056362e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={588.30533033972e-9,1000e-9,548.798866143694e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={565.763956188699e-9,1000e-9,573.557802557739e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={539.996175184169e-9,1000e-9,594.938633764073e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={511.50352787297e-9,1000e-9,612.525206203598e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={480.840591225105e-9,1000e-9,625.975217248209e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={448.604184423854e-9,1000e-9,635.026877732084e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={415.421752459233e-9,1000e-9,639.504007380015e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={381.939153624976e-9,1000e-9,639.319463956064e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={348.808088621501e-9,1000e-9,634.476839388064e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={316.673415943072e-9,1000e-9,625.070389854827e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={286.160600440727e-9,1000e-9,611.283201196839e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={257.863539360405e-9,1000e-9,593.383625358635e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={232.333002808605e-9,1000e-9,571.720057223438e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={210.065913638753e-9,1000e-9,546.714153503057e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={191.495675413102e-9,1000e-9,518.852625669615e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={176.983736695381e-9,1000e-9,488.677766670372e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={166.812555865645e-9,1000e-9,456.776895812354e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={161.180103389197e-9,1000e-9,423.770927260111e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={160.196008546673e-9,1000e-9,390.302284647779e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={163.879425624791e-9,1000e-9,357.02239703379e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={172.158661099949e-9,1000e-9,324.579019575239e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={184.872569071115e-9,1000e-9,293.603625710563e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={201.773687781486e-9,1000e-9,264.699116247349e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={222.533056180103e-9,1000e-9,238.428084583906e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={246.746616774517e-9,1000e-9,215.301866468707e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={273.943080150275e-9,1000e-9,195.770587431683e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={303.593098083287e-9,1000e-9,180.214401602786e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={335.119566700883e-9,1000e-9,168.936092444279e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={367.908859152247e-9,1000e-9,162.155179415045e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={401.32276915708e-9,1000e-9,160.003645274023e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={434.710932964899e-9,1000e-9,162.523367185935e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={467.423487945657e-9,1000e-9,169.665301629907e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={498.823721426633e-9,1000e-9,181.290438975816e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={528.300463580357e-9,1000e-9,197.172509148623e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={555.279983150104e-9,1000e-9,217.002385718001e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={579.237154476197e-9,1000e-9,240.394102692677e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={599.705678469652e-9,1000e-9,266.892366909422e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={616.287158593538e-9,1000e-9,295.981419796587e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={628.658855198397e-9,1000e-9,327.09507602803e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={636.579967282411e-9,1000e-9,359.627743676466e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 3e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={639.896319408998e-9,1000e-9,392.946211371478e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+
+
+
+
+
+
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={609.681118450996e-9,1000e-9,411.568429674732e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={604.917240351762e-9,1000e-9,445.923029153339e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={594.563754115108e-9,1000e-9,479.024968109045e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={578.903075856049e-9,1000e-9,509.971311937454e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={558.362388053148e-9,1000e-9,537.917925050024e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={533.501987124093e-9,1000e-9,562.102496692427e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={505e-9,1000e-9,581.865334794732e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={473.633886590478e-9,1000e-9,596.667360651382e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={440.259232703985e-9,1000e-9,606.104813583008e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={405.786411897314e-9,1000e-9,609.92026447524e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={371.155752858134e-9,1000e-9,608.009637773876e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={337.311889689644e-9,1000e-9,600.425050394697e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={305.177994754713e-9,1000e-9,587.373390109863e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={275.630596940354e-9,1000e-9,569.210672188805e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={249.475672234625e-9,1000e-9,546.432328229739e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={227.426658802699e-9,1000e-9,519.659692077156e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={210.084996253509e-9,1000e-9,489.623051454245e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={197.923719935057e-9,1000e-9,457.14172761752e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={191.274557763231e-9,1000e-9,423.101726408757e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={190.318881549004e-9,1000e-9,388.431570325269e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={195.082759648238e-9,1000e-9,354.076970846661e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={205.436245884891e-9,1000e-9,320.975031890955e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={221.096924143951e-9,1000e-9,290.028688062546e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={241.637611946851e-9,1000e-9,262.082074949976e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={266.498012875906e-9,1000e-9,237.897503307573e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={294.999999999999e-9,1000e-9,218.134665205268e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={326.366113409521e-9,1000e-9,203.332639348619e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={359.740767296014e-9,1000e-9,193.895186416992e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={394.213588102685e-9,1000e-9,190.07973552476e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={428.844247141865e-9,1000e-9,191.990362226124e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={462.688110310355e-9,1000e-9,199.574949605303e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={494.822005245286e-9,1000e-9,212.626609890137e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={524.369403059645e-9,1000e-9,230.789327811194e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={550.524327765374e-9,1000e-9,253.56767177026e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={572.573341197301e-9,1000e-9,280.340307922843e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={589.915003746491e-9,1000e-9,310.376948545754e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={602.076280064942e-9,1000e-9,342.858272382478e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  },
+    {
+	process_time= 4e-3;	//10ms
+        model_name="FIB";
+        parameters= {
+		FWHM = 50e-9;	//50nm
+		direction={0,-1,0};
+		position={608.725442236769e-9,1000e-9,376.898273591242e-9};
+		stop_criterion=0.001;
+		sticking_probability=1.0;
+		yield_0 = 2.5;
+		yield_max = 20;
+		angle_max=82;
+		current = 50e-12; //50pA
+		num_reemitted_particles = 1;
+		num_simulated_particles=10000;
+		target_density = 5e28; //atoms per m^3
+	};
+	print_velocities=true;
+	final_output=true;
+  }
+};
