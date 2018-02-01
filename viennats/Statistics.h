@@ -316,7 +316,7 @@ namespace my {
             theta = 2*my::math::Pi*RandomNumber();
 
 			for (int i=0;i<3;i++) {
-				if (Parameter.open_boundary_direction==i) {
+				if (Parameter.open_boundary==i) {
 					position[i]=center[i];
 				} else {
 					if (x==4) {
@@ -348,7 +348,7 @@ namespace my {
             theta = 2*my::math::Pi*RandomNumber();
 
 			for (int i=0;i<3;i++) {
-				if (Parameter.open_boundary_direction==i) {
+				if (Parameter.open_boundary==i) {
 					position[i]=center[i];
 				} else {
 					if (x==4) {
@@ -379,7 +379,7 @@ namespace my {
             theta = 2*my::math::Pi*RandomNumber();
 
 			for (int i=0;i<3;i++) {
-				if (Parameter.open_boundary_direction==i) {
+				if (Parameter.open_boundary==i) {
 					position[i]=center[i];
 				} else {
 					if (x==4) {
@@ -403,13 +403,13 @@ namespace my {
 
         	bool keep;
     		double d;
-    		for (int i=0;i<3;i++) d=(Parameter.open_boundary_direction==i)?(center[i]-(Partition.Max(i)-1)*Parameter.GridDelta):d;
+    		for (int i=0;i<3;i++) d=(Parameter.open_boundary==i)?(center[i]-(Partition.Max(i)-1)*Parameter.grid_delta):d;
 
             do {
-            	for (int i=0;i<3;i++) position[i]=(Parameter.open_boundary_direction==i)?center[i]:RandomNumber()*Partition.Extension(i)*Parameter.GridDelta;
+            	for (int i=0;i<3;i++) position[i]=(Parameter.open_boundary==i)?center[i]:RandomNumber()*Partition.Extension(i)*Parameter.grid_delta;
 
 	        	double PositionSumSquares=0;
-	        	for (int i=0;i<3;i++) PositionSumSquares+=(Parameter.open_boundary_direction!=i)?(position[i]-center[i])*(position[i]-center[i]):0;
+	        	for (int i=0;i<3;i++) PositionSumSquares+=(Parameter.open_boundary!=i)?(position[i]-center[i])*(position[i]-center[i]):0;
 
 	        	double scd;
 				scd = (d*1.6e-19)/(2*(my::math::Pi)*(PositionSumSquares+d*d)*sqrt(PositionSumSquares+d*d));
@@ -442,7 +442,7 @@ namespace my {
             do {
         		double scd=0;
         		double scd_max=0;
-        		for (int i=0;i<3;i++) position[i]=(Parameter.open_boundary_direction==i)?((Partition.Max(i)-1)*Parameter.GridDelta):RandomNumber()*Partition.Extension(i)*Parameter.GridDelta;
+        		for (int i=0;i<3;i++) position[i]=(Parameter.open_boundary==i)?((Partition.Max(i)-1)*Parameter.grid_delta):RandomNumber()*Partition.Extension(i)*Parameter.grid_delta;
 
 //        		position_max[0]=23;//25;
 //        		position_max[1]=43.7;
@@ -450,11 +450,11 @@ namespace my {
             	for (unsigned int i=0;i<charges.size();++i){
 
             		double PositionSumSquares=0;
-            		for (int j=0;j<3;j++) PositionSumSquares+=(Parameter.open_boundary_direction!=j)?(position[j]-positions[3*i+j])*(position[j]-positions[3*i+j]):0;
+            		for (int j=0;j<3;j++) PositionSumSquares+=(Parameter.open_boundary!=j)?(position[j]-positions[3*i+j])*(position[j]-positions[3*i+j]):0;
 
 
             		double PositionSumSquaresMax=0;
-            		for (int j=0;j<3;j++) PositionSumSquaresMax+=(Parameter.open_boundary_direction!=j)?(position_max[j]-positions[3*i+j])*(position_max[j]-positions[3*i+j]):0;
+            		for (int j=0;j<3;j++) PositionSumSquaresMax+=(Parameter.open_boundary!=j)?(position_max[j]-positions[3*i+j])*(position_max[j]-positions[3*i+j]):0;
 
             		scd 	+= (d*charges[i]*1.6e-19)/(2*(my::math::Pi)*(PositionSumSquares+d*d)*sqrt(PositionSumSquares+d*d));
             		scd_max += (d*charges[i]*1.6e-19)/(2*(my::math::Pi)*(PositionSumSquaresMax+d*d)*sqrt(PositionSumSquaresMax+d*d));
@@ -483,7 +483,7 @@ namespace my {
             int x=4, y=4;
 
 			for (int i=0;i<3;i++) {
-				if (Parameter.open_boundary_direction!=i) {
+				if (Parameter.open_boundary!=i) {
 					if (x==4) {
 						x=i;
 					} else {
@@ -571,17 +571,17 @@ namespace my {
     		int x=4;
     		int y=4;
 
-    		for (int i=0;i<3;i++) d=(Parameter.open_boundary_direction==i)?(StartPosition[i]-(Partition.Max(i)-1)*Parameter.GridDelta):d;
+    		for (int i=0;i<3;i++) d=(Parameter.open_boundary==i)?(StartPosition[i]-(Partition.Max(i)-1)*Parameter.grid_delta):d;
 
     		double scd_max;
 			scd_max = (1.6e-19)/(2*(my::math::Pi)*(d*d));
 
             do {
 	        	for (int i=0;i<3;i++) {
-	        		if (Parameter.open_boundary_direction==i){
+	        		if (Parameter.open_boundary==i){
 	        			position[i]=StartPosition[i];
 	        		} else {
-	        			position[i]=RandomNumber()*Partition.Extension(i)*Parameter.GridDelta;
+	        			position[i]=RandomNumber()*Partition.Extension(i)*Parameter.grid_delta;
 	        			if (x==4) {	//if x has not yet been assigned
 	        				x=i;
 	        			} else {	//x has been assigned, now assign y
@@ -663,10 +663,10 @@ namespace my {
 
             do {
 	        	for (int i=0;i<3;i++) {
-	        		if (Parameter.open_boundary_direction==i){
+	        		if (Parameter.open_boundary==i){
 	        			position[i]=StartPosition[i];
 	        		} else {
-	        			position[i]=RandomNumber()*Partition.Extension(i)*Parameter.GridDelta;
+	        			position[i]=RandomNumber()*Partition.Extension(i)*Parameter.grid_delta;
 	        			if (x==4) {	//if x has not yet been assigned
 	        				x=i;
 	        			} else {	//x has been assigned, now assign y
@@ -748,7 +748,7 @@ namespace my {
             int x=4, y=4;
 
 			for (int i=0;i<3;i++) {
-				if (Parameter.open_boundary_direction!=i) {
+				if (Parameter.open_boundary!=i) {
 					if (x==4) {
 						x=i;
 					} else {
@@ -833,7 +833,7 @@ namespace my {
 
 			//---FIND THE INITIAL AND THERMALDROPLET ELECTRICAL FORCES AND ACCELLERATIONS---
 
-			double H	    = StartPosition[Parameter.open_boundary_direction]; //270 mm or 0.27 m
+			double H	    = StartPosition[Parameter.open_boundary]; //270 mm or 0.27 m
 			double Phi_0    = 10e3;					//V
 			double R	    = 1e-3;					//outer radius of the nozzle (guess)
 			double K_V	    = 1-exp(-0.021*H/R);	//non-dimensional related to H/R ratio
@@ -1148,9 +1148,9 @@ namespace my {
 
 			r	= radius;
 
-			Position[0]=RandomNumber()*4*(Partition.Max(0)*Parameter.GridDelta)-2*(Partition.Max(0)*Parameter.GridDelta);
+			Position[0]=RandomNumber()*4*(Partition.Max(0)*Parameter.grid_delta)-2*(Partition.Max(0)*Parameter.grid_delta);
 			Position[1]=0;
-			Position[2]=RandomNumber()*4*(Partition.Max(2)*Parameter.GridDelta)-2*(Partition.Max(2)*Parameter.GridDelta);
+			Position[2]=RandomNumber()*4*(Partition.Max(2)*Parameter.grid_delta)-2*(Partition.Max(2)*Parameter.grid_delta);
 
 			double gamma_d = 0.022;
 			double permittivity = 8.854187817e-12;
@@ -1162,9 +1162,9 @@ namespace my {
 		template<class VecType1, class VecType2, class ParameterType, class PartitionType>
 		inline void EvenlyDistributed(const VecType1& StartPosition, VecType2& Position, const ParameterType& Parameter, const PartitionType& Partition){
 
-				Position[0]=RandomNumber()*(Partition.Max(0)*Parameter.GridDelta-Partition.Min(0)*Parameter.GridDelta)+Partition.Min(0)*Parameter.GridDelta;
+				Position[0]=RandomNumber()*(Partition.Max(0)*Parameter.grid_delta-Partition.Min(0)*Parameter.grid_delta)+Partition.Min(0)*Parameter.grid_delta;
 				Position[1]=0;
-				Position[2]=RandomNumber()*(Partition.Max(2)*Parameter.GridDelta-Partition.Min(2)*Parameter.GridDelta)+Partition.Min(2)*Parameter.GridDelta;
+				Position[2]=RandomNumber()*(Partition.Max(2)*Parameter.grid_delta-Partition.Min(2)*Parameter.grid_delta)+Partition.Min(2)*Parameter.grid_delta;
 		}
 
 

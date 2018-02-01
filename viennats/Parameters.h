@@ -1,741 +1,677 @@
-#ifndef DEF_PARAMETERS
-#define DEF_PARAMETERS
+#define BOOST_SPIRIT_QI_DEBUG
 
-/* =========================================================================
-   Copyright (c)    2008-2015, Institute for Microelectronics, TU Wien.
-                            -----------------
-                 ViennaTS - The Vienna Topography Simulator
-                            -----------------
-   Contact:         viennats@iue.tuwien.ac.at
-   License:         MIT (X11), see file LICENSE in the base directory
-============================================================================= */
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/phoenix_core.hpp>
+#include <boost/spirit/include/phoenix_operator.hpp>
+#include <boost/spirit/include/phoenix_object.hpp>
+#include <boost/fusion/include/adapt_struct.hpp>
+#include <boost/fusion/include/io.hpp>
 
+#include <boost/config/warning_disable.hpp>
+#include <boost/spirit/include/phoenix_fusion.hpp>
+#include <boost/spirit/include/phoenix_stl.hpp>
+#include <boost/variant/recursive_variant.hpp>
+#include <boost/filesystem.hpp>
 
-#include <string>
-#include <map>
+#include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <fstream>
-#include <algorithm>
-
-#include <boost/spirit/include/classic.hpp>
-#include <boost/spirit/include/classic_clear_actor.hpp>
-#include <boost/spirit/include/classic_push_back_actor.hpp>
-#include <boost/spirit/include/classic_increment_actor.hpp>
-#include <boost/spirit/include/classic_decrement_actor.hpp>
-#include <boost/spirit/include/classic_assign_actor.hpp>
-#include <boost/spirit/include/classic_if.hpp>
-
-#include "Partition/Partition.h"
+#include <string>
+#include <complex>
+#include <list>
+#include <vector>
 
 #include "boundaries.h"
+#include "Partition/Partition.h"
 
-#include "message.h"
 
-#include "parser_actors.h"
 
-//#include "sprng/sprng.h"
+namespace qi = boost::spirit::qi;
+//namespace phoenix = boost::phoenix;
 
-#define BOOST_SPIRIT_DEBUG
+// lazy function for error reporting
+struct ReportError {
+    // the result type must be explicit for Phoenix
+    template<typename, typename, typename, typename>
+    struct result { typedef void type; };
 
-///Namespace for all parameter related tasks(parameter grammar and parameter storage).
-namespace par {
 
-	///Holds all the information about the parameters given to the program.
-	///Includes a list of ProcessParameterType
-	class Parameters {
-	public:
+    // contract the string to the surrounding new-line characters
+    template<typename Iter>
+    void operator()(Iter first_iter, Iter last_iter,
+        Iter error_iter, const qi::info& what) const {
+            std::string first(first_iter, error_iter);
+            std::string last(error_iter, last_iter);
+            auto first_pos = first.rfind('\n');
+            auto last_pos = last.find('\n');
+            auto error_line = ((first_pos == std::string::npos) ? first
+            : std::string(first, first_pos + 1))
+            + std::string(last, 0, last_pos);
+            auto error_pos = (error_iter - first_iter) + 1;
+            if (first_pos != std::string::npos) {
+                error_pos -= (first_pos + 1);
+            }
+            std::cerr << "INPUT ERROR: Parsing error near " << what << std::endl << std::endl
+            << error_line << std::endl
+            << std::setw(error_pos) << '^' << "--- here"
+            << std::endl;
+        }
+    };
 
-		///Holds all the process specific information given to the program.
-	    class ProcessParameterType {
-        public:
+    const boost::phoenix::function<ReportError> report_error = ReportError();
 
-	    	//AFM wire only!
-	        double ProcessDistance;
-	        double AFMStartPosition[3];
-	        double AFMEndPosition[3];
+    //symbol table for true/false
+    struct boolean_ : qi::symbols<char, bool>{
+        boolean_(){
+            add
+            ("true", true)
+            ("false", false);
+        }
+    }boolean_symbols;
 
-            int AddLayer;                   //the number of level set layers which should be added to the geometry before the process is started
-			std::vector<int> ActiveLayers;	//Layers that are to be etched/deposited on
-			std::vector<int> MaskLayers;			//Layers that will be masks and stop etching
+    //symbol table for true/false
+    struct boundary_condition_ : qi::symbols<char, bnc::boundary_condition_type>{
+        boundary_condition_(){
+            add
+            ("INFINITE", bnc::INFINITE_BOUNDARY)
+            ("REFLECTIVE", bnc::REFLECTIVE_BOUNDARY)
+            ("PERIODIC", bnc::PERIODIC_BOUNDARY)
+            ("EXTENDED", bnc::EXTENDED_BOUNDARY);
+        }
+    }boundary_condition_symbols;
 
-            double ProcessTime;             //the process time in seconds
-            unsigned int ALDStep;
+    //symbol table for cartesian directions
+    struct cartesian_dir_ : qi::symbols<char, int>{
+        cartesian_dir_(){
+            add
+            ("-z", -3)
+            ("-y", -2)
+            ("-x", -1)
+            ("+x", 1)
+            ("x", 1)
+            ("+y", 2)
+            ("y", 2)
+            ("+z", 3)
+            ("z", 3);
+        }
+    }cartesian_dir_symbols;
 
-            std::string ModelName;          //the name of the used process model
 
-            std::string ModelParameters;    //the model parameters, which are passed to the model given by "ModelName"
+    namespace client{
+        //define shortcuts for namespace
+        namespace qi = boost::spirit::qi;
+        namespace ascii = boost::spirit::ascii;
 
-            int IterationCycles;            //the number of iterations (process calculation) before advancing to the next time step,
-                                            //may be necessary in case of an iterative problem, as is the case in the presence of coverages which themselves depend
-                                            //on the flux
+        //Define struct to keep input data
+        struct Parameters{
+            Parameters(std::string);
 
-     //       int Iterations;
+            struct ProcessParameterType{
+                double ProcessDistance;
+                double AFMStartPosition[3];
+                double AFMEndPosition[3];
+                int AddLayer;            //the number of level set layers added to the geometry before the process is started
+                std::vector<int> ActiveLayers;	//Layers that are to be etched/deposited on
+                std::vector<int> MaskLayers;			//Layers that will be masks and stop etching
+                double ProcessTime;             //the process time in seconds
+                unsigned int ALDStep;
+                std::string ModelName;          //the name of the used process model
+                std::string ModelParameters;    //the model parameters, which are passed to the model given by "ModelName"
+                int IterationCycles;            //the number of iterations (process calculation) before advancing to the next time step,
+                int StartIterationCycles;       //the number of iterations at the process simulation start, might be necessary to calculate initial values for coverages
+                double MaxTimeStep;             //maximal allowed time step
+                double smoothing_max_curvature;               //parameter for smoothing surface level set every time step
+                double smoothing_min_curvature;               //parameter for smoothing surface level set every time step
+                int smoothing_material_level;
+                int smoothing_max_iterations;
+                bool print_coverages;
+                bool print_rates;
+                bool print_velocities;
+                bool print_materials;
+                enum FiniteDifferenceSchemeType {ENGQUIST_OSHER_1ST_ORDER, ENGQUIST_OSHER_2ND_ORDER, LAX_FRIEDRICHS_1ST_ORDER, LAX_FRIEDRICHS_2ND_ORDER} ;
+                FiniteDifferenceSchemeType FiniteDifferenceScheme;
+                double LaxFriedrichsDissipationCoefficient;
+                partition::DataStructureType partition_data_structure;
+                partition::SplittingType partition_splitting_strategy;
+                partition::SurfaceAreaHeuristicLambdaType partition_surface_area_heuristic_lambda;
 
-     //       int TotalTime;
+                //Outputtimes
+                std::vector<double> output_times;
+                std::vector<double> output_volume;
+                int output_times_periodicity;
+                double output_times_period_length;
+                bool initial_output;
+                bool final_output;
+                bool MaskLayer;
+                bool GrowNewOxide;
 
-            int StartIterationCycles;       //the number of iterations at the process simulation start, might be necessary to calculate initial values for coverages
+                ProcessParameterType(){
+                    AddLayer=0;
+                    ActiveLayers.clear();
+                    MaskLayers.clear();
+                    ProcessTime=0;
+                    ALDStep=1;
+                    ModelName.clear();
+                    ModelParameters.clear();
+                    IterationCycles=0;
+                    StartIterationCycles=0;
+                    MaxTimeStep=std::numeric_limits<double>::max();
+                    print_coverages=false;
+                    print_rates=false;
+                    print_velocities=false;
+                    print_materials=false;
+                    FiniteDifferenceScheme=ENGQUIST_OSHER_1ST_ORDER;
 
-            double MaxTimeStep;             //maximal allowed time step
+                    output_times_periodicity=1;
+                    output_times_period_length=0;
+                    initial_output=false;
+                    final_output=false;
+                    MaskLayer=false;
 
-            double smoothing_max_curvature;               //parameter for smoothing surface level set every time step
-            double smoothing_min_curvature;               //parameter for smoothing surface level set every time step
-            int smoothing_material_level;
-            int smoothing_max_iterations;
+                    smoothing_max_curvature=std::numeric_limits<double>::max();
+                    smoothing_min_curvature=-std::numeric_limits<double>::max();
+                    smoothing_material_level=0;
+                    smoothing_max_iterations=100;
 
+                    partition_data_structure=partition::NEIGHBOR_LINKS_ARRAYS;
+                    partition_splitting_strategy=partition::SURFACE_AREA_HEURISTIC;
+                    partition_surface_area_heuristic_lambda=0.8;
+                }
+            };
+
+            // ADD CUSTOM PARAMETERS HERE AT END(ORDER IS IMPORTANT IN THE GRAMMAR DEFINITION)
+            std::vector<std::string> geometry_files;
+            std::string output_path;
+            bool surface_geometry;
+            bool report_import_errors;
+            double cfl_condition;
+            double input_scale;
+            double grid_delta;
+            std::vector<int> input_transformation;
+            std::vector<double> input_shift;
+            std::vector<double> default_disc_orientation;
+            std::vector<int> ignore_materials;
+            bool change_input_parity;
+            int num_dimensions;
+            int omp_threads;
+            double domain_extention;
+            double receptor_radius;
+            double further_tracking_distance;
+            bool print_vtk;
+            bool print_dx;
+            bool print_velocities;
             bool print_coverages;
             bool print_rates;
-            bool print_velocities;
             bool print_materials;
+            bool print_statistics;
+            int max_extended_starting_position;
+            int open_boundary;
+            bool remove_bottom;
+            double snap_to_boundary_eps;
+            int process_cycles;
+            std::vector<int> material_mapping;
+            int add_layer;
+            std::vector<bnc::boundary_condition_type> boundary_condition;
+            std::list<ProcessParameterType> process_parameters;
 
-            enum FiniteDifferenceSchemeType {ENGQUIST_OSHER_1ST_ORDER, ENGQUIST_OSHER_2ND_ORDER, LAX_FRIEDRICHS_1ST_ORDER, LAX_FRIEDRICHS_2ND_ORDER} ;
-            FiniteDifferenceSchemeType FiniteDifferenceScheme;
+            //Extra parameters deduced from parsed ones
+            std::vector<bool> input_transformation_signs;
+            bool open_boundary_negative;
+            std::vector<bnc::boundary_conditions_type> boundary_conditions;
 
-            double LaxFriedrichsDissipationCoefficient;
-
-            partition::DataStructureType partition_data_structure;
-            partition::SplittingType partition_splitting_strategy;
-            partition::SurfaceAreaHeuristicLambdaType partition_surface_area_heuristic_lambda;
-
-
-
-            //Outputtimes
-            std::vector<double> output_times;
-			std::vector<double> output_volume;
-            int output_times_periodicity;
-            double output_times_period_length;
-            bool initial_output;
-            bool final_output;
-            bool MaskLayer;
-            bool GrowNewOxide;
-
-            ProcessParameterType() {
-                clear();
+        private:
+            //error helper function
+            std::string make_error(std::string name){
+                std::ostringstream oss;
+                oss << "INPUT ERROR: Required parameter \"" << name << "\" not set!" << std::endl;
+                return oss.str();
             }
 
-            void clear() {
 
-            	//AFM wire only!
-//    	        ProcessDistance=0;
-//    	        AFMStartPosition[0]=0;AFMStartPosition[1]=0;AFMStartPosition[1]=0;
-//    	        AFMEndPosition[0]=0;AFMEndPosition[1]=0;AFMEndPosition[1]=0;
+            //ADD "REQUIRED" PARAMETERS TO BE ADDED HERE
+            bool validate(){
+                std::string error;
+                if(geometry_files.empty()) error+=make_error("geometry_file");
+                if(output_path.empty()) error+=make_error("output_path");
+                if(cfl_condition==-1.) error+=make_error("cfl_condition");
+                if(grid_delta==-1.) error+=make_error("grid_delta");
+                if(default_disc_orientation.empty()) error+=make_error("default_disc_orientation");
+                if(num_dimensions==-1) error+=make_error("num_dimensions");
+                if(open_boundary==0) error+=make_error("open_boundary");
+                if(boundary_condition.empty()) error+=make_error("boundary_conditions");
 
-                //default values
-                AddLayer=0;
-				ActiveLayers.clear();
-                MaskLayers.clear();
-                ProcessTime=0;
-                ALDStep=1;
-                ModelName.clear();
-                ModelParameters.clear();
-                IterationCycles=0;
-                StartIterationCycles=0;
-     //           Iterations=0;
-     //           TotalTime=0;
-                MaxTimeStep=std::numeric_limits<double>::max();
-                print_coverages=false;
-                print_rates=false;
-                print_velocities=false;
-                print_materials=false;
-                FiniteDifferenceScheme=ENGQUIST_OSHER_1ST_ORDER;
-
-                output_times_periodicity=1;
-                output_times_period_length=0;
-                initial_output=false;
-                final_output=false;
-                MaskLayer=false;
-
-                smoothing_max_curvature=std::numeric_limits<double>::max();
-                smoothing_min_curvature=-std::numeric_limits<double>::max();
-                smoothing_material_level=0;
-                smoothing_max_iterations=100;
-
-                partition_data_structure=partition::NEIGHBOR_LINKS_ARRAYS;
-                partition_splitting_strategy=partition::SURFACE_AREA_HEURISTIC;
-                partition_surface_area_heuristic_lambda=0.8;
-
+                //check if there are errors
+                if(error.compare("")){
+                    std::cerr << error << std::endl;
+                    return false;
+                }else return true;
             }
 
+            Parameters();   //make private so it cannot be called by mistake
+        };
+    }
+
+    // ADD STRUCT MEMBERS THAT SHOULD BE PARSED HERE SO THEY CAN BE ACCESSED BY THE PARSER
+    BOOST_FUSION_ADAPT_STRUCT(client::Parameters,
+        (std::vector<std::string>, geometry_files)
+        (std::string, output_path)
+        (bool, surface_geometry)
+        (bool, report_import_errors)
+        (double, cfl_condition)
+        (double, input_scale)
+        (double, grid_delta)
+        (std::vector<int>, input_transformation)
+        (std::vector<double>, input_shift)
+        (std::vector<double>, default_disc_orientation)
+        (std::vector<int>, ignore_materials)
+        (bool, change_input_parity)
+        (int, num_dimensions)
+        (int, omp_threads)
+        (double, domain_extention)
+        (double, receptor_radius)
+        (double, further_tracking_distance)
+        (bool, print_vtk)
+        (bool, print_dx)
+        (bool, print_velocities)
+        (bool, print_coverages)
+        (bool, print_rates)
+        (bool, print_materials)
+        (bool, print_statistics)
+        (int, max_extended_starting_position)
+        (int, open_boundary)
+        (bool, remove_bottom)
+        (double, snap_to_boundary_eps)
+        (int, process_cycles)
+        (std::vector<int>, material_mapping)
+        (int, add_layer=0)
+        (std::vector<bnc::boundary_condition_type>, boundary_condition)
+        (std::list<client::Parameters::ProcessParameterType>, process_parameters)
+    )
+
+    BOOST_FUSION_ADAPT_STRUCT(client::Parameters::ProcessParameterType,
+        (double, ProcessDistance)
+        (double, AFMStartPosition[3])
+        (double, AFMEndPosition[3])
+        (int, AddLayer)
+        (std::vector<int>, ActiveLayers)
+        (std::vector<int>, MaskLayers)
+        (double, ProcessTime)
+        (unsigned int, ALDStep)
+        (std::string, ModelName)
+        (std::string, ModelParameters)
+        (int, IterationCycles)
+        (int, StartIterationCycles)
+        (double, MaxTimeStep)
+        (double, smoothing_max_curvature)
+        (double, smoothing_min_curvature)
+        (int, smoothing_material_level)
+        (int, smoothing_max_iterations)
+        (bool, print_coverages)
+        (bool, print_rates)
+        (bool, print_velocities)
+        (bool, print_materials)
+        (client::Parameters::ProcessParameterType::FiniteDifferenceSchemeType, FiniteDifferenceScheme)
+        (double, LaxFriedrichsDissipationCoefficient)
+        (partition::DataStructureType, partition_data_structure)
+        (partition::SplittingType, partition_splitting_strategy)
+        (partition::SurfaceAreaHeuristicLambdaType, partition_surface_area_heuristic_lambda)
+        (std::vector<double>, output_times)
+        (std::vector<double>, output_volume)
+        (int, output_times_periodicity)
+        (double, output_times_period_length)
+        (bool, initial_output)
+        (bool, final_output)
+        (bool, MaskLayer)
+        (bool, GrowNewOxide)
+    )
+
+    namespace client{
+        template <typename Iterator>
+        struct skipper_grammar : qi::grammar<Iterator>{
+            skipper_grammar() : skipper_grammar::base_type(skip_on){
+                using ascii::char_;
+                using ascii::space;
+                using qi::eol;
+
+                skip_on = space | eol | ("/*" >> *(char_ - "*/") >> "*/") | ("//" >> *(char_ - eol) >> eol);
+            }
+            qi::rule<Iterator> skip_on;
         };
 
-
-		//dimension
-		int Dimensions;
-//		int Orientation;
-
-		//maximal time step for level set method (in grid units)
-		double TimeStepRatio;
-
-		//boundary conditions of simulation domain
-		std::vector<bnc::boundary_conditions_type> boundary_conditions;
-
-		//input geometry and output path
-		std::string InputFile;
-		std::vector<std::string> InputFiles;
-		std::string OutputPath;
-
-		bool surface_geometry;
-		bool report_import_errors;
-		//Outputtimes
-		//std::vector<double> OutputTimes;
-
-
-		//grid constant
-		double GridDelta;
-
-		//input transformations
-		double InputScale;
-		std::vector<int> MapMaterials;
-		std::vector<int> InputTransformationDirections;
-		std::vector<bool> InputTransformationSigns;
-		std::vector<double> InputShift;
-		bool change_input_parity;
-
-		std::vector<double> DefaultDiskOrientation;
-		std::vector<int> IgnoreMaterials;
-
-		bool remove_bottom;
-//		bool separate_materials;
-
-		double snap_to_boundary_eps;
-
-		int process_cycles;
-		int number_of_layers;
-
-		//maximum number of cores
-		int OpenMP_threads;
-
-		//domain extension in case of EXTENDED boundary conditions
-        double DomainExtension;
-
-
-        //disk properties
-        double ReceptorRadius;
-        double FurtherTrackingDistance;
-
-        //output file format
-        bool print_vtk;     //TODO
-        bool print_dx;      //TODO
-
-
-        bool print_coverages;
-        bool print_rates;
-        bool print_velocities;
-        bool print_materials;
-
-        bool PrintStatistics;
-
-        int open_boundary_direction;
-        bool is_open_boundary_negative;
-        int max_extended_starting_position;
-
-        int AddLayer;
-
-        //TODO
-
-		//static const bool PrintStatistics=true;
-
-		Parameters(const std::string& FileName);
-
-		std::string GetCompleteOutputFileName(const std::string& FileName) const {
-			std::ostringstream oss;
-			oss << par::Parameters::OutputPath<< FileName;
-			return oss.str();
-		}
-
-		std::list<ProcessParameterType> ProcessParameters;
-
-	};
-
-
-
-//	int Parameters::RNG_Seed;
-
-	Parameters::ProcessParameterType tmp_process;
-	bnc::boundary_conditions_type tmp_boundary_condition;
-
-	class tmp_counter_check_class {
-		int& z;
-	 public:
-
-		 tmp_counter_check_class(int& a) : z(a) {}
-
-		 void clear() {
-			 z=0;
-		 }
-
-		 bool operator()() const{
-			return (z>0);
-		 }
-
-		 void operator++() {
-			 ++z;
-		 }
-
-		 void operator--() {
-			 --z;
-		 }
-	 };
-
-	using namespace boost::spirit::classic;
-
-	///Defines grammar for Parameters File
-	struct par_grammar : public grammar<par_grammar>
-	{
-	private:
-		tmp_counter_check_class& tmp_counter_check;
-
-	public:
-		Parameters& par;
-
-		par_grammar(Parameters& p, tmp_counter_check_class& t2) :  tmp_counter_check(t2), par(p)  {}
-
-	    template <typename ScannerT> struct definition {
-
-	    	 rule<ScannerT> 	rule_all,
-								rule_comment,
-								rule_input_file,
-								rule_output_path,
-								//rule_output_times,
-								rule_surface_geometry,
-								rule_report_import_errors,
-								rule_CFL_condition,
-								rule_grid_delta,
-								rule_input_scale,
-								rule_input_transformation,
-								rule_input_shift,
-								rule_default_disk_orientation,
-								rule_ignore_materials,
-								rule_change_input_parity,
-//								rule_random_seed,
-								rule_dimensions,
-								rule_OpenMP_threads,
-								rule_Domain_Extension,
-								rule_boundary_condition2A,
-								rule_boundary_condition2B,
-                                rule_boundary_conditions2,
-                                rule_material_mapping,
-                                rule_ReceptorRadius,
-                                rule_FurtherTrackingDistance,
-                                rule_print_vtk,
-                                rule_print_dx,
-
-                                rule_print_velocities,
-                                rule_print_coverages,
-                                rule_print_rates,
-                                rule_print_materials,
-                                rule_print_statistics,
-                                rule_open_boundary,
-                                rule_max_extended_starting_position,
-                                rule_remove_bottom,
-//                                rule_separate_materials,
-                                rule_snap_to_boundary_eps,
-                                rule_processing_cycles,
-//                                rule_crystal_orientation,
-                                rule_add_layer,
-
-                                //AFM wire only!
-                                rule_process_distance,
-								rule_process_startPosition,
-								rule_process_endPosition,
-
-                                                                rule_ALD_step,
-								rule_process_time,
-								rule_process_top_mask,
-								rule_process_grow_new_oxide,
-								rule_process_smoothing_max_curvature,
-								rule_process_smoothing_min_curvature,
-								rule_process_smoothing_material_level,
-								rule_process_smoothing_max_iterations,
-								rule_process_partition_data_structure,
-								rule_process_partition_splitting_strategy,
-								rule_process_partition_surface_area_heuristic_lambda,
-								rule_process_MaxTimeStep,
-								rule_process,
-								rule_process_addlayer,
-								rule_process_active_layers,
-								rule_process_mask_layers,
-								rule_process_IterationCycles,
-								rule_process_StartIterationCycles,
-								rule_process_model_name,
-								rule_process_output_times_periodicity,
-                                rule_process_output_times_period_length,
-                                rule_process_initial_output,
-								rule_process_final_output,
-								rule_process_print_velocities,
-								rule_process_print_coverages,
-								rule_process_print_rates,
-								rule_process_print_materials,
-								rule_process_parameters,
-								rule_processes,
-								rule_process_finite_difference_scheme,
-								rule_process_lax_friedrichs_dissipation_coefficient,
-								rule_process_output_volume,
-								rule_process_output_times;
-
-	        definition(par_grammar const& self)	{
-
-	            using namespace parser_actors;
-
-
-	        	Parameters& p=self.par;
-
-	            rule_input_file = (str_p("GeometryFiles") | str_p("geometry_files") | str_p("GeometryFile") | str_p("geometry_file")) >>'=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.InputFile)]) >> '\"' >> ';';
-	            rule_output_path = (str_p("OutputPath") | str_p("output_path"))  >> '=' >> '\"' >> *((~ch_p('\"'))[push_back_a(p.OutputPath)]) >> '\"'  >> ';';
-	            rule_surface_geometry = (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.surface_geometry)]) >> ';');
-	            rule_report_import_errors = (str_p("report_import_errors")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.report_import_errors)]) >> ';');
-	            rule_CFL_condition   = (str_p("CFL-Condition") | str_p("cfl_condition"))  >> '='  >> real_p[assign_a(p.TimeStepRatio)]  >> ';';
-				rule_grid_delta   = (str_p("GridDelta") | str_p("grid_delta"))  >> '='  >> real_p[assign_a(p.GridDelta)]  >> ';';
-				rule_input_scale   = (str_p("InputScale") | str_p("input_scale"))  >> '='  >> real_p[assign_a(p.InputScale)]  >> ';';
-				rule_input_transformation = (str_p("input_transformation") >> '=' >> '{' >> (('\"' >> (((ch_p('+') | '-') >> (ch_p('x') | 'y' | 'z'))[assign_input_transformation(p.InputTransformationDirections, p.InputTransformationSigns)]) >> '\"') % ',') >> '}' >> ';');
-				rule_input_shift = (str_p("input_shift") >> '=' >> '{' >> (real_p[push_back_a(p.InputShift)] % ',') >> '}' >> ';');
-				rule_default_disk_orientation = (str_p("default_disk_orientation") >> '=' >> '{' >> (real_p[push_back_a(p.DefaultDiskOrientation)] % ',') >> '}' >> ';');
-				rule_ignore_materials = (str_p("ignore_materials") >> '=' >> '{' >> (int_p[push_back_a(p.IgnoreMaterials)] % ',') >> '}' >> ';');
-				rule_change_input_parity=(str_p("change_input_parity")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.change_input_parity)]) >> ';');
-//				rule_random_seed   = (str_p("RandomSeed") | str_p("random_seed"))  >> '='  >> int_p[assign_a(p.RNG_Seed)]  >> ';';
-				rule_dimensions   = (str_p("Dimensions") | str_p("num_dimensions"))  >> '='  >> int_p[assign_a(p.Dimensions)]  >> ';';
-				rule_OpenMP_threads = (str_p("OpenMP_threads") | str_p("omp_threads")) >> '=' >> int_p[assign_a(p.OpenMP_threads)] >> ';';
-				rule_Domain_Extension = (str_p("Domain_Extension") | str_p("domain_extension")) >> '=' >> real_p[assign_a(p.DomainExtension)] >> ';';
-				rule_ReceptorRadius = (str_p("ReceptorRadius") | str_p("receptor_radius")) >> '=' >> real_p[assign_a(p.ReceptorRadius)] >> ';';
-				rule_FurtherTrackingDistance = (str_p("FurtherTrackingDistance") | str_p("further_tracking_distance")) >> '=' >> real_p[assign_a(p.FurtherTrackingDistance)] >> ';';
-				rule_print_vtk = (str_p("print_vtk")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_vtk)]) >> ';');
-				rule_print_dx = (str_p("print_dx")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_dx)]) >> ';');
-				rule_print_velocities = (str_p("print_velocities")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_velocities)]) >> ';');
-                rule_print_coverages = (str_p("print_coverages")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_coverages)]) >> ';');
-                rule_print_rates = (str_p("print_rates")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_rates)]) >> ';');
-                rule_print_materials = (str_p("print_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_materials)]) >> ';');
-                rule_print_statistics = (str_p("print_statistics")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.PrintStatistics)]) >> ';');
-                rule_max_extended_starting_position = (str_p("max_extended_starting_position") >> '='  >>  int_p[assign_a(p.max_extended_starting_position)] >>  ';');
-                rule_open_boundary = (str_p("open_boundary") >> '=' >> '\"' >> (((ch_p('+') | '-') >> (ch_p('x') | 'y' | 'z'))[assign_dir(p.open_boundary_direction, p.is_open_boundary_negative)]) >> '\"' >> ';');
-                rule_remove_bottom = str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.remove_bottom)]) >> ';';
-//                rule_separate_materials = str_p("separate_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.separate_materials)]) >> ';';
-                rule_snap_to_boundary_eps  = str_p("snap_to_boundary_eps")  >> '='  >> real_p[assign_a(p.snap_to_boundary_eps)]  >> ';';
-                rule_processing_cycles = str_p("process_cycles")  >> '='  >> int_p[assign_a(p.process_cycles)]  >> ';';
-
-				rule_boundary_condition2A = (   (str_p("REFLECTIVE")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::REFLECTIVE_BOUNDARY)]) |
-                                                (str_p("SYMMETRIC")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::REFLECTIVE_BOUNDARY)]) |              //synonym for reflective
-                                                (str_p("INFINITE")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::INFINITE_BOUNDARY)]) |
-                                                (str_p("PERIODIC")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::PERIODIC_BOUNDARY)]) |
-                                                (str_p("EXTENDED")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.min, bnc::EXTENDED_BOUNDARY)])
-                                            );
-
-				rule_boundary_condition2B = (   (str_p("REFLECTIVE")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.max, bnc::REFLECTIVE_BOUNDARY)]) |
-                                                (str_p("SYMMETRIC")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.max, bnc::REFLECTIVE_BOUNDARY)]) |              //synonym for reflective
-                                                (str_p("INFINITE")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.max, bnc::INFINITE_BOUNDARY)]) |
-                                                (str_p("PERIODIC")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.max, bnc::PERIODIC_BOUNDARY)]) |
-                                                (str_p("EXTENDED")[assign_enum<bnc::boundary_condition_type>(tmp_boundary_condition.max, bnc::EXTENDED_BOUNDARY)])
-                                            );
-
-
-                rule_boundary_conditions2  = str_p("boundary_conditions")  >> '='  >>  '{' >>
-                            list_p( (ch_p('{') >> rule_boundary_condition2A >> ',' >>  rule_boundary_condition2B >> ch_p('}'))[push_back_a(p.boundary_conditions, tmp_boundary_condition)], ',')
-                            >> '}'  >> ';';
-                rule_material_mapping  = str_p("material_mapping")  >> '='  >>  '{' >> (int_p[push_back_a(p.MapMaterials)] % ',') >> '}'  >> ';';
-                rule_add_layer = str_p("add_layer")  >> '='  >>int_p[assign_a(p.AddLayer)]  >> ';';
-
-
-
-				rule_process_time = str_p("process_time")  >> '='  >> real_p[assign_a(tmp_process.ProcessTime)]  >> ';';
-
-                                //ALD only
-                                rule_ALD_step = str_p("ALD_step")  >> '='  >> int_p[assign_a(tmp_process.ALDStep)]  >> ';';
-
-				//AFM wire only
-//				rule_process_distance = str_p("process_distance")  >> '='  >> real_p[assign_a(tmp_process.ProcessDistance)]  >> ';';
-//				rule_process_startPosition = str_p("start_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMStartPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMStartPosition[2])] >> '}' >> ';';
-//				rule_process_endPosition = str_p("end_position")  >> '='  >> '{' >> real_p[assign_a(tmp_process.AFMEndPosition[0])]  >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[1])] >> "," >> real_p[assign_a(tmp_process.AFMEndPosition[2])] >> '}' >> ';';
-
-//				rule_process_top_mask = (str_p("mask_layer") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.MaskLayer)]) >> ';');
-//				rule_process_grow_new_oxide = (str_p("grow_new_oxide") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.GrowNewOxide)]) >> ';');
-				rule_process_smoothing_max_curvature = str_p("smoothing_max_curvature")  >> '='  >>real_p[assign_a(tmp_process.smoothing_max_curvature)]  >> ';';
-				rule_process_smoothing_min_curvature = str_p("smoothing_min_curvature")  >> '='  >>real_p[assign_a(tmp_process.smoothing_min_curvature)]  >> ';';
-				rule_process_smoothing_material_level = str_p("smoothing_material_level")  >> '='  >> int_p[assign_a(tmp_process.smoothing_material_level)]  >> ';';
-				rule_process_smoothing_max_iterations = str_p("smoothing_max_iterations")  >> '='  >> int_p[assign_a(tmp_process.smoothing_max_iterations)]  >> ';';
-				rule_process_addlayer = str_p("add_layer")  >> '='  >>int_p[assign_a(tmp_process.AddLayer)]  >> ';';
-				rule_process_active_layers = str_p("active_layers") >> '='  >>  '{' >> (int_p[push_back_a(tmp_process.ActiveLayers)] % ',') >> '}'  >> ';';
-				rule_process_mask_layers = str_p("mask_layers") >> '=' >> '{' >> (int_p[push_back_a(tmp_process.MaskLayers)] % ',') >> '}' >> ';';
-				rule_process_output_times_periodicity=str_p("output_times_periodicity") >> '=' >> int_p[assign_a(tmp_process.output_times_periodicity)]  >> ';';
-                rule_process_output_times_period_length=str_p("output_times_period_length") >> '=' >> real_p[assign_a(tmp_process.output_times_period_length)]  >> ';';
-                rule_process_initial_output = (str_p("initial_output")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.initial_output)]) >> ';');
-				rule_process_final_output = (str_p("final_output")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.final_output)]) >> ';');
-                rule_process_print_velocities = (str_p("print_velocities")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.print_velocities)]) >> ';');
-				rule_process_print_coverages = (str_p("print_coverages")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.print_coverages)]) >> ';');
-				rule_process_print_rates = (str_p("print_rates")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.print_rates)]) >> ';');
-				rule_process_print_materials = (str_p("print_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(tmp_process.print_materials)]) >> ';');
-
-				rule_process_MaxTimeStep = (str_p("MaxTimeStep") | str_p("max_time_step"))  >> '='  >> real_p[assign_a(tmp_process.MaxTimeStep)]  >> ';';
-				rule_process_IterationCycles = (str_p("IterationCycles") | str_p("iteration_cycles"))  >> '='  >>int_p[assign_a(tmp_process.IterationCycles)]  >> ';';
-				rule_process_StartIterationCycles = (str_p("StartIterationCycles") | str_p("start_iteration_cycles"))  >> '='  >>int_p[assign_a(tmp_process.StartIterationCycles)]  >> ';';
-//				rule_process_Iterations = (str_p("Iterations") | str_p("iterations")) >> '=' >> int_p[assign_a(tmp_process.Iterations)] >> ';';
-//				rule_process_TotalTime = (str_p("total_time") | str_p("Total_time")) >> '=' >> int_p[assign_a(tmp_process.TotalTime)] >> ';';
-				rule_process_model_name = str_p("model_name") >> '=' >>  '\"' >> *((~ch_p('\"'))[push_back_a(tmp_process.ModelName)]) >> '\"' >> ';';
-				rule_process_parameters=str_p("parameters") >>'=' 	>> ch_p('{')[clear_a(self.tmp_counter_check)]
-				                                                    >> *(	(ch_p('{')[push_back_a(tmp_process.ModelParameters)][increment_a(self.tmp_counter_check)]) |
-				                                                    		(if_p(self.tmp_counter_check)[ch_p('}')[push_back_a(tmp_process.ModelParameters)][decrement_a(self.tmp_counter_check)]].else_p[nothing_p]) |
-				                                                    		((~ch_p('}'))[push_back_a(tmp_process.ModelParameters)])
-
-				                                                    	)
-				                                                	>> '}' >> ';';
-				rule_process_output_volume = str_p("output_volume") >> '=' >> '{' >> (real_p[push_back_a(tmp_process.output_volume)] % ',' >> '}' >> ';');
-				rule_process_output_times  = str_p("output_times")  >> '='  >>  '{' >> (real_p[push_back_a(tmp_process.output_times)] % ',') >> '}'  >> ';';
-
-
-				typedef Parameters::ProcessParameterType::FiniteDifferenceSchemeType FiniteDifferenceSchemeType;
-
-				rule_process_finite_difference_scheme=str_p("finite_difference_scheme") >> '=' >> (
-				        str_p("ENGQUIST_OSHER_1ST_ORDER")[assign_enum<FiniteDifferenceSchemeType>(tmp_process.FiniteDifferenceScheme,tmp_process.ENGQUIST_OSHER_1ST_ORDER)] |
-				        str_p("ENGQUIST_OSHER_2ND_ORDER")[assign_enum<FiniteDifferenceSchemeType>(tmp_process.FiniteDifferenceScheme,tmp_process.ENGQUIST_OSHER_2ND_ORDER)] |
-				        str_p("LAX_FRIEDRICHS_1ST_ORDER")[assign_enum<FiniteDifferenceSchemeType>(tmp_process.FiniteDifferenceScheme,tmp_process.LAX_FRIEDRICHS_1ST_ORDER)] |
-				        str_p("LAX_FRIEDRICHS_2ND_ORDER")[assign_enum<FiniteDifferenceSchemeType>(tmp_process.FiniteDifferenceScheme,tmp_process.LAX_FRIEDRICHS_2ND_ORDER)]
-                                                                                                    ) >> ';';
-
-				rule_process_lax_friedrichs_dissipation_coefficient=str_p("dissipation_coefficient") >> '=' >> real_p[assign_a(tmp_process.LaxFriedrichsDissipationCoefficient)] >> ';';
-
-				rule_process_partition_data_structure=str_p("partition_data_structure") >> '=' >> (
-                        str_p("NEIGHBOR_LINKS_ARRAYS")[assign_enum<partition::DataStructureType>(tmp_process.partition_data_structure,partition::NEIGHBOR_LINKS_ARRAYS)] |
-                        str_p("FULL_GRID")[assign_enum<partition::DataStructureType>(tmp_process.partition_data_structure,partition::FULL_GRID)] |
-                        str_p("UP_DOWN_LINKED_TREE")[assign_enum<partition::DataStructureType>(tmp_process.partition_data_structure,partition::UP_DOWN_LINKED_TREE)]
-                                                                                                    ) >> ';';
-
-				rule_process_partition_splitting_strategy=str_p("partition_splitting_strategy") >> '=' >> (
-                        str_p("SPATIAL_MEDIAN")[assign_enum<partition::SplittingType>(tmp_process.partition_splitting_strategy,partition::SPATIAL_MEDIAN)] |
-                        str_p("OBJECT_MEDIAN")[assign_enum<partition::SplittingType>(tmp_process.partition_splitting_strategy,partition::OBJECT_MEDIAN)] |
-                        str_p("SURFACE_AREA_HEURISTIC")[assign_enum<partition::SplittingType>(tmp_process.partition_splitting_strategy,partition::SURFACE_AREA_HEURISTIC)]
-                                                                                                    ) >> ';';
-
-				rule_process_partition_surface_area_heuristic_lambda = str_p("partition_surface_area_heuristic_lambda")  >> '='  >>real_p[assign_a(tmp_process.partition_surface_area_heuristic_lambda)]  >> ';';
-
-
-				rule_process = ch_p('{') >> *(
-                                                rule_process_time |
-                                                rule_ALD_step |
-                                                rule_process_distance |
-                                                rule_process_startPosition |
-                                                rule_process_endPosition |
-                                                rule_process_top_mask |
-                                                rule_process_grow_new_oxide |
-                                                rule_process_smoothing_max_curvature |
-                                                rule_process_smoothing_min_curvature |
-                                                rule_process_smoothing_material_level |
-                                                rule_process_smoothing_max_iterations |
-                                                rule_process_partition_data_structure |
-                                                rule_process_partition_splitting_strategy |
-                                                rule_process_partition_surface_area_heuristic_lambda |
-                                                rule_process_IterationCycles |
-												rule_process_StartIterationCycles |
-									//			rule_process_Iterations |
-									//			rule_process_TotalTime |
-												rule_process_addlayer |
-												rule_process_active_layers |
-												rule_process_mask_layers |
-												rule_process_MaxTimeStep |
-												rule_process_model_name |
-												rule_process_initial_output |
-												rule_process_final_output |
-												rule_process_output_times_periodicity       |
-												rule_process_output_times_period_length     |
-												rule_process_output_volume |
-												rule_process_output_times |
-                                                rule_process_parameters |
-                                                rule_process_print_velocities |
-                                                rule_process_print_coverages |
-                                                rule_process_print_rates |
-                                                rule_process_print_materials |
-                                                rule_process_finite_difference_scheme |
-                                                rule_process_lax_friedrichs_dissipation_coefficient
-								) >> '}';
-
-
-				rule_processes = (str_p("Processes") | str_p("processes"))  >> '='  >> '{' >> list_p((rule_process[push_back_a(p.ProcessParameters, tmp_process)][clear_a(tmp_process)]) , ',') >> '}'  >> ';';
-
-				rule_all=*(
-                                rule_comment                        |
-                                rule_input_file                     |
-                                rule_output_path                    |
-								rule_surface_geometry				|
-								rule_report_import_errors			|
-                                rule_CFL_condition                  |
-                                rule_grid_delta                     |
-                                rule_input_scale                    |
-                                rule_input_transformation           |
-                                rule_input_shift					|
-                                rule_default_disk_orientation		|
-                                rule_ignore_materials				|
-                                rule_change_input_parity            |
-//                                rule_random_seed                    |
-                                rule_dimensions                     |
-                                rule_OpenMP_threads                 |
-                                rule_Domain_Extension               |
-                                rule_boundary_conditions2           |
-                                rule_material_mapping				|
-                                rule_processes                      |
-                                rule_ReceptorRadius                 |
-                                rule_FurtherTrackingDistance        |
-                                rule_print_vtk						|
-                                rule_print_dx						|
-                                rule_print_velocities               |
-                                rule_print_coverages                |
-                                rule_print_rates                    |
-                                rule_print_materials                |
-                                rule_print_statistics               |
-                                rule_max_extended_starting_position |
-                                rule_open_boundary                  |
-                                rule_snap_to_boundary_eps           |
-                                rule_remove_bottom                  |
-                                rule_processing_cycles				|
-//                                rule_crystal_orientation			|
-                                rule_add_layer
-                                //anychar_p
-                            )>>end_p;
-
+        template <typename Iterator, typename Skipper>
+        struct par_grammar : qi::grammar<Iterator, Parameters(), Skipper>{
+
+            par_grammar() : par_grammar::base_type(definition, "Definition"){
+                using qi::lit;
+                using qi::lexeme;
+                using ascii::char_;
+                using qi::int_;
+                using qi::double_;
+                using qi::on_error;
+                using qi::fail;
+                using qi::_val;
+                using qi::_1;
+
+                using boost::phoenix::val;
+                using boost::phoenix::construct;
+                using namespace qi::labels;
+
+                //Define names for error parsing
+                definition.name("Parameter File");
+                quotes.name("name");
+                listed.name("list");
+                boolean.name("boolean argument");
+                process_distance.name("process_distance");
+
+                //define rules to be used for parsing ----------------------------------
+                quotes %= '"' >> lexeme[+(char_ - '"') > '"'];
+                listed %= '"' >> +(lexeme[+(char_ - '"' - ',')] % ',') >> '"';
+                boolean %= boolean_symbols[_val=_1];
+                intvec %= '{' >> +(lexeme[int_] % ',') > '}';
+                doublevec %= '{' >> +(lexeme[double_] % ',') > '}';
+                boundaryvec %= (('{' > +(lexeme[boundary_condition_symbols] % ',') > '}') % ',');
+                model_param_end = lit(';') >> lit('}') >> lit(';');
+
+
+
+                //ADD CUSTOM RULES HERE
+                //rules have to be in the same order in which the variables are declared in the struct
+                geometry_file %= (lit("geometry_files") | lit("GeometryFiles") | lit("geometry_file") | lit("GeometryFile")) > "=" > listed > ";";
+                output_path %= (lit("output_path") | lit("OutputPath")) > "=" > quotes > ";";
+                surface_geometry %= lit("surface_geometry") > "=" > boolean > ";";
+                report_import_errors %= lit("report_import_errors") > "=" > boolean > ";";
+                cfl_condition %= lit("cfl_condition") > "=" > lexeme[double_] > ";";
+                input_scale %= lit("input_scale") > "=" > lexeme[double_] > ";";
+                grid_delta %= lit("grid_delta") > "=" > lexeme[double_] > ";";
+                input_transformation %= lit("input_transformation") > '=' > intvec > ';';
+                input_shift %= lit("input_shift") > '=' > doublevec > ';';
+                default_disc_orientation %= lit("default_disc_orientation") > '=' > doublevec > ';';
+                ignore_materials %= lit("ignore_materials") > '=' > intvec > ';';
+                change_input_parity %= lit("change_input_parity") > '=' > boolean > ';';
+                num_dimensions %= lit("num_dimensions") > '=' > lexeme[int_] > ';';
+                omp_threads %= lit("omp_threads") > '=' > lexeme[int_] > ';';
+                domain_extension %= lit("domain_extension") > '=' > lexeme[int_] > ';';
+                receptor_radius %= lit("receptor_radius") > '=' > lexeme[double_] > ';';
+                further_tracking_distance %= lit("further_tracking_distance") > '=' > lexeme[double_] > ';';
+                print_vtk %= lit("print_vtk") > '=' > boolean > ';';
+                print_dx %= lit("print_dx") > '=' > boolean > ';';
+                print_velocities %= lit("print_velocities") > '=' > boolean > ';';
+                print_coverages %= lit("print_coverages") > '=' > boolean > ';';
+                print_rates %= lit("print_rates") > '=' > boolean > ';';
+                print_materials %= lit("print_materials") > '=' > boolean > ';';
+                print_statistics %= lit("print_statistics") > '=' > boolean > ';';
+                max_extended_starting_position %= lit("max_extended_starting_postion") > '=' > lexeme[int_] > ';';
+                open_boundary %= lit("open_boundary") > '=' > '"' > lexeme[cartesian_dir_symbols] > '"' > ';';
+                remove_bottom %= lit("remove_bottom") > '=' > boolean > ';';
+                snap_to_boundary_eps %= lit("snap_to_boundary_eps") > '=' > lexeme[double_] > ';';
+                process_cycles %= lit("process_cycles") > '=' > lexeme[int_] > ';';
+                material_mapping %= lit("material_mapping") > '=' > doublevec > ';';
+                add_layer %= lit("add_layer") > '=' > lexeme[int_] > ';';
+                boundary_conditions %= lit("boundary_conditions") > '=' > '{' > boundaryvec > '}' > ';';
+
+                // PROCESS PARSING
+                process_distance %= lit("process_distance") > '=' > lexeme[double_] > ';';
+                afm_start_position %= lit("afm_start_position") > '=' > lexeme[double_] > ';';
+                afm_end_position %= lit("afm_end_position") > '=' > lexeme[double_] > ';';
+                active_layers %= lit("active_layers") > '=' > intvec > ';';
+                mask_layers %= lit("mask_layers") > '=' > intvec > ';';
+                process_time %= lit("process_time") > '=' > lexeme[double_] > ';';
+                ald_step %= lit("ald_step") > '=' > lexeme[int_] > ';';
+                model_name %= lit("model_name") > '=' > quotes > ';';
+                model_parameters %= lit("parameters") > '=' > '{' > +(char_ - (lit(';') >> lit('}') >> lit(';'))) > model_param_end;    //do not use lexeme to allow skipping for end detection
+                iteration_cycles %= lit("iteration_cycles") > '=' > lexeme[int_] > ';';
+                start_iteration_cycles %= lit("start_iteration_cycles") > '=' > lexeme[int_] > ';';
+                max_time_step %= lit("max_time_step") > '=' > lexeme[double_] > ';';
+                smoothing_max_curvature %= lit("smoothing_max_curvature") > '=' > lexeme[double_] > ';';
+                smoothing_min_curvature %= lit("smoothing_min_curvature") > '=' > lexeme[double_] > ';';
+                smoothing_material_level %= lit("smoothing_material_level") > '=' > lexeme[int_] > ';';
+                smoothing_max_iterations %= lit("smoothing_max_iterations") > '=' > lexeme[int_] > ';';
+                finite_difference_scheme %= lit("finite_difference_scheme") > '=' > lexeme[int_] > ';';
+                dissipation_coefficient %= lit("dissipation_coefficient") > '=' > lexeme[double_] > ';';
+                partition_data_structure %= lit("partition_data_structure") > '=' > lexeme[int_] > ';';
+                partition_splitting_strategy %= lit("partition_splitting_strategy") > '=' > lexeme[int_] > ';';
+                partition_surface_area_heuristic_lambda %= lit("partition_surface_area_heuristic_lambda") > '=' > lexeme[double_] > ';';
+                output_times %= lit("output_times") > '=' > doublevec > ';';
+                output_volume %= lit("output_volume") > '=' > doublevec > ';';
+                output_times_periodicity %= lit("output_times_periodicity") > '=' > lexeme[int_] > ';';
+                output_times_period_length %= lit("output_times_period_length") > '=' > lexeme[double_] > ';';
+                initial_output %= lit("initial_output") > '=' > boolean > ';';
+                final_output %= lit("final_output") > '=' > boolean > ';';
+                mask_layer %= lit("mask_layer") > '=' > boolean > ';';
+                grow_new_oxide %= lit("grow_new_oxide") > '=' > boolean > ';';
+
+                // PROCESS PARAMETERS
+                //ORDER OF RULES MUST MATCH VARIABLE DECLARATION IN STRUCT
+                process_params %= process_distance ^ afm_start_position ^ afm_end_position ^ add_layer ^ active_layers ^
+                mask_layers ^ process_time ^ ald_step ^ model_name ^ model_parameters ^ iteration_cycles ^
+                start_iteration_cycles ^ max_time_step ^ smoothing_max_curvature ^ smoothing_min_curvature ^
+                smoothing_material_level ^ smoothing_max_iterations ^ print_coverages ^ print_rates ^
+                print_velocities ^ print_materials ^ finite_difference_scheme ^ dissipation_coefficient ^
+                partition_data_structure ^ partition_splitting_strategy ^ partition_surface_area_heuristic_lambda ^
+                output_times ^ output_volume ^ output_times_periodicity ^ output_times_period_length ^
+                initial_output ^ final_output ^ mask_layer ^ grow_new_oxide;
+
+                process %= lit('{') > process_params > lit('}');
+                processes %= lit("processes") > lit('=') > lit('{') > (process % ',') > lit('}') > lit(';');
+
+                //ORDER OF RULES MUST MATCH VARIABLE DECLARATION IN STRUCT
+                definition %= geometry_file ^ output_path ^ surface_geometry ^ report_import_errors ^
+                cfl_condition ^ input_scale ^ grid_delta ^ input_transformation ^
+                input_shift ^ default_disc_orientation ^ ignore_materials ^
+                change_input_parity ^ num_dimensions ^ omp_threads ^ domain_extension ^
+                receptor_radius ^ further_tracking_distance ^ print_vtk ^ print_dx ^
+                print_velocities ^ print_coverages ^ print_rates ^ print_materials ^
+                print_statistics ^ max_extended_starting_position ^ open_boundary ^
+                remove_bottom ^ snap_to_boundary_eps ^ process_cycles ^ material_mapping ^
+                add_layer ^ boundary_conditions ^ processes;
+
+                // what to do when parsing fails
+                on_error<fail>
+                (
+                    definition
+                    , report_error(_1, _2, _3, _4)
+                );
             }
+        private:
+            //Declare rules for the parser here ------------------------------------------------------
+            qi::rule<Iterator, Parameters(), Skipper> definition;
+            qi::rule<Iterator, std::string(), Skipper> quotes;
+            qi::rule<Iterator, std::vector<std::string>(), Skipper> listed;
+            qi::rule<Iterator, std::vector<int>(), Skipper> intvec;
+            qi::rule<Iterator, std::vector<double>(), Skipper> doublevec;
+            qi::rule<Iterator, bool(), Skipper> boolean;
+            qi::rule<Iterator, Parameters::ProcessParameterType(), Skipper> process;
+            qi::rule<Iterator, Parameters::ProcessParameterType(), Skipper> process_params;
+            qi::rule<Iterator, std::list<Parameters::ProcessParameterType>(), Skipper> processes;
+            qi::rule<Iterator, Skipper> model_param_end;
 
-
-	        rule<ScannerT> const&
-	        start() const { return rule_all; }
-	    };
-	};
-
-
-	namespace {
-
-        void ReadFile( std::string FileName, std::string & str);
-
-        class include_actor {
-            std::string & str;
-        public:
-            include_actor(std::string & s) : str(s) {}
-
-            template <class iter>
-            void operator()(const iter&  a, const iter& b ) const {
-                ReadFile(std::string(a,b), str);
-            }
+            // ADD CUSTOM RULES HERE (use right rule template)
+            qi::rule<Iterator, std::vector<std::string>(), Skipper> geometry_file;
+            qi::rule<Iterator, std::vector<bnc::boundary_condition_type>(), Skipper> boundaryvec;
+            qi::rule<Iterator, std::vector<bnc::boundary_condition_type>(), Skipper> boundary_conditions;
+            qi::rule<Iterator, std::vector<int>(), Skipper> input_transformation,
+                ignore_materials,
+                material_mapping,
+                active_layers,
+                mask_layers;
+            qi::rule<Iterator, std::vector<double>(), Skipper> input_shift,
+                default_disc_orientation,
+                output_times,
+                output_volume;
+            qi::rule<Iterator, std::string(), Skipper> output_path,
+                model_name,
+                model_parameters;
+            qi::rule<Iterator, bool(), Skipper> surface_geometry,
+                report_import_errors,
+                change_input_parity,
+                print_vtk,
+                print_dx,
+                print_velocities,
+                print_coverages,
+                print_rates,
+                print_materials,
+                print_statistics,
+                remove_bottom,
+                initial_output,
+                final_output,
+                mask_layer,
+                grow_new_oxide;
+            qi::rule<Iterator, double(), Skipper> cfl_condition,
+                input_scale,
+                grid_delta,
+                domain_extension,
+                receptor_radius,
+                further_tracking_distance,
+                snap_to_boundary_eps,
+                process_distance,
+                afm_start_position,
+                afm_end_position,
+                process_time,
+                max_time_step,
+                smoothing_max_curvature,
+                smoothing_min_curvature,
+                dissipation_coefficient,
+                output_times_period_length;
+            qi::rule<Iterator, int(), Skipper> num_dimensions,
+                omp_threads,
+                max_extended_starting_position,
+                open_boundary,
+                process_cycles,
+                add_layer,
+                ald_step,
+                iteration_cycles,
+                start_iteration_cycles,
+                smoothing_material_level,
+                smoothing_max_iterations,
+                output_times_periodicity,
+                partition_data_structure,
+                partition_splitting_strategy,
+                partition_surface_area_heuristic_lambda,
+                finite_difference_scheme;
         };
-
-        void ReadFile( std::string FileName, std::string & str) {
-
-             //read parameters
-            std::ifstream ifs(FileName.c_str());
-
-            file_iterator<char> first(FileName.c_str());
-            file_iterator<char> last(first.make_end());
-
-             parse(
-                    first,
-                    last,
-
-                    *(
-                            str_p("#include") >> (*blank_p) >> '\"' >> (*blank_p) >> (*(~ch_p('\"')))[include_actor(str)] >> '\"' >>  (*blank_p) >> eol_p |
-                            space_p |
-                            anychar_p[push_back_a(str)]
-                     ),
-                     comment_p("//") | comment_p("/*", "*/")
-
-            ).full;
-
-            ifs.close();
-
-        }
-}
-
-	inline Parameters::Parameters(const std::string& FileName)  {
-
-	    //default values
-	    OpenMP_threads=0;
-        DomainExtension=0;
-
-        FurtherTrackingDistance=3.;
-        ReceptorRadius=0.8;
-
-        InputScale=1;
-        change_input_parity=false;
-
-        print_dx=false;
-        print_vtk=true;
-
-        print_coverages=false;
-        print_rates=false;
-        print_velocities=false;
-        print_materials=false;
-
-        //PrintStatistics=true;
-        PrintStatistics=false;
-
-        open_boundary_direction=1;
-        is_open_boundary_negative=false;
-
-        remove_bottom=true;
-        snap_to_boundary_eps=1e-6;
-
-        process_cycles=1;
+    }
 
 
-        max_extended_starting_position=1000;
-        AddLayer=0;
-
+    client::Parameters::Parameters(std::string fileName){
         surface_geometry=false;
         report_import_errors=true;
+        cfl_condition=-1.;
+        input_scale=-1.;
+        grid_delta=-1.;
+        change_input_parity=false;
+        num_dimensions=-1;
+        omp_threads=-1;
+        domain_extention=-1.;
+        receptor_radius=-1.;
+        further_tracking_distance=-1.;
+        print_vtk=true;
+        print_dx=false;
+        print_velocities=false;
+        print_coverages=false;
+        print_rates=false;
+        print_materials=false;
+        print_statistics=false;
+        max_extended_starting_position=1000;
+        open_boundary=0;
+        open_boundary_negative=false;
+        remove_bottom=true;
+        snap_to_boundary_eps=1e-6;
+        process_cycles=1;
+        add_layer=0;
 
-	    std::string str;
-	    ReadFile(FileName, str);
+        //Open file
+        std::string input;
+        std::ifstream inFile(fileName);
+        if(inFile){
+            std::ostringstream oss;
+            oss << inFile.rdbuf();
+            input = oss.str();
+            inFile.close();
+        }else abort();
 
-		int tmp_counter;
-	    tmp_counter_check_class tmp_counter_check(tmp_counter);
 
-	    //parse parameter file
-		par_grammar my_parser(*this, tmp_counter_check);
+        //Start parsing
+        typedef client::skipper_grammar<std::string::iterator> skipper_type;
+        client::par_grammar<std::string::iterator, skipper_type> g;
 
-		bool b = parse(
-				str.begin(),
-				str.end(),
-				my_parser
-				).full;
+        std::string::iterator start=input.begin(), end=input.end();
 
-		if (!b) msg::print_error("Failed reading parameter file!");
+        bool r = phrase_parse(start, end, g, skipper_type(), *this);
 
-//----- Section to parse through the file name(s) and determine input format ---
-		std::size_t start = str.find("ile=\"");
-		if (start>str.find("iles=\"")) {
-			start = str.find("iles=\"");
-			start++;
-		}
-		start+=4;
-		std::size_t end = str.find("\";",start);
-		std::string FNstr=str.substr(start+1,end-start-1);
-	    bool done=false;
-	    while (!done) {
-	        std::size_t found = FNstr.find(",");
-	        if (found!=std::string::npos) {
-	          InputFiles.push_back (FNstr.substr(0,found));
-	          FNstr=FNstr.substr(found+1);
-	        } else {
-	        	InputFiles.push_back(FNstr);
-	        	done=true;
-	        }
+        //check if grammar is correct
+        if(!r){
+            std::cerr << "INPUT ERROR: Illegal parameter name or other unexpected name specified." << std::endl;
+            std::string first(input.begin(), start);
+            std::string last(start, end);
+            auto first_pos = first.rfind('\n');
+            auto last_pos = last.find('\n');
+            auto error_line = ((first_pos == std::string::npos) ? first
+            : std::string(first, first_pos + 1))
+            + std::string(last, 0, last_pos);
+
+            std::cerr << "Error occurred in line:" << std::endl << error_line << std::endl << std::endl;
+            abort();
+        }
+
+        //check if file was parsed until the end
+        if(start!=end){
+            std::cerr << "INPUT ERROR: Illegal parameter name or duplicate parameter definition." << std::endl;
+            std::string first(input.begin(), start);
+            std::string last(start, end);
+            auto first_pos = first.rfind('\n');
+            auto last_pos = last.find('\n');
+            auto error_line = ((first_pos == std::string::npos) ? first
+            : std::string(first, first_pos + 1))
+            + std::string(last, 0, last_pos);
+
+            std::cerr << "Error occurred in line:" << std::endl << error_line << std::endl << std::endl;
+            abort();
+        }
+
+        //check if semantics are correct
+        if(!validate()) abort();
+
+
+        //IMPORTANT: MODEL PARAMETERS ARE MISSING }; AT THE END, NEED TO ADD BEFORE ANYTHING ELSE
+        for(std::list<client::Parameters::ProcessParameterType>::iterator it=process_parameters.begin(); it!=process_parameters.end(); ++it) it->ModelParameters.append(";");
+
+        // fix input transformation
+        for(size_t i=0; i<input_transformation.size(); ++i) input_transformation_signs[i] = input_transformation[i] >= 0;
+
+        //set boundary conditions to boundary_conditions_type
+        boundary_conditions.resize(3);
+        for(int i=0; i<3; ++i){
+            boundary_conditions[i].min = boundary_condition[2*i];
+            boundary_conditions[i].max = boundary_condition[2*i+1];
+        }
+
+        //fix boundary parameters
+        if(open_boundary < 0){
+            open_boundary_negative=true;
+            open_boundary*=-1;
+        }
+        --open_boundary;
+
+        //Create directory, if it does not exist
+	    if(!boost::filesystem::exists(output_path)) {
+					msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
+                    boost::filesystem::path dir(output_path);
+                    if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
 	    }
 
-		//----- Generate the output folder ---
-
-	    struct stat st;
-	    if(stat(OutputPath.c_str(),&st) == -1) {
-					msg::print_message("Output directory not found! Creating new directory!\n");
-					mkdir(OutputPath.c_str(),mode_t(0777));
-	    }
-
-		//test boundary condtions for periodicity, and check conformity
+        //test boundary condtions for periodicity, and check conformity
 		for (unsigned int h=0;h<boundary_conditions.size();h++) {
-
 		    if (boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY);
 		    if (boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY);
-		    //if (boundary_conditions[h].min==INFINITE_BOUNDARY) assert(h==static_cast<unsigned int>(open_boundary_direction));
-		    if (h==static_cast<unsigned int>(open_boundary_direction)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
-		    //if (boundary_conditions[h].max==INFINITE_BOUNDARY) assert(h==static_cast<unsigned int>(open_boundary_direction));
-		    if (h==static_cast<unsigned int>(open_boundary_direction)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
-		    //if (boundary_conditions[h].min==INFINITE_BOUNDARY) assert(boundary_conditions[h].max==INFINITE_BOUNDARY);
-            //if (boundary_conditions[h].max==INFINITE_BOUNDARY) assert(boundary_conditions[h].min==INFINITE_BOUNDARY);
-
+		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
+		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
 		}
 
-		//add OutputTimes
-		for(std::list<ProcessParameterType>::iterator pIter=ProcessParameters.begin();pIter!=ProcessParameters.end();++pIter) {
+        //add OutputTimes
+		for(std::list<ProcessParameterType>::iterator pIter=process_parameters.begin();pIter!=process_parameters.end();++pIter) {
+            // Create output times from period length and periodicity
 		    if (pIter->output_times_period_length>0 && pIter->output_times_periodicity>=0) {
 
 		        unsigned int tmp=pIter->output_times.size();
@@ -748,15 +684,12 @@ namespace par {
 		        }
 		    }
 
-
+            // add output times for initial and final output
             if (pIter->initial_output) pIter->output_times.push_back(0);
-//            int this_size_here = pIter->output_times.size();
-//            msg::print_message("output_times.size() before: ", this_size_here);
-
             if (pIter->final_output) pIter->output_times.push_back(pIter->ProcessTime);
 
+            //make sure they are in correct order and is unique
             std::sort(pIter->output_times.begin(),pIter->output_times.end());
-
             std::vector<double>::iterator it=std::unique(pIter->output_times.begin(),pIter->output_times.end());
             pIter->output_times.resize(it-pIter->output_times.begin());
 
@@ -764,21 +697,5 @@ namespace par {
 			std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
 			it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
 			pIter->output_volume.resize(it-pIter->output_volume.begin());
-
-//            int this_size_here2 = pIter->output_times.size();
-//            msg::print_message("output_times.size() after: ", this_size_here2);
 		}
-
-		//process cycles
-		{
-		    std::list<ProcessParameterType> tmp;
-		    for (int i=0;i<process_cycles;++i) {
-		        copy(ProcessParameters.begin(), ProcessParameters.end(),back_inserter(tmp));
-		    }
-		    swap(ProcessParameters, tmp);
-		}
-
-	}
-
-}
-#endif //DEF_PARAMETERS
+    }
