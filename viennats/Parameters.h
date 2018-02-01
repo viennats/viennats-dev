@@ -239,7 +239,7 @@ struct ReportError {
                 if(grid_delta==-1.) error+=make_error("grid_delta");
                 if(default_disc_orientation.empty()) error+=make_error("default_disc_orientation");
                 if(num_dimensions==-1) error+=make_error("num_dimensions");
-                if(open_boundary==0) error+=make_error("open_boundary");
+                //if(open_boundary==0) error+=make_error("open_boundary");
                 if(boundary_condition.empty()) error+=make_error("boundary_conditions");
 
                 //check if there are errors
@@ -328,6 +328,13 @@ struct ReportError {
     )
 
     namespace client{
+        //Testing function to output parsed value directly
+        std::string output_parsed(std::string value){
+            std::cout << value << std::endl;
+            return value;
+        }
+
+
         template <typename Iterator>
         struct skipper_grammar : qi::grammar<Iterator>{
             skipper_grammar() : skipper_grammar::base_type(skip_on){
@@ -364,6 +371,7 @@ struct ReportError {
                 listed.name("list");
                 boolean.name("boolean argument");
                 process_distance.name("process_distance");
+                model_parameters.name("model_parameters");
 
                 //define rules to be used for parsing ----------------------------------
                 quotes %= '"' >> lexeme[+(char_ - '"') > '"'];
@@ -387,7 +395,7 @@ struct ReportError {
                 grid_delta %= lit("grid_delta") > "=" > lexeme[double_] > ";";
                 input_transformation %= lit("input_transformation") > '=' > intvec > ';';
                 input_shift %= lit("input_shift") > '=' > doublevec > ';';
-                default_disc_orientation %= lit("default_disc_orientation") > '=' > doublevec > ';';
+                default_disc_orientation %= (lit("default_disc_orientation") | lit("default_disk_orientation")) > '=' > doublevec > ';';
                 ignore_materials %= lit("ignore_materials") > '=' > intvec > ';';
                 change_input_parity %= lit("change_input_parity") > '=' > boolean > ';';
                 num_dimensions %= lit("num_dimensions") > '=' > lexeme[int_] > ';';
@@ -420,7 +428,7 @@ struct ReportError {
                 process_time %= lit("process_time") > '=' > lexeme[double_] > ';';
                 ald_step %= lit("ald_step") > '=' > lexeme[int_] > ';';
                 model_name %= lit("model_name") > '=' > quotes > ';';
-                model_parameters %= lit("parameters") > '=' > '{' > +(char_ - (lit(';') >> lit('}') >> lit(';'))) > model_param_end;    //do not use lexeme to allow skipping for end detection
+                model_parameters %= lit("parameters") > '=' > '{' > +(char_ - (model_param_end)) > model_param_end;    //do not use lexeme to allow skipping for end detection
                 iteration_cycles %= lit("iteration_cycles") > '=' > lexeme[int_] > ';';
                 start_iteration_cycles %= lit("start_iteration_cycles") > '=' > lexeme[int_] > ';';
                 max_time_step %= lit("max_time_step") > '=' > lexeme[double_] > ';';
@@ -433,7 +441,7 @@ struct ReportError {
                 partition_data_structure %= lit("partition_data_structure") > '=' > lexeme[int_] > ';';
                 partition_splitting_strategy %= lit("partition_splitting_strategy") > '=' > lexeme[int_] > ';';
                 partition_surface_area_heuristic_lambda %= lit("partition_surface_area_heuristic_lambda") > '=' > lexeme[double_] > ';';
-                output_times %= lit("output_times") > '=' > doublevec > ';';
+                output_times %= (lit("output_times") - lit("output_times_periodicity") - lit("output_times_period_length")) > '=' > doublevec > ';';
                 output_volume %= lit("output_volume") > '=' > doublevec > ';';
                 output_times_periodicity %= lit("output_times_periodicity") > '=' > lexeme[int_] > ';';
                 output_times_period_length %= lit("output_times_period_length") > '=' > lexeme[double_] > ';';
@@ -475,7 +483,7 @@ struct ReportError {
                 );
             }
         private:
-            //Declare rules for the parser here ------------------------------------------------------
+            // Rules for the parser ------------------------------------------------------
             qi::rule<Iterator, Parameters(), Skipper> definition;
             qi::rule<Iterator, std::string(), Skipper> quotes;
             qi::rule<Iterator, std::vector<std::string>(), Skipper> listed;
@@ -649,12 +657,22 @@ struct ReportError {
             boundary_conditions[i].max = boundary_condition[2*i+1];
         }
 
-        //fix boundary parameters
-        if(open_boundary < 0){
-            open_boundary_negative=true;
-            open_boundary*=-1;
+        //fix boundary parameters and deduce open boundary if necessary
+        if(open_boundary==0){
+            for(size_t i=0; i<boundary_condition.size(); ++i){
+                if(boundary_condition[i]==bnc::INFINITE_BOUNDARY){
+                    open_boundary=i/2;
+                    open_boundary_negative=(i+1)%2;
+                    break;
+                }
+            }
+        }else{
+            if(open_boundary < 0){
+                open_boundary_negative=true;
+                open_boundary*=-1;
+            }
+            --open_boundary;
         }
-        --open_boundary;
 
         //Create directory, if it does not exist
 	    if(!boost::filesystem::exists(output_path)) {
