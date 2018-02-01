@@ -557,15 +557,12 @@ struct ReportError {
     client::Parameters::Parameters(std::string fileName){
         surface_geometry=false;
         report_import_errors=true;
-        cfl_condition=-1.;
-        input_scale=-1.;
-        grid_delta=-1.;
+        input_scale=1.;
         change_input_parity=false;
-        num_dimensions=-1;
-        omp_threads=-1;
-        domain_extention=-1.;
-        receptor_radius=-1.;
-        further_tracking_distance=-1.;
+        omp_threads=0;
+        domain_extention=0.;
+        receptor_radius=0.8;
+        further_tracking_distance=3.;
         print_vtk=true;
         print_dx=false;
         print_velocities=false;
@@ -574,12 +571,17 @@ struct ReportError {
         print_materials=false;
         print_statistics=false;
         max_extended_starting_position=1000;
-        open_boundary=0;
         open_boundary_negative=false;
         remove_bottom=true;
         snap_to_boundary_eps=1e-6;
         process_cycles=1;
         add_layer=0;
+
+        //REQUIRED (set dummy variables to check if they were declared)
+        cfl_condition=-1.;
+        grid_delta=-1.;
+        num_dimensions=-1;
+        open_boundary=0;
 
         //Open file
         std::string input;
