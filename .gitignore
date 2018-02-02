@@ -2,6 +2,7 @@ build
 .*.swp
 *~
 *output
+*output1
 *output2
 *output3
 *output_*
@@ -11,5 +12,7 @@ nbproject
 TCAD.sh
 /docs/manual/html/*
 /docs/manual/ViennaTS_Doc.html
+/docs/*odt
+/docs/*odt#
 .clang_complete
 .build_tools.cson

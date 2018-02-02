@@ -389,10 +389,13 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 	msg::print_done();
 
-
-	msg::print_start("Add Initial Layers...");
-	proc::AddLayer(LevelSets, p.add_layer);
-	msg::print_done();
+	if(p.add_layer>0){
+		std::stringstream oss;
+		oss << "Adding " << p.add_layer << " initial layer" << ((p.add_layer==1)?"...":"s...");
+		msg::print_start(oss.str());
+		proc::AddLayer(LevelSets, p.add_layer);
+		msg::print_done();
+	}
 
 	//organization of the output information by initiation of required models
 	OutputInfoType output_info;
@@ -495,8 +498,12 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		std::swap(LevelSets, temp_levelSets);
 
-		std::cout << std::endl << "Add Layer = " << pIter->AddLayer << "\n";
-		proc::AddLayer(LevelSets, pIter->AddLayer);
+		std::cout << std::endl;
+		if(pIter->AddLayer>0){
+			std::cout << "Add Layer = " << pIter->AddLayer << "\n";
+			proc::AddLayer(LevelSets, pIter->AddLayer);
+		}
+
 		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
 		std::cout << "Active/Total Layers: " << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
 

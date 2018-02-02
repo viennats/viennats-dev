@@ -285,7 +285,7 @@ struct ReportError {
         (double, snap_to_boundary_eps)
         (int, process_cycles)
         (std::vector<int>, material_mapping)
-        (int, add_layer=0)
+        (int, add_layer)
         (std::vector<bnc::boundary_condition_type>, boundary_condition)
         (std::list<client::Parameters::ProcessParameterType>, process_parameters)
     )
@@ -612,6 +612,7 @@ struct ReportError {
 
         //check if grammar is correct
         if(!r){
+            if(start==input.begin()) abort();
             std::cerr << "INPUT ERROR: Illegal parameter name or other unexpected name specified." << std::endl;
             std::string first(input.begin(), start);
             std::string last(start, end);
