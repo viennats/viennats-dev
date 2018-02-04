@@ -389,10 +389,10 @@ namespace calc {
     typedef ClusterPositionType<D, PartitionType> ClusterPositionType;
 
 
-    const double ReceptorRadius=Parameter.ReceptorRadius;
+    const double ReceptorRadius=Parameter.receptor_radius;
     const double ReceptorRadius2=ReceptorRadius*ReceptorRadius;
 
-    const double further_tracking_distance=Parameter.FurtherTrackingDistance; //default is 3
+    const double further_tracking_distance=Parameter.further_tracking_distance; //default is 3
 
     //Initialize Rates
     unsigned int  num_active_points=SurfaceLevelSet.num_active_pts();
@@ -418,10 +418,10 @@ namespace calc {
                         std::vector<double>(num_active_points*Model.RatesStorageSize,0.)
                       );
 
-    double RecepterArea=(D==3)?(Parameter.ReceptorRadius*Parameter.ReceptorRadius*my::math::Pi):(2.*Parameter.ReceptorRadius);
+    double RecepterArea=(D==3)?(Parameter.receptor_radius*Parameter.receptor_radius*my::math::Pi):(2.*Parameter.receptor_radius);
     if (!ModelType::SpatiallyEqualDistributedFlux) {
-        RecepterArea*=Parameter.GridDelta;
-        if (D==3) RecepterArea*=Parameter.GridDelta;
+        RecepterArea*=Parameter.grid_delta;
+        if (D==3) RecepterArea*=Parameter.grid_delta;
     }
     ////std::cout << "Recepter Area: " << RecepterArea << endl;
 
@@ -442,7 +442,7 @@ namespace calc {
             #endif
 
 		    const int NumStartingPlaces=(ModelType::SpatiallyEqualDistributedFlux)?
-                                            static_cast<int>(Partition.AreaSize(Parameter.open_boundary_direction)):   //AXIS
+                                            static_cast<int>(Partition.AreaSize(Parameter.open_boundary)):   //AXIS
 												my_num_threads;
 
 
@@ -471,7 +471,7 @@ namespace calc {
           if (ModelType::SpatiallyEqualDistributedFlux) {
 
           unsigned int tmp_s=StartingPlace;
-          int tmp_dim=Parameter.open_boundary_direction;    //AXIS
+          int tmp_dim=Parameter.open_boundary;    //AXIS
           if (tmp_dim==0) tmp_dim=D;
           --tmp_dim;
 
@@ -483,7 +483,7 @@ namespace calc {
           }
           StartPosition[tmp_dim]=tmp_s;
 
-          starting_subbox=Partition.Access(StartPosition, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+          starting_subbox=Partition.Access(StartPosition, Parameter.open_boundary, Parameter.open_boundary_negative);
           //std::cout << "equaldistributed \n";
 
           }
@@ -511,10 +511,10 @@ namespace calc {
             Model.ParticleGeneration(p,ParticleType,ProcessTime, StartPosition);
             //std::cout << "\nparticlegeneration\n";
             //if particle is not moving downwards
-            if (Parameter.is_open_boundary_negative) {
-                if(p.Direction[Parameter.open_boundary_direction]<=0.) continue;
+            if (Parameter.open_boundary_negative) {
+                if(p.Direction[Parameter.open_boundary]<=0.) continue;
             } else {
-                if(p.Direction[Parameter.open_boundary_direction]>=0.) continue;
+                if(p.Direction[Parameter.open_boundary]>=0.) continue;
             }
 
             //calculate represented flux by that particle
@@ -532,7 +532,7 @@ namespace calc {
                 //chose random start position
                 for (int i=0;i<D;++i) {
                     cp.X[i]=StartPosition[i];
-                    if (i!=Parameter.open_boundary_direction) cp.X[i]+=my::stat::RandomNumber();
+                    if (i!=Parameter.open_boundary) cp.X[i]+=my::stat::RandomNumber();
                 }
 
                 cp.Subbox=starting_subbox;
@@ -541,17 +541,17 @@ namespace calc {
                 //determine additional particles, which are necessary to account for extended boundaries
                 int zmax[D-1];
 
-                int dir=Parameter.open_boundary_direction;
+                int dir=Parameter.open_boundary;
 
                 for (int i=0;i<D-1;++i) {
-                    dir=(Parameter.open_boundary_direction+i+1)%D;
+                    dir=(Parameter.open_boundary+i+1)%D;
                     zmax[i]=0;
-                    if (dir!=Parameter.open_boundary_direction) {
+                    if (dir!=Parameter.open_boundary) {
                         if ((Parameter.boundary_conditions[dir].min==bnc::EXTENDED_BOUNDARY) && (p.Direction[dir]>0)) {
                             zmax[i]=static_cast<int>(
                                                                     std::ceil(
                                                                                 (
-                                                                                        -std::min(   std::fabs((Partition.Extension(Parameter.open_boundary_direction)*p.Direction[dir])/p.Direction[Parameter.open_boundary_direction]),
+                                                                                        -std::min(   std::fabs((Partition.Extension(Parameter.open_boundary)*p.Direction[dir])/p.Direction[Parameter.open_boundary]),
                                                    static_cast<double>(Parameter.max_extended_starting_position)
                                                 )
                                                                                        -(cp.X[dir]+(cp.Subbox.Min(dir)-Partition.Min(dir)))
@@ -563,7 +563,7 @@ namespace calc {
                                         zmax[i]=static_cast<int>(
                                                                     std::floor(
                                                                                 (
-                                                                                        std::min(   std::fabs((Partition.Extension(Parameter.open_boundary_direction)*p.Direction[dir])/p.Direction[Parameter.open_boundary_direction]),
+                                                                                        std::min(   std::fabs((Partition.Extension(Parameter.open_boundary)*p.Direction[dir])/p.Direction[Parameter.open_boundary]),
                                                   static_cast<double>(Parameter.max_extended_starting_position)
                                                 )
                                                                                         -(cp.X[dir]+(cp.Subbox.Min(dir)-Partition.Min(dir)))
@@ -596,12 +596,12 @@ namespace calc {
                     ClusterPositionType new_cp;
 
                     for (int g=0;g<D-1;++g) {
-                        int dir=(g+Parameter.open_boundary_direction+1)%D;
+                        int dir=(g+Parameter.open_boundary+1)%D;
                         new_cp.X[dir]=  cp.X[dir]+
                                                     static_cast<double>(cp.Subbox.Min(dir)-Partition.Min(dir))+                         //TODO check!!!
                                                     static_cast<double>(counter[g])*static_cast<double>(Partition.Extension(dir));
                     }
-                    new_cp.Subbox=Partition.Access(new_cp.X, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+                    new_cp.Subbox=Partition.Access(new_cp.X, Parameter.open_boundary, Parameter.open_boundary_negative);
                     ParticlePositionsStack.push(new_cp);
                     ParticleStack.push(p);
                 }
@@ -609,21 +609,21 @@ namespace calc {
             }
             else {
 
-                for (int i=0;i<D;++i) cp.X[i]=StartPosition[i]/Parameter.GridDelta;       //scale starting position
+                for (int i=0;i<D;++i) cp.X[i]=StartPosition[i]/Parameter.grid_delta;       //scale starting position
 
-                double t=-(  cp.X[Parameter.open_boundary_direction]-
-                    ((Parameter.is_open_boundary_negative)?Partition.Min(Parameter.open_boundary_direction):Partition.Max(Parameter.open_boundary_direction))
-                  )/p.Direction[Parameter.open_boundary_direction];
+                double t=-(  cp.X[Parameter.open_boundary]-
+                    ((Parameter.open_boundary_negative)?Partition.Min(Parameter.open_boundary):Partition.Max(Parameter.open_boundary))
+                  )/p.Direction[Parameter.open_boundary];
 
                 //Move cp.X to the top LS surface and update horizontal axis values (not open boundary value)
                 for (int dir=0;dir<D;++dir) {
-                    if (dir!=Parameter.open_boundary_direction) {
+                    if (dir!=Parameter.open_boundary) {
                         bool ReverseSign;
                         cp.X[dir]=Parameter.boundary_conditions[dir].map_coordinate(Partition.Min(dir), Partition.Max(dir),cp.X[dir]+p.Direction[dir]*t, ReverseSign);
                         if (ReverseSign) p.Direction[dir]=-p.Direction[dir];
                     }
                 }
-                cp.Subbox=Partition.Access(cp.X, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+                cp.Subbox=Partition.Access(cp.X, Parameter.open_boundary, Parameter.open_boundary_negative);
                             //cp.X is now position within subbox after removing the "global components"
             }
 
@@ -907,7 +907,7 @@ namespace calc {
 
                                             int Factor=1;
                                             for (int kk=0;kk<D;kk++) {
-                                                if (kk!=Parameter.open_boundary_direction) {
+                                                if (kk!=Parameter.open_boundary) {
                                                     if ((Parameter.boundary_conditions[kk].min==bnc::REFLECTIVE_BOUNDARY) || (Parameter.boundary_conditions[kk].min==bnc::EXTENDED_BOUNDARY)) {
                                                         if ((g & (1<<kk))==0) {
                                                             if (Partition.Min(kk)==Subbox.Min(kk)) {
@@ -1073,7 +1073,7 @@ namespace calc {
 			  {
 				if(it.active_pt_id() != LevelSetType::INACTIVE)
 				{
-				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.GridDelta << " ";
+				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.grid_delta << " ";
 				  outputfile << Rates[it.active_pt_id()] << std::endl;
 				}
 			  }

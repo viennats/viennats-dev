@@ -95,9 +95,7 @@ namespace model {
 
 			ActiveLayers = p->ActiveLayers;
 
-
 			using namespace boost::spirit::classic;
-			//		    stacked_mat=stacked_material;
 
 			double Accuracy;
 

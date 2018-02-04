@@ -10,7 +10,7 @@ cfl_condition = 0.1;
 
 grid_delta = 0.2;
 
-default_disk_orientation = {1,0,0};
+default_disc_orientation = {1,0,0};
 
 num_dimensions = 2;
 
@@ -23,17 +23,20 @@ open_boundary="-x";
 
 processes = {
     {
-	process_time= 200;                	
+	process_time= 200;   
+		        	
         model_name="ConstantRates";
         add_layer=0;
         parameters= {
-		//constant_rates={0.01};
+		constant_rates={0.01};
 		direction={1,0,0};
 		directional_rates={0.05};
 
 	};
+	    
 	output_times_period_length = 2;
 	output_times_periodicity=100;
-	output_times={0};
+	output_times={0}; 
+	
     }
 };

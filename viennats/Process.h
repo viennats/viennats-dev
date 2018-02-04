@@ -39,7 +39,6 @@
 
 ///Process related objects and methods.
 namespace proc {
-
 	template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
 
 	    for (int i=0;i<num_layers;++i) {
@@ -482,7 +481,7 @@ namespace proc {
 
 	    typedef typename LevelSetsType::value_type LevelSetType;
 
-	    LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.GridDelta, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative));
+	    LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.grid_delta, Parameter.open_boundary, Parameter.open_boundary_negative));
 
 	    for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
 	        it->max(LevelSets.back());         //adjust all level set functions below the plane
@@ -512,14 +511,14 @@ namespace proc {
         geometry::surface<D> mask_surface;
 
         if (Model.surface()) {
-        	mask_surface.ReadVTK(Model.file_name(), Parameter.InputScale, Parameter.InputTransformationDirections,
-					Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.InputShift);
+        	mask_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
+					Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
         } else {
-            mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
-            		Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+            mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
+            		Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
-//	    mask_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+//	    mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 
 	    typedef std::list<geometry::surface<D> > SurfacesType;
 	    SurfacesType Surfaces;
@@ -527,33 +526,34 @@ namespace proc {
 	    {
             std::bitset<2*D> remove_flags;
 
-            for (int i=0;i<D;++i) {
-                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+			for (int i=0;i<D;++i) {
+                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+					Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
                     remove_flags.set(i);
                 } else {
-                    if (i==Parameter.open_boundary_direction && !Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+                    if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
                 }
-                if (Parameter.boundary_conditions[i].max==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::EXTENDED_BOUNDARY) {
+                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
                     remove_flags.set(i+D);
                 } else {
-                    if (i==Parameter.open_boundary_direction && Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+                    if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
                 }
             }
 
     		if (Model.surface()) {
     			Surfaces.push_back(mask_surface);
     		} else {
-                geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+                geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
     		}
 
-//            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+//            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
 	    /*geometry::TransformGeometryToSurfaces(     mask_geometry,
                                                    Surfaces,
-                                                   Parameter.open_boundary_direction,
-                                                   Parameter.is_open_boundary_negative,
-                                                   Parameter.GridDelta*Parameter.snap_to_boundary_eps
+                                                   Parameter.open_boundary,
+                                                   Parameter.open_boundary_negative,
+                                                   Parameter.grid_delta*Parameter.snap_to_boundary_eps
                                                );*/
 
 	    LevelSetType mask_ls(LevelSets.back().grid());
@@ -599,11 +599,11 @@ namespace proc {
 			geometry::surface<D> boolop_surface;// = new geometry::surface<D>;
 
 			if (Model.surface()) {
-				boolop_surface.ReadVTK(Model.file_name(), Parameter.InputScale, Parameter.InputTransformationDirections,
-				Parameter.InputTransformationSigns, Parameter.change_input_parity, Parameter.InputShift);
+				boolop_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
+				Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
 			} else {
-				boolop_geometry.Read(Model.file_name(),Parameter.InputScale,Parameter.InputTransformationDirections, Parameter.InputTransformationSigns,
-				Parameter.change_input_parity, Parameter.MapMaterials, Parameter.InputShift, Parameter.IgnoreMaterials);
+				boolop_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
+				Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 			}
 
 
@@ -614,26 +614,27 @@ namespace proc {
 				std::bitset<2*D> remove_flags;
 
 				for (int i=0;i<D;++i) {
-					if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-						remove_flags.set(i);
-					} else {
-						if (i==Parameter.open_boundary_direction && !Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
-					}
-					if (Parameter.boundary_conditions[i].max==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].max==bnc::EXTENDED_BOUNDARY) {
-						remove_flags.set(i+D);
-					} else {
-						if (i==Parameter.open_boundary_direction && Parameter.is_open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
-					}
-				}
+	                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+						Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+	                    remove_flags.set(i);
+	                } else {
+	                    if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+	                }
+	                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+	                    remove_flags.set(i+D);
+	                } else {
+	                    if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+	                }
+	            }
 
 				if (Model.surface()) {
 					Surfaces.push_back(boolop_surface);
 				} else {
 					//std::cout << "transform to surface\n";
-					geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+					geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
 				}
 
-				//            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.GridDelta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+				//            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
 			}
 
 			LevelSetType dummy_ls(LevelSets.back().grid());
@@ -701,7 +702,7 @@ namespace proc {
 
 			if (Parameter.print_dx) {
 				std::ostringstream oss;
-				oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+				oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
 #ifdef VERBOSE
 				msg::print_message("print dx");
 #endif
@@ -711,7 +712,7 @@ namespace proc {
 			}
 			if (Parameter.print_vtk) {
 				std::ostringstream oss;
-				oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+				oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
 #ifdef VERBOSE
 				msg::print_message("print vtk");
 #endif
@@ -762,7 +763,7 @@ namespace proc {
 //	    	LevelSets.pop_back();
 //	    }
 //	    typedef typename LevelSetsType::value_type LevelSetType;
-//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary_direction, !Parameter.is_open_boundary_negative));
+//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
 	    //----------------------------------------------------------------------------------------------------------------------------------------
 
 		int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
@@ -780,11 +781,11 @@ namespace proc {
 		std::vector<bool> Visibilities;
 
 		//time statistics
-		const std::string TimeStatFileName=Parameter.GetCompleteOutputFileName("StatisticsTimes.cvs");
+		const std::string TimeStatFileName=Parameter.output_path+"StatisticsTimes.cvs";
 		std::ofstream f;
 
 		//unsigned int LineNumber;
-		if (Parameter.PrintStatistics) {
+		if (Parameter.print_statistics) {
 			if(!std::ifstream(TimeStatFileName.c_str())) {
 
 #ifdef VERBOSE
@@ -883,7 +884,7 @@ namespace proc {
                                 LevelSets,
                                 dummy,
                                 lvlset::SMOOTHING_SCHEME(ProcessParameter.smoothing_material_level, ProcessParameter.smoothing_max_curvature, ProcessParameter.smoothing_min_curvature),
-                                Parameter.TimeStepRatio,
+                                Parameter.cfl_condition,
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
@@ -900,12 +901,12 @@ namespace proc {
 
 			/*
 			//Output statistics for level sets
-			if (Parameter.PrintStatistics) {
+			if (Parameter.print_statistics) {
 			    TimeTotalExclOutput+=my::time::GetTime();
 				int i=0;
 				for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
 					std::ostringstream tmp;
-					tmp << Parameter.OutputPath << "StatisticsLevelSet" << i << ".cvs";
+					tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
 					lvlset::misc::PrintStatistics(*it, tmp.str());
 					i++;
 				}
@@ -927,7 +928,7 @@ namespace proc {
 				msg::print_message("calculate connectivities");
 #endif
                 TimeConnectivities-=my::time::GetTime();
-                std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.is_open_boundary_negative);
+                std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.open_boundary_negative);
                 graph_size=x.first;
                 num_components=x.second;
                 TimeConnectivities+=my::time::GetTime();
@@ -937,7 +938,7 @@ namespace proc {
 				msg::print_message("calculate visibilities");
 #endif
                 TimeVisibilities-=my::time::GetTime();
-                CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+                CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary, Parameter.open_boundary_negative);
                 TimeVisibilities+=my::time::GetTime();
             }
 
@@ -956,7 +957,7 @@ namespace proc {
 				msg::print_message("normal vector calculation");
 #endif
                 TimeNormals-=my::time::GetTime();
-                calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative, Parameter.ReceptorRadius, lvlset::vec<double,D>(Parameter.DefaultDiskOrientation));
+                calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary, Parameter.open_boundary_negative, Parameter.receptor_radius, lvlset::vec<double,D>(Parameter.default_disc_orientation));
                 TimeNormals+=my::time::GetTime();
             }
 
@@ -974,7 +975,7 @@ namespace proc {
                 TimeExpansion+=my::time::GetTime();
 
                 TimeCells-=my::time::GetTime();
-                calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.ReceptorRadius);
+                calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.receptor_radius);
                 TimeCells+=my::time::GetTime();
 
                 typedef typename calc::PartitionTraits<ParameterType> tmp_type;
@@ -986,9 +987,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1015,9 +1016,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1041,9 +1042,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1100,7 +1101,7 @@ namespace proc {
 
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
-                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
 #ifdef VERBOSE
                         msg::print_message("print dx");
 #endif
@@ -1113,7 +1114,7 @@ namespace proc {
                     }
                     if (Parameter.print_vtk) {
                         std::ostringstream oss;
-                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
 #ifdef VERBOSE
                         msg::print_message("print vtk");
 #endif
@@ -1156,7 +1157,7 @@ namespace proc {
                 double MaxTimeStep=NextTimeStop-RelativeTime;
 //                //std::cout << "MaxTimeStep = " << MaxTimeStep << "\n";
 
-                if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_1ST_ORDER) {
+                if (ProcessParameter.FiniteDifferenceScheme==ENGQUIST_OSHER_1ST_ORDER) {
 
                 	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1171,7 +1172,7 @@ namespace proc {
                             LevelSets_temp,
                             Velocities,
                             lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
@@ -1184,7 +1185,7 @@ namespace proc {
 
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
+                } else if (ProcessParameter.FiniteDifferenceScheme==ENGQUIST_OSHER_2ND_ORDER) {
 
                 	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1197,13 +1198,13 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::ENGQUIST_OSHER_SV_2ND_ORDER,
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
+                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
 
                 	VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1216,7 +1217,7 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::LAX_FRIEDRICHS_SCALAR_1ST_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
@@ -1241,7 +1242,7 @@ namespace proc {
             //#######################################
             // print statistics
             //#######################################
-			if (Parameter.PrintStatistics) {
+			if (Parameter.print_statistics) {
 #ifdef VERBOSE
 				msg::print_message("print statistics");
 #endif
@@ -1299,7 +1300,7 @@ namespace proc {
 //	    	LevelSets.pop_back();
 //	    }
 //	    typedef typename LevelSetsType::value_type LevelSetType;
-//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary_direction, !Parameter.is_open_boundary_negative));
+//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
 	    //----------------------------------------------------------------------------------------------------------------------------------------
 
 		int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
@@ -1317,11 +1318,11 @@ namespace proc {
 		std::vector<bool> Visibilities;
 
 		//time statistics
-		const std::string TimeStatFileName=Parameter.GetCompleteOutputFileName("StatisticsTimes.cvs");
+		const std::string TimeStatFileName=Parameter.output_path + "StatisticsTimes.cvs";
 		std::ofstream f;
 
 		//unsigned int LineNumber;
-		if (Parameter.PrintStatistics) {
+		if (Parameter.print_statistics) {
 			if(!std::ifstream(TimeStatFileName.c_str())) {
 
 #ifdef VERBOSE
@@ -1429,7 +1430,7 @@ namespace proc {
                                 LevelSets,
                                 dummy,
                                 lvlset::SMOOTHING_SCHEME(ProcessParameter.smoothing_material_level, ProcessParameter.smoothing_max_curvature, ProcessParameter.smoothing_min_curvature),
-                                Parameter.TimeStepRatio,
+                                Parameter.cfl_condition,
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
@@ -1446,12 +1447,12 @@ namespace proc {
 
 			/*
 			//Output statistics for level sets
-			if (Parameter.PrintStatistics) {
+			if (Parameter.print_statistics) {
 			    TimeTotalExclOutput+=my::time::GetTime();
 				int i=0;
 				for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
 					std::ostringstream tmp;
-					tmp << Parameter.OutputPath << "StatisticsLevelSet" << i << ".cvs";
+					tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
 					lvlset::misc::PrintStatistics(*it, tmp.str());
 					i++;
 				}
@@ -1473,7 +1474,7 @@ namespace proc {
 				msg::print_message("calculate connectivities");
 #endif
                 TimeConnectivities-=my::time::GetTime();
-                std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.is_open_boundary_negative);
+                std::pair<unsigned int, unsigned int> x=CalculateConnectivities(LevelSets.back(), Connectivities, Parameter.open_boundary_negative);
                 graph_size=x.first;
                 num_components=x.second;
                 TimeConnectivities+=my::time::GetTime();
@@ -1483,7 +1484,7 @@ namespace proc {
 				msg::print_message("calculate visibilities");
 #endif
                 TimeVisibilities-=my::time::GetTime();
-                CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative);
+                CalculateVisibilities(LevelSets.back(), Visibilities, Parameter.open_boundary, Parameter.open_boundary_negative);
                 TimeVisibilities+=my::time::GetTime();
             }
 
@@ -1502,7 +1503,7 @@ namespace proc {
 				msg::print_message("normal vector calculation");
 #endif
                 TimeNormals-=my::time::GetTime();
-                calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary_direction, Parameter.is_open_boundary_negative, Parameter.ReceptorRadius, lvlset::vec<double,D>(Parameter.DefaultDiskOrientation));
+                calc::CalculateNormalVectors(LevelSets.back(), NormalVectors, DistancesToReceiver, Parameter.open_boundary, Parameter.open_boundary_negative, Parameter.receptor_radius, lvlset::vec<double,D>(Parameter.default_disc_orientation));
                 TimeNormals+=my::time::GetTime();
             }
 
@@ -1517,7 +1518,7 @@ namespace proc {
                 TimeExpansion+=my::time::GetTime();
 
                 TimeCells-=my::time::GetTime();
-                calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.ReceptorRadius);
+                calc::SetupCells(LevelSets.back(),Cells, CellCoordinates, NormalVectors, DistancesToReceiver, Parameter.receptor_radius);
                 TimeCells+=my::time::GetTime();
 
                 typedef typename calc::PartitionTraits<ParameterType> tmp_type;
@@ -1528,9 +1529,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1555,9 +1556,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1581,9 +1582,9 @@ namespace proc {
                     Partition.Setup(0, Cells.size(), CellCoordinates, LevelSets.back().grid().boundary_conditions(),ProcessParameter.partition_splitting_strategy,ProcessParameter.partition_surface_area_heuristic_lambda);
                     TimePartition+=my::time::GetTime();
                     ray_tracing_memory=Partition.get_memory();
-                    if (Parameter.PrintStatistics) {
+                    if (Parameter.print_statistics) {
                         TimeTotalExclOutput+=my::time::GetTime();
-                        Partition.PrintStatistics(Parameter.GetCompleteOutputFileName("StatisiticsPartition.cvs"));
+                        Partition.PrintStatistics(Parameter.output_path+"StatisiticsPartition.cvs");
                         TimeTotalExclOutput-=my::time::GetTime();
                     }
 
@@ -1640,7 +1641,7 @@ namespace proc {
 
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
-                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
 #ifdef VERBOSE
                         msg::print_message("print dx");
 #endif
@@ -1653,7 +1654,7 @@ namespace proc {
                     }
                     if (Parameter.print_vtk) {
                         std::ostringstream oss;
-                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
 #ifdef VERBOSE
                         msg::print_message("print vtk");
 #endif
@@ -1713,7 +1714,7 @@ namespace proc {
 
 						//print surface
 						std::ostringstream oss;
-						oss << Parameter.OutputPath << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
+						oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
 						lvlset::write_explicit_surface_vtk(LS, oss.str());
 
 						++counter;
@@ -1748,7 +1749,7 @@ namespace proc {
 
                 double MaxTimeStep=NextTimeStop-RelativeTime;
 
-                if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_1ST_ORDER) {
+                if (ProcessParameter.FiniteDifferenceScheme==ENGQUIST_OSHER_1ST_ORDER) {
 
                 	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1762,14 +1763,14 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::ENGQUIST_OSHER_SV_1ST_ORDER,
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
 
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.ENGQUIST_OSHER_2ND_ORDER) {
+                } else if (ProcessParameter.FiniteDifferenceScheme==ENGQUIST_OSHER_2ND_ORDER) {
 
                 	VelocityClass2<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1782,13 +1783,13 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::ENGQUIST_OSHER_SV_2ND_ORDER,
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else if (ProcessParameter.FiniteDifferenceScheme==ProcessParameter.LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
+                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
 
                 	VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1801,7 +1802,7 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::LAX_FRIEDRICHS_SCALAR_1ST_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
-                            Parameter.TimeStepRatio,
+                            Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
@@ -1826,7 +1827,7 @@ namespace proc {
             //#######################################
             // print statistics
             //#######################################
-			if (Parameter.PrintStatistics) {
+			if (Parameter.print_statistics) {
 #ifdef VERBOSE
 				msg::print_message("print statistics");
 #endif

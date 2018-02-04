@@ -132,7 +132,7 @@ namespace model {
 				const double* Coverages,
 				double RelTime) const {
 			Rates[p.Type]+=p.Flux*p.Probability;
-                        std::cout << "ParticleCollision inside model \n";
+                        //std::cout << "ParticleCollision inside model \n";
 		}
 
 		template <class PT, class VecType> void ParticleReflexion(
@@ -145,7 +145,7 @@ namespace model {
 //				double dot
                 ) const
 		{
-                    std::cout << "ParticleReflexion inside model \n";
+                    //std::cout << "ParticleReflexion inside model \n";
 			switch(p.Type) {
 				case 0: {       //ION
 					break;

@@ -53,7 +53,7 @@ SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 # Find prerequisites
 ####################
 
-# Look for additiona CMake modules in the cmake subdirectory ..
+# Look for additional CMake modules in the cmake subdirectory ..
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
 # OpenMP ..
@@ -62,14 +62,9 @@ SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 
 # Boost ..
 SET(BOOST_MIN_VERSION 1.46.0)
-FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED)
+FIND_PACKAGE(Boost ${BOOST_MIN_VERSION} REQUIRED COMPONENTS filesystem system)
 INCLUDE_DIRECTORIES(${Boost_INCLUDE_DIRS})
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lboost_system")
-
-# SPRNG ..
-#FIND_PACKAGE(SPRNG REQUIRED)
-#INCLUDE_DIRECTORIES(${SPRNG_INCLUDE_DIR})
-#SET(LIBRARIES ${LIBRARIES} ${SPRNG_LIBRARY})
+LINK_DIRECTORIES(${Boost_LIBRARY_DIRS})
 
 # HDF5
 #FIND_PACKAGE(HDF5 COMPONENTS CXX)

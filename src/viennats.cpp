@@ -240,28 +240,28 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 	//!Read Geometry and populate geometry class
 	geometry::geometry<D> g;
-	int num_surfaces=p.InputFiles.size();
+	int num_surfaces=p.geometry_files.size();
 	geometry::surface<D> *s = new geometry::surface<D> [num_surfaces];
 
 	if (p.surface_geometry) {
 		//!If surface geometries are passed, read .vtk surface geometries
 		//!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
-		std::cout << "The geometry consists of " << p.InputFiles.size() <<" input surfaces. \n";
+		std::cout << "The geometry consists of " << p.geometry_files.size() <<" input surfaces. \n";
 		for(int cs=0;cs<num_surfaces;cs++) {
-			msg::print_start("Read surface input file "+p.InputFiles[cs]+"...");
-			s[cs].ReadVTK(p.InputFiles[num_surfaces-cs-1], p.InputScale, p.InputTransformationDirections,
-					      p.InputTransformationSigns, p.change_input_parity, p.InputShift);
+			msg::print_start("Read surface input file "+p.geometry_files[cs]+"...");
+			s[cs].ReadVTK(p.geometry_files[num_surfaces-cs-1], p.input_scale, p.input_transformation,
+					      p.input_transformation_signs, p.change_input_parity, p.input_shift);
 
 			for (int h = 0; h < D; ++h) {
-				grid_min[h] = std::min(grid_min[h],int(std::ceil(s[cs].Min[h] / p.GridDelta - p.snap_to_boundary_eps)));
-				grid_max[h] = std::max(grid_max[h],int(std::floor(s[cs].Max[h] / p.GridDelta + p.snap_to_boundary_eps)));
+				grid_min[h] = std::min(grid_min[h],int(std::ceil(s[cs].Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
+				grid_max[h] = std::max(grid_max[h],int(std::floor(s[cs].Max[h] / p.grid_delta + p.snap_to_boundary_eps)));
 			}
 			msg::print_done();
 #ifdef VERBOSE
 	std::cout << "min = " << (s[cs].Min) << "   " << "max = " << (s[cs].Max)
 			<< std::endl;
-	std::cout << "min = " << (s[cs].Min / p.GridDelta) << "   " << "max = "
-			<< (s[cs].Max / p.GridDelta) << std::endl;
+	std::cout << "min = " << (s[cs].Min / p.grid_delta) << "   " << "max = "
+			<< (s[cs].Max / p.grid_delta) << std::endl;
 #endif
 		}
 	} else {
@@ -269,25 +269,25 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		//!surface.Read(...) reads a geometry file and modifies it according to the user-set parameters
 		// g.Read reads a geometry file and modifies it according to the user-set parameters
 		msg::print_start("Read geometry input file...");
-		g.Read(p.InputFiles[0], p.InputScale, p.InputTransformationDirections,
-			p.InputTransformationSigns, p.change_input_parity, p.MapMaterials,
-			p.InputShift, p.IgnoreMaterials);
+		g.Read(p.geometry_files[0], p.input_scale, p.input_transformation,
+			p.input_transformation_signs, p.change_input_parity, p.material_mapping,
+			p.input_shift, p.ignore_materials);
 		{
 			// output to a .vtk file the modified initial geometry
 			std::ostringstream oss;
-			oss << p.OutputPath << "Initial_Volume_Mesh.vtk";
+			oss << p.output_path << "Initial_Volume_Mesh.vtk";
 			g.Write(oss.str());
 		}
 		for (int h = 0; h < D; ++h) {
-			grid_min[h]	= std::ceil(g.Min[h] / p.GridDelta - p.snap_to_boundary_eps);
-			grid_max[h] = std::floor(g.Max[h] / p.GridDelta
+			grid_min[h]	= std::ceil(g.Min[h] / p.grid_delta - p.snap_to_boundary_eps);
+			grid_max[h] = std::floor(g.Max[h] / p.grid_delta
 						+ p.snap_to_boundary_eps);
 		}
 #ifdef VERBOSE
 	std::cout << "min = " << (g.Min) << "   " << "max = " << (g.Max)
 			<< std::endl;
-	std::cout << "min = " << (g.Min / p.GridDelta) << "   " << "max = "
-			<< (g.Max / p.GridDelta) << std::endl;
+	std::cout << "min = " << (g.Min / p.grid_delta) << "   " << "max = "
+			<< (g.Max / p.grid_delta) << std::endl;
 #endif
 		msg::print_done();
 	}
@@ -318,8 +318,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 #endif
 //	}
 
-	//!Set the level set grid "GridTraitsType<D> GridProperties(grid_min, grid_max, boundary conditions, GridDelta)"
-	GridTraitsType<D> GridProperties(grid_min, grid_max, bnc, p.GridDelta);
+	//!Set the level set grid "GridTraitsType<D> GridProperties(grid_min, grid_max, boundary conditions, grid_delta)"
+	GridTraitsType<D> GridProperties(grid_min, grid_max, bnc, p.grid_delta);
 
 	//!Generate the grid_type with the set GridProperties
 	lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
@@ -337,8 +337,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 					|| p.boundary_conditions[i].min == bnc::EXTENDED_BOUNDARY) {
 				remove_flags.set(i);
 			} else {
-				if (i == p.open_boundary_direction
-						&& !p.is_open_boundary_negative && p.remove_bottom)
+				if (i == p.open_boundary
+						&& !p.open_boundary_negative && p.remove_bottom)
 					remove_flags.set(i);
 			}
 			if (p.boundary_conditions[i].max == bnc::PERIODIC_BOUNDARY
@@ -346,8 +346,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 					|| p.boundary_conditions[i].max == bnc::EXTENDED_BOUNDARY) {
 				remove_flags.set(i + D);
 			} else {
-				if (i == p.open_boundary_direction
-						&& p.is_open_boundary_negative && p.remove_bottom)
+				if (i == p.open_boundary
+						&& p.open_boundary_negative && p.remove_bottom)
 					remove_flags.set(i + D);
 			}
 		}
@@ -357,7 +357,7 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		} else {
 			std::cout << "transform to surface\n";
 			geometry::TransformGeometryToSurfaces(g, Surfaces, remove_flags,
-												  p.GridDelta * p.snap_to_boundary_eps, p.report_import_errors);
+												  p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
 		}
 	}
 	msg::print_done();
@@ -366,9 +366,9 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 	int SurfaceCounter = 0;
 	for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {//unsigned int i=0;i<Surfaces.size();++i) {
 		std::ostringstream oss, oss2;
-		oss << p.OutputPath << "Interface" << "Initial" << "_"
+		oss << p.output_path << "Interface" << "Initial" << "_"
 				<< SurfaceCounter << ".dx";
-		oss2 << p.OutputPath << "Interface" << "Initial" << "_"
+		oss2 << p.output_path << "Interface" << "Initial" << "_"
 				<< SurfaceCounter << ".vtk";
 		it->Write(oss.str());
 		it->WriteVTK(oss2.str());
@@ -389,10 +389,13 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 	msg::print_done();
 
-
-	msg::print_start("Add Initial Layers...");
-	proc::AddLayer(LevelSets, p.AddLayer);
-	msg::print_done();
+	if(p.add_layer>0){
+		std::stringstream oss;
+		oss << "Adding " << p.add_layer << " initial layer" << ((p.add_layer==1)?"...":"s...");
+		msg::print_start(oss.str());
+		proc::AddLayer(LevelSets, p.add_layer);
+		msg::print_done();
+	}
 
 	//organization of the output information by initiation of required models
 	OutputInfoType output_info;
@@ -415,8 +418,8 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 #endif
 
 	for (typename std::list<typename ParameterType2::ProcessParameterType>::iterator
-			pIter = p.ProcessParameters.begin(); pIter
-			!= p.ProcessParameters.end(); ++pIter) {
+			pIter = p.process_parameters.begin(); pIter
+			!= p.process_parameters.end(); ++pIter) {
 		{
 			std::ostringstream oss;
 			oss << "Start execution of process \"" + pIter->ModelName + "\""
@@ -463,7 +466,7 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 				if((unsigned int)pIter->MaskLayers[i]>LevelSets.size()) assert(0);
 				LSIter = LevelSets.begin();
 				for(int a=0; a<pIter->MaskLayers[i]; a++)	LSIter++;		//Advance iterator to corresponding levelset
-				temp_levelSets.back().min(*LSIter);			// AND second mask levelset with first
+				temp_levelSets.back().min(*LSIter);			// Union second mask levelset with first
 				temp_levelSets.back().thin_out();
 			}
 		}
@@ -495,8 +498,12 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		std::swap(LevelSets, temp_levelSets);
 
-		std::cout << std::endl << "AddLayer = " << pIter->AddLayer << "\n";
-		proc::AddLayer(LevelSets, pIter->AddLayer);
+		std::cout << std::endl;
+		if(pIter->AddLayer>0){
+			std::cout << "Add Layer = " << pIter->AddLayer << "\n";
+			proc::AddLayer(LevelSets, pIter->AddLayer);
+		}
+
 		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
 		std::cout << "Active/Total Layers: " << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
 
@@ -688,22 +695,22 @@ int main(int argc, char *argv[]) {
 	assert(std::numeric_limits<double>::is_iec559);
 
 	//!Read Parameters-File and populate Parameters class
-	par::Parameters p(argv[1]);
+	client::Parameters p(argv[1]);
 
 	//!Set maximum number of threads
 #ifdef _OPENMP
-	if (p.OpenMP_threads>0) omp_set_num_threads(p.OpenMP_threads);
+	if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
 #endif
 
 //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
 #ifdef DIMENSION_2
-	if (p.Dimensions == 2)
-		main_<2, par::Parameters> (p);
+	if (p.num_dimensions == 2)
+		main_<2, client::Parameters> (p);
 #endif
 
 #ifdef DIMENSION_3
-	if (p.Dimensions == 3)
-		main_<3, par::Parameters> (p);
+	if (p.num_dimensions == 3)
+		main_<3, client::Parameters> (p);
 #endif
 
   double exec_time = my::time::GetTime()-timer;
