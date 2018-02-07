@@ -17,16 +17,16 @@ namespace model {
             const static double C[]; //{C_NH3_TDMAT, C_TiN_TDMAT, C_TDMAT_NH3, C_TiN_NH3}
             const static double n[]; //{n_NH3, n_TDMAT}
 
-		double molecular_thickness;
-                double reduction_ratio;
-                double step_size;
-                int step;
-                double m_NH3;
-                double m_TDMAT;
-                double sticking_probability;
-		double StartDirection[3];
-		double end_probability;
-		double reaction_order;
+		    double molecular_thickness;
+            double reduction_ratio;
+            double step_size;
+            int step;
+            double m_NH3;
+            double m_TDMAT;
+            double sticking_probability;
+		    double StartDirection[3];
+		    double end_probability;
+		    double reaction_order;
 //                double TDMAT_flux;
 //                double NH3_flux;
                 double Flux;

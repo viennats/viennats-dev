@@ -462,7 +462,7 @@ struct ReportError {
                 active_layers %= lit("active_layers") > '=' > intvec > ';';
                 mask_layers %= lit("mask_layers") > '=' > intvec > ';';
                 process_time %= lit("process_time") > '=' > lexeme[double_] > ';';
-                ald_step %= lit("ald_step") > '=' > lexeme[int_] > ';';
+                ald_step %= (lit("ald_step") | lit("ALD_step")) > '=' > lexeme[int_] > ';';
                 model_name %= lit("model_name") > '=' > quotes > ';';
                 model_parameters %= lit("parameters") > '=' > '{' > +(char_ - (model_param_end)) > model_param_end;    //do not use lexeme to allow skipping for end detection
                 iteration_cycles %= lit("iteration_cycles") > '=' > lexeme[int_] > ';';

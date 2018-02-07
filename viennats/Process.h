@@ -594,7 +594,7 @@ namespace proc {
         const int D=LevelSetType::dimensions;
 		LevelSetType* boolop_ls;
 
-		if(Model.lvlset<0){
+		if(!Model.file_name().empty()){
 			geometry::geometry<D> boolop_geometry;
 			geometry::surface<D> boolop_surface;// = new geometry::surface<D>;
 
@@ -641,11 +641,13 @@ namespace proc {
 			init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
 			boolop_ls = &dummy_ls;
 		}
-		else{			//If internal levelset should be used
+		else if(Model.levelset()>0){			//If internal levelset should be used
 			typename LevelSetsType::iterator it = LevelSets.begin();
-			for(int i=0; i<Model.lvlset; ++i) ++it;
+			for(int i=0; i<Model.levelset(); ++i) ++it;
 			boolop_ls = &(*it);
-		}
+		} else{
+            return;
+        }
 
         if (Model.level()>0) {
 
@@ -664,7 +666,7 @@ namespace proc {
                 ++ls_it;
             }
 
-			if (Model.invert() && Model.lvlset>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
+			if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
         } else {                        //Model.level()<0
 
             if (Model.invert()) boolop_ls->invert();
@@ -685,7 +687,7 @@ namespace proc {
                 ls_it->thin_out();
                 ++ls_it;
             }
-			if (Model.invert() && Model.lvlset>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
+			if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
         }
 		//Write one output if there is any output time or there is final output
 		if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
