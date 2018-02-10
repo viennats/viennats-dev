@@ -99,6 +99,9 @@ namespace lvlset {
 
     public:
 
+        const GridTraitsType&  getGridTraitsConst() const{return this->GridTraits;}
+        const GridTraitsType&  getGridTraits() {return this->GridTraits;}
+
         grid_type(const GridTraitsType& gt) : GridTraits(gt) {      //constructor
             for (int i=0;i<D;i++) {
                 BoundaryConditions_[i]=GridTraits.boundary_condition(i);

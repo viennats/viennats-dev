@@ -21,17 +21,17 @@
 #define DIMENSION_2
 
 //Processes
-/* Processes are not needed for testing file io
 #define PROCESS_CONSTANT_RATES
-#define PROCESS_SIMPLE_DEPOSITION
+// Processes are not needed for testing file io
+/*#define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_TiN_ALD
 #define PROCESS_TiN_PEALD
 #define PROCESS_TiO2_ALD
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_Cl2_CH4_PLASMA_ETCHING
-#define PROCESS_BCl3_PLASMA_ETCHING
+#define PROCESS_BCl3_PLASMA_ETCHING*/
 #define PROCESS_SiO2_PLASMA_ETCHING
-#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
+/*#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
 #define PROCESS_Cl2_N2_ETCHING
 #define PROCESS_CFx_DEPOSITION
 #define PROCESS_HfO2_DEPOSITION
@@ -41,13 +41,13 @@
 #define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
 #define PROCESS_FIB
-*/
+
 
 //LS Processes
 #define PROCESS_PLANARIZATION
 #define PROCESS_MASK
 #define PROCESS_BOOLEANOPS
-
+*/
 //Flux calculation
 #define PROCESS_CALCULATEFLUX
 
@@ -158,6 +158,8 @@ private:
 public:
 	///Can be 2 or 3-dimensional
 	const static int dimensions = D;
+	coord_type getGridDelta()const{return this->GridDelta;}
+	void setGridDelta(coord_type d) {this->GridDelta = d;}
 
 	///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
 	template<class A, class B, class C>
@@ -444,10 +446,16 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
 		//print levelset
-		typedef typename LevelSetsType::iterator LevelSetsIteratorType;
-		//typename LevelSetsType::iterator exportIter = LevelSets.begin();
-		LevelSetsIteratorType exportIter = LevelSets.begin();
-		exportIter->exportLevelSet("./exportedLVLSET.txt");
+		//LevelSets.begin()->print();
+LevelSets.begin()->exportLevelSet("./exportedLVLSet_OLD.lvl");
+		//LevelSets.begin()->importLevelSet("./exportedLVLSET_2.lvl");
+		std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
+LevelSets.begin()->print();
+LevelSets.begin()->printLVSet("./exportedLVLSet_NEW.lvl");
+LevelSets.begin()->importLVSet("./exportedLVLSet_NEW.lvl");
+LevelSets.begin()->print();
+		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
+lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid).importLVSet("./exportedLVLSet_NEW.lvl").print();
 
 		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
@@ -458,8 +466,7 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 			++LSIter;
 		}
 		std::cout << '\b' << " ";
-	/*test*/	LevelSetsIteratorType temp_levelSets_iter = temp_levelSets.begin();
-			temp_levelSets_iter->exportLevelSet("./tmplvlset.txt");
+
 		//add mask layers on top of inactive
 		if(!pIter->MaskLayers.empty()){
 			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i) pIter->MaskLayers[i] -= 1;	//kernel numbering
@@ -676,7 +683,6 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 			proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info, CoveragesALD_TiO2);
         	}
 #endif
-
 		output_info.start_time = output_info.end_time;
 		output_info.process_counter++;
 	}

@@ -30,7 +30,7 @@
 #include "grid.hpp"
 #include "math.hpp"
 //Exporting the levelset to a file specfic for the levelset structure
-//#include "import_export.hpp"
+#include "file_io.hpp"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -108,6 +108,16 @@ namespace lvlset {
 		fout << *this;
 		if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << "\n";
 		fout.close();
+	}
+
+	//the method that imports the levelset
+	void importLevelSet(std::string path)//;
+	{
+		std::ifstream fin(path);//, ios_base::out );//| ios_base::binary);
+		if(!fin.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return; }
+		fin >> *this;
+		if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
+		fin.close();
 	}
 
     private:
@@ -579,68 +589,239 @@ namespace lvlset {
             }
 
 	    //overloading the << operator
-	    friend std::ofstream & operator<<(std::ofstream & os, const sub_levelset_type & sub_lvlset){
-		os << "SUCCESSFUL sublvlset!\n";
-		os << "levelset data structure" << std::endl << std::endl;
-
+	    /************************************************************************************************************
+	    *************************************	The levelset file format  ***************************************
+	    *************************************************************************************************************
+	    *	File Header: 16-20 Bytes*										*
+	    *****************************										*
+	    *   +00 4B Identification Bytes LVST									*
+	    *   +04 1B Pad Byte 'x'											*
+	    *   +05 1B Dimension of the Levelset(2 or3)									*
+	    *   +06 2B Major+Minor version number									*
+	    *   +08 1B Endianess - either LE(0) or BE(1)								*
+	    *	+09 1B Bits Per Run Type										*
+	    *	+10 1B Bits Per Distance										*
+	    *   +11 1B Bytes Per Index											*
+	    *   +12 4-8B GridDelta (sizeof double) 									*
+	    *************************************************************************************************************
+	    *   HRLE Block: 12 Byte Header followed by HRLE Block Data   *						*
+	    *************************************************************************************************************
+	    *   12 Bytes HRLE Block Header: Element Counts for Start Indices, Run Types, Run Breaks			*
+	    *   Followed by Start Indices, Run Types, Run Breaks							*
+	    *************************************************************************************************************
+	    *	4 Byte distance element count										*
+	    *	Distances												*
+	    *************************************************************************************************************
+	    *
+	    *	bitset indexing
+	    *	7   6   5   4   3   2   1   0
+	    *	0   1   1   1   0   0   0   1
+	    *
+	    *************************************************************************************************************/
+	    friend std::ofstream & operator<<(std::ofstream & fout, const sub_levelset_type & sub_lvlset){
+		char byte = 0;		
+		fout << "LVSTx" <<  D << MAJOR_FILE_LVLST_VERSION << MINOR_FILE_LVLST_VERSION << (bigEndian() ? 1 : 0)  << BITS_PER_RUN << BITS_PER_DISTANCE << BYTES_PER_INDEX;
+		double delta = sub_lvlset.Grid.getGridTraitsConst().getGridDelta();
+		fout.write((char *)&(delta), sizeof(double));
+		//os << '|';
+		//std::bitset<CHAR_BIT> bitset;
+		int count;//0
                 for (int dim=D-1;dim>=0;--dim) {
+		    //os << '{';
+		    //12 byte RLE block header
+		    long num = sub_lvlset.start_indices[dim].size();
+		    fout.write((char *)&(num), 4);
+		    num = sub_lvlset.runtypes[dim].size();
+		    fout.write((char *)&(num), 4);
+		    num = sub_lvlset.runbreaks[dim].size();
+		    fout.write((char *)&(num), 4);
 
-                    os <<  dim <<  " start_indices";
-
-                    int c=0;
+                    //os <<  "[";
                     for (typename std::vector<size_type>::const_iterator it=sub_lvlset.start_indices[dim].begin();it!=sub_lvlset.start_indices[dim].end();++it) {
-                        if (c%10==0) os << std::endl;
-                        ++c;
-                        os << std::setw(6) << *it << " ";
-
+                        fout.write((char *)&(*it), BYTES_PER_INDEX);//write 4 bytes, my PC Little endian
                     }
-                    os << std::endl;
+                    //os <<  "]";
 
-                    os << dim << " run_types";
+                    //os << "[";
+		    count = 3;
+		    int num_rt =0;
+           	    std::vector<size_type> d_run_indices = {};
+		    // 00 - defined runtype
+		    // 01 - undefined runtype positive (POS_PT)
+		    // 10 - UNDEF_PT
+		    // 11 - undefined runtype negative (NEG_PT)
+                    for (typename std::vector<size_type>::const_iterator it=sub_lvlset.runtypes[dim].begin(); it != sub_lvlset.runtypes[dim].end() ;it++) {
+			if(*it == POS_PT){//01
+				byte |= 1 << count * BITS_PER_RUN;
+			}
+			else if(*it == NEG_PT){//11
+				byte |= 3 << count * BITS_PER_RUN;
+			}
+			else if(*it == UNDEF_PT){//10
+				byte |= 2 << count * BITS_PER_RUN;
+			}
+			else if(*it == SEGMENT_PT){//skip
+				continue;
+			}
+			else {//00
+				byte |= 0 << count * BITS_PER_RUN;
+				d_run_indices.push_back(*it);
+			}
+			num_rt++;count--;
 
-                    c=0;
-                    for (typename std::vector<size_type>::const_iterator it=sub_lvlset.runtypes[dim].begin();it!=sub_lvlset.runtypes[dim].end();++it) {
-                        if (c%10==0) std::cout << std::endl;
-                        ++c;
-                        if ((*it)==POS_PT) {
-                            os << std::setw(6) << "+oo" << " ";
-                        } else if ((*it)==NEG_PT) {
-                            os << std::setw(6) << "-oo" << " ";
-                        } else if ((*it)==UNDEF_PT) {
-                            os << std::setw(6) << "UND" << " ";
-                        } else if (!is_defined(*it)) {
-                            os << "S" << std::setw(5) << ((*it) - SEGMENT_PT) << " ";
-                        } else {
-                            os << std::setw(6) << (*it) << " ";
-                        }
-
+			if(count < 0){
+				fout << byte;
+				count = 3;byte=0;
+			}
                     }
-                    os << std::endl;
+		    //std::cout << "Count: " << count << std::endl << "Num_Rt: " << num_rt << std::endl;
+		    if(count >= 0 && count < 3){
+			fout << byte;
+			count = 3;byte=0;
+		    }
+		    //std::cout << "Defined Runs: " << d_run_indices.size() << std::endl;
+		    for (typename std::vector<size_type>::const_iterator it=d_run_indices.begin();it!=d_run_indices.end();++it) {
+                        fout.write((char *)&(*it), BYTES_PER_INDEX);//std::cout << "DFR: " << *it<< std::endl;//write 4 bytes, my PC Little endian
+                    }
+                    //os <<  "]";
+		    //std::cout << num_rt << " run types of "<< sub_lvlset.runtypes[dim].size() <<" written. This equals " << ceil(num_rt/4.0) << " bytes.\n";
 
-                    os << dim << " run_breaks";
-
-                    c=0;
+                    //os << "[";
                     for (typename std::vector<index_type>::const_iterator it=sub_lvlset.runbreaks[dim].begin();it!=sub_lvlset.runbreaks[dim].end();++it) {
-                        if (c%10==0) os << std::endl;
-                        ++c;
-                        os << std::setw(6) << *it << " ";
-
+			fout.write((char *)&(*it), BYTES_PER_INDEX);//std::cout << "RN Break: " << *it << std::endl;
                     }
-                    os << std::endl;
+                    //os <<  "]}";
 
                 }
-
-                os << "distances";
-
-                int c=0;
+		long num = sub_lvlset.distances.size();
+		//std::cout << "Distances to write: " << num  << std::endl;
+		fout.write((char *)&(num), 4);
+		count = 1;
                 for (typename std::vector<value_type>::const_iterator it=sub_lvlset.distances.begin();it!=sub_lvlset.distances.end();++it) {
-                    if (c%10==0) os << std::endl;
-                    ++c;
-                    os.precision(3);
-                    os << std::setw(6) << *it << " ";
-
+			/*
+			*  Levelset values range from -1 .... +1
+			*  With 4 bits we can represent values from 0 .... 15 or -8 ... +7
+			*  I chose 0 .... 15
+			*  -1   .... +1    |*7.5
+			*  -7.5 .... +7.5  |+7.5
+			*  0    .... +15
+			*/
+			byte |= std::lround(*it * 7.5 + 7.5) << count * BITS_PER_DISTANCE;
+			//std::cout << (*it) <<  " transforms to: " << std::round(*it * 7.5 + 7.5) << std::endl;
+			count--;
+			if(count < 0){
+				fout << byte;
+				count = 1;byte=0;
+			}
                 }
-		return os;	
+		if(count == 0){
+		    fout << byte;
+		    count = 1;byte=0;
+		}
+		return fout;	
+	    }
+
+
+	    friend std::ifstream & operator>>(std::ifstream & fin, sub_levelset_type & sub_lvlset){
+		std::cout << "Reading in LVLST\n";
+		char buff[12] = {};
+		char byte = 0;
+		uint32_t uInt;
+		int32_t sInt;
+		fin.read(buff, 12);
+		std::cout << buff << std::endl;
+		//LVSTx
+		int dimension = buff[5]-48;
+		if(MAJOR_FILE_LVLST_VERSION !=  buff[6]-48 || MINOR_FILE_LVLST_VERSION != buff[7]-48) std::cout << "WARNING: File version does not match!" << std::endl;
+		if(bigEndian() != buff[8]-48) std::cout << "WARNING: File was written in a different byte order than it is being read. Results may be incorrect!" << std::endl;
+		int bits_per_run = buff[9]-48;
+		int bits_per_distance = buff[10]-48;
+		int bytes_per_index = buff[11]-48;
+		std::cout << "Dimension: " << dimension << std::endl << "Bits per run:" << bits_per_run << std::endl;
+		std::cout << "Bits per distance:" << bits_per_distance << std::endl;
+		std::cout << "Bytes per index:" << bytes_per_index << std::endl;
+		double gridDelta;
+		fin.read((char *)&gridDelta, sizeof(double));
+		//sub_lvlset.Grid.getGridTraits().setGridDelta(gridDelta);
+		std::cout << "Delta: " << gridDelta << std::endl;
+		for(int i=dimension;i--;){
+			int32_t num_st_indices=0, num_run_types=0, num_run_breaks=0;
+			fin.read((char *)&num_st_indices, 4);
+			fin.read((char *)&num_run_types, 4);
+			fin.read((char *)&num_run_breaks, 4);
+			std::cout << "\nST Indices: " << num_st_indices << std::endl;
+			std::cout << "RN Types: " << num_run_types << std::endl;
+
+			if(sub_lvlset.start_indices[i].size() > 0)
+				sub_lvlset.start_indices[i].clear();
+
+			for(int x = 0; x < num_st_indices; x++){
+				fin.read((char*) &uInt, bytes_per_index);
+				sub_lvlset.start_indices[i].push_back(uInt);
+			}
+			int count = 0, run_types_read = 0;
+			std::cout << "Num_Bytes_RT: " << std::ceil(num_run_types/4.0) << std::endl;
+			if(sub_lvlset.runtypes[i].size() > 0)
+				sub_lvlset.runtypes[i].clear();
+			for(int y = 0; y < std::ceil(num_run_types/4.0); y++){
+				fin.read(&byte, 1);
+				for(int z = 4; z--;){
+					if(run_types_read == num_run_types) break;
+					uInt = ((byte & (0x03 << z*bits_per_run)) >> z*bits_per_run);// << std::endl;
+					//std::cout << uInt;// << std::endl << (bool)(uInt == 3) << std::endl;
+					if(uInt == 1) sub_lvlset.runtypes[i].push_back(POS_PT);
+					else if(uInt == 3) sub_lvlset.runtypes[i].push_back(NEG_PT);
+					else if(uInt == 2) sub_lvlset.runtypes[i].push_back(UNDEF_PT);
+					else if(uInt == 0) sub_lvlset.runtypes[i].push_back(101), count++;
+					run_types_read++;
+				}
+				//std::cout << std::endl;
+			}
+			std::cout << std::endl << "Run Types read: " << run_types_read << std::endl << "Defined Runs: " << count << std::endl;
+
+			for(unsigned int j=0; j<sub_lvlset.runtypes[i].size(); j++){
+				if(sub_lvlset.runtypes[i][j] == 101){
+					fin.read((char *) &uInt, bytes_per_index);
+					sub_lvlset.runtypes[i][j] = uInt;
+				}
+			}
+
+			std::cout << "RN Breaks: " << num_run_breaks << std::endl;
+			if(sub_lvlset.runbreaks[i].size() > 0)
+				sub_lvlset.runbreaks[i].clear();
+			for(int z = 0; z < num_run_breaks; z++){
+				sInt = 0;fin.read((char *) &sInt, bytes_per_index);
+				//std::cout << sInt << std::endl;
+				sub_lvlset.runbreaks[i].push_back(sInt);
+			}
+		}
+
+		long num_distances = 0, distances_read=0;
+		fin.read((char *)&num_distances, 4);
+		std::cout << "Distances to read: " << num_distances << std::endl;
+		if(sub_lvlset.distances.size() > 0)
+			sub_lvlset.distances.clear();
+		for(int i = 0; i < std::round(num_distances/2.0); i++){
+			fin.read(&byte, 1);
+			for(unsigned int z = 2; z--;){
+				if(distances_read == num_distances) break; //if we have an odd number of distances we need to break so the last 4 bits are not interpreted as a distance they are padding
+				//std::cout << ((byte & (0xF << z*bits_per_distance)) >> z*bits_per_distance);// << std::endl;
+				uInt = ((byte & (0xF << z*bits_per_distance)) >> z*bits_per_distance);
+				/*
+				*  To transform the saved dustances into discrete points we go from 0 .... 15 to -1 .... +1
+				*  0  .... 15  |:7.5
+				*  0  .... +2  |-1
+				*  -1 .... +1
+				*/
+				sub_lvlset.distances.push_back(uInt / 7.5 - 1);
+				//std::cout << uInt <<  " transforms to: " << (uInt / 7.5 - 1) << std::endl;
+				distances_read++;
+			}
+			//std::cout << std::endl;
+		}
+		std::cout << distances_read << " Distances read." << std::endl;
+
+		return fin;	
 	    }
 
             //TODO
@@ -726,11 +907,19 @@ namespace lvlset {
         public:
 
 	    //overloading the << operator
-	    friend std::ofstream & operator<<(std::ofstream & os, const sub_levelsets_type & sub_lvlsets){
+	    friend std::ofstream & operator<<(std::ofstream & fout, const sub_levelsets_type & sub_lvlsets){
 		for (typename sub_levelsets_type::size_type i=0;i!=sub_lvlsets.size();++i) {
-           	    os << *(sub_lvlsets.subs[i]);
+           	    fout << *(sub_lvlsets.subs[i]);
             	}
-		return os;	
+		return fout;	
+	    }
+
+	    //overloading the >> operator
+	    friend std::ifstream & operator>>(std::ifstream & fin, const sub_levelsets_type & sub_lvlsets){
+		for (typename sub_levelsets_type::size_type i=0;i!=sub_lvlsets.size();++i) {
+           	    fin >> *(sub_lvlsets.subs[i]);
+            	}
+		return fin;	
 	    }
 
             typedef typename sub_levelsets_intern_type::size_type size_type;
@@ -1039,11 +1228,276 @@ namespace lvlset {
             }
         }
 
+	levelset& printLVSet(std::string path){
+		std::ofstream fout(path);//, ios_base::out );//| ios_base::binary);
+		if(!fout.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return *this; }
+
+		char byte = 0;
+		//write the file header
+		fout << "LVSTx" <<  D << MAJOR_FILE_LVLST_VERSION << MINOR_FILE_LVLST_VERSION << (bigEndian() ? 1 : 0)  << BITS_PER_RUN << BITS_PER_DISTANCE << BYTES_PER_INDEX;
+		double delta = sub_levelsets[0].Grid.getGridTraitsConst().getGridDelta();
+		fout.write((char *)&(delta), sizeof(double));
+		//std::bitset<CHAR_BIT> bitset;
+		int count;
+                for (int dim=D-1;dim>=0;--dim) {
+		    //get start indices, runtypes and runbreaks
+		    std::vector<size_type> & startIndices = (sub_levelsets[0]).start_indices[dim];
+		    //copy all runtypes that are not segment points into one vector
+		    /*std::vector<size_type> runTypes = {};
+		    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+			y = last;
+			for(; y<sub_levelsets[x].runtypes[dim].size(); y++){
+				size_type rt = sub_levelsets[x].runtypes[dim][y];
+				if (rt != POS_PT && rt != NEG_PT && rt != UNDEF_PT && !is_defined(rt))
+			            continue;
+			        else
+				    if(last != y || (x == 0 && last == y)){
+			        	RN_TY.push_back(rt);
+					last = y;
+				    }
+			}
+		    }*/
+		    std::vector<index_type> & runBreaks = (sub_levelsets[0]).runbreaks[dim];
+
+		    //12 byte RLE block header
+		    uint32_t num = startIndices.size();
+		    fout.write((char *)&(num), 4);
+		    num = sub_levelsets[0].runtypes[dim].size();//runTypes.size()
+		    fout.write((char *)&(num), 4);
+		    num = runBreaks.size();
+		    fout.write((char *)&(num), 4);
+
+		    //write the start indices to the file
+                    for (typename std::vector<size_type>::const_iterator it=startIndices.begin();it!=startIndices.end();++it) {
+                        fout.write((char *)&(*it), BYTES_PER_INDEX);//write 4 bytes, my PC Little endian
+                    }
+
+		    //write all runtypes, skipping all segments
+		    uint32_t last = 0, y;
+		    count = 3;
+           	    std::vector<size_type> d_run_indices = {};
+		    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+			y = last;
+			for(; y<sub_levelsets[x].runtypes[dim].size(); y++){
+				size_type rt = sub_levelsets[x].runtypes[dim][y];
+				if(rt == POS_PT){// 01 - positive undefined runtype
+					byte |= 1 << count * BITS_PER_RUN;
+					last = y;count--;
+				}
+				else if(rt == NEG_PT){// 11 - negative undefined runtype
+					byte |= 3 << count * BITS_PER_RUN;
+					last = y;count--;
+				}
+				else if(rt == UNDEF_PT){// 10 - uninitialized runtype
+					byte |= 2 << count * BITS_PER_RUN;
+					last = y;count--;
+				}
+				else if(!is_defined(rt)){// skip Segments
+					continue;
+				}
+				else {// 00 - defined runtype
+					if(last != y || (x == 0 && last == y)){
+					    byte |= 0 << count * BITS_PER_RUN;
+					    d_run_indices.push_back(rt);
+					    last = y;count--;
+					}
+				}
+				if(count < 0){
+					fout << byte;
+					count = 3;byte=0;
+				}
+                    	}
+		    }
+		    //std::cout << "Count: " << count << std::endl << "Num_Rt: " << num_rt << std::endl;
+		    if(count >= 0 && count < 3){
+		        fout << byte;
+		        byte=0;
+		    }
+
+
+		    //write run types only - deprecated
+                    /*for (typename std::vector<size_type>::const_iterator it=runTypes.begin(); it != runTypes.end() ;it++) {
+			if(*it == POS_PT) byte |= 1 << count * BITS_PER_RUN;
+			else if(*it == NEG_PT) byte |= 3 << count * BITS_PER_RUN;
+			else if(*it == UNDEF_PT) byte |= 2 << count * BITS_PER_RUN;
+			else if(*it == SEGMENT_PT) continue;
+			else {
+				byte |= 0 << count * BITS_PER_RUN;
+				d_run_indices.push_back(*it);
+			}
+			count--;
+
+			if(count < 0){
+				fout << byte;
+				count = 3;byte=0;
+			}
+                    }
+		    if(count >= 0 && count < 3){
+			fout << byte;
+			byte=0;
+		    }*/
+		    //write defined runtypes
+		    for (typename std::vector<size_type>::const_iterator it=d_run_indices.begin();it!=d_run_indices.end();++it) {
+                        fout.write((char *)&(*it), BYTES_PER_INDEX);//std::cout << "DFR: " << *it<< std::endl;//write 4 bytes, my PC Little endian
+                    }
+
+		    //Write runbreaks
+                    for (typename std::vector<index_type>::const_iterator it=runBreaks.begin();it!=runBreaks.end();++it) {
+			fout.write((char *)&(*it), BYTES_PER_INDEX);//std::cout << "RN Break: " << *it << std::endl;
+                    }
+
+                }
+		//get distances
+		std::vector<value_type> & distances = sub_levelsets[0].distances;
+		long num = distances.size();
+		//std::cout << "Distances to write: " << num  << std::endl;
+		fout.write((char *)&(num), 4);
+		count = 1;
+                for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
+			//  Levelset values range from -1 .... +1
+			//  With 4 bits we can represent values from 0 .... 15 or -8 ... +7
+			//  I chose 0 .... 15
+			// -1   .... +1    |*7.5
+			// -7.5 .... +7.5  |+7.5
+			//  0   .... +15
+			byte |= std::lround(*it * 7.5 + 7.5) << count * BITS_PER_DISTANCE;
+			//std::cout << (*it) <<  " transforms to: " << std::round(*it * 7.5 + 7.5) << std::endl;
+			count--;
+			if(count < 0){
+				fout << byte;
+				count = 1;byte=0;
+			}
+                }
+		if(count == 0)
+		    fout << byte;
+
+		if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << "\n";
+		fout.close();
+		return *this;
+	}
+
+	levelset& importLVSet(std::string path){
+		std::ifstream fin(path);//, ios_base::out );//| ios_base::binary);
+		if(!fin.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return *this; }
+
+
+		std::cout << "Reading in LevelSet from " << path << std::endl;
+		char buff[12] = {};
+		char byte = 0;
+		uint32_t uInt;
+		int32_t sInt;
+		fin.read(buff, 12);
+		//std::cout << buff << std::endl;
+		//LVSTx
+		int dimension = buff[5]-48;
+		if(MAJOR_FILE_LVLST_VERSION !=  buff[6]-48 || MINOR_FILE_LVLST_VERSION != buff[7]-48) std::cout << "WARNING: File version does not match!" << std::endl;
+		if(bigEndian() != buff[8]-48) std::cout << "WARNING: File was written in a different byte order than it is being read. Results may be incorrect!" << std::endl;
+		int bits_per_run = buff[9]-48;
+		int bits_per_distance = buff[10]-48;
+		int bytes_per_index = buff[11]-48;
+		std::cout << "Dimensions: " << dimension << std::endl << "Bits per run:" << bits_per_run << std::endl;
+		std::cout << "Bits per distance:" << bits_per_distance << std::endl;
+		std::cout << "Bytes per index:" << bytes_per_index << std::endl;
+		double gridDelta;
+		fin.read((char *)&gridDelta, sizeof(double));
+		//sub_lvlset.Grid.getGridTraits().setGridDelta(gridDelta);
+		std::cout << "Delta: " << gridDelta << std::endl;
+		for(int i=dimension;i--;){
+			std::vector<size_type>& startIndices = sub_levelsets[0].start_indices[i];
+			std::vector<size_type>& runTypes = sub_levelsets[0].runtypes[i];
+			std::vector<index_type>& runBreaks = sub_levelsets[0].runbreaks[i];
+			uint32_t num_st_indices=0, num_run_types=0, num_run_breaks=0;
+			fin.read((char *)&num_st_indices, 4);
+			fin.read((char *)&num_run_types, 4);
+			fin.read((char *)&num_run_breaks, 4);
+
+			unsigned int values_read = 0;
+			if(startIndices.size() > 0) startIndices.clear();
+			for(unsigned int x = 0; x < num_st_indices; x++){
+				fin.read((char*) &uInt, bytes_per_index);
+				startIndices.push_back(uInt);
+				values_read++;
+			}
+			std::cout << "Dimension " << i << std::endl << "\t" << values_read << " of " << num_st_indices << " Start Indices read." << std::endl;
+
+			int count = 0; values_read = 0;
+			if(runTypes.size() > 0) runTypes.clear();
+			for(int y = 0; y < std::ceil(num_run_types/4.0); y++){
+				fin.read(&byte, 1);
+				for(int z = 4; z--;){
+					if(values_read == num_run_types) break;
+					uInt = ((byte & (0x03 << z*bits_per_run)) >> z*bits_per_run);// << std::endl;
+					if(uInt == 1) runTypes.push_back(POS_PT);
+					else if(uInt == 3) runTypes.push_back(NEG_PT);
+					else if(uInt == 2) runTypes.push_back(UNDEF_PT);
+					else if(uInt == 0) runTypes.push_back(0), count++;
+					values_read++;
+				}
+			}
+			std::cout << "\t" << values_read << " of " << num_run_types << " Run Types read." << " Defined Runs: " << count << std::endl;
+
+			for(unsigned int j=0; j<runTypes.size(); j++){
+				if(runTypes[j] == 0){
+					fin.read((char *) &uInt, bytes_per_index);
+					runTypes[j] = uInt;
+				}
+			}
+
+			values_read = 0;
+			if(runBreaks.size() > 0) runBreaks.clear();
+			for(unsigned int z = 0; z < num_run_breaks; z++){
+				sInt = 0;fin.read((char *) &sInt, bytes_per_index);
+				runBreaks.push_back(sInt);
+				values_read++;
+			}
+			std::cout << "\t" << values_read << " of " << num_run_breaks << " Run Breaks." << std::endl;
+		}
+
+		uint32_t num_distances = 0, distances_read=0;
+		fin.read((char *)&num_distances, 4);
+		std::vector<value_type> & distances = sub_levelsets[0].distances;
+		if(distances.size() > 0)
+			distances.clear();
+		for(int i = 0; i < std::round(num_distances/2.0); i++){
+			fin.read(&byte, 1);
+			for(unsigned int z = 2; z--;){
+				if(distances_read == num_distances) break; //if we have an odd number of distances we need to break so the last 4 bits are not interpreted as a distance they are padding
+				//std::cout << ((byte & (0xF << z*bits_per_distance)) >> z*bits_per_distance);// << std::endl;
+				uInt = ((byte & (0xF << z*bits_per_distance)) >> z*bits_per_distance);
+				/*
+				*  To transform the saved dustances into discrete points we go from 0 .... 15 to -1 .... +1
+				*  0  .... 15  |:7.5
+				*  0  .... +2  |-1
+				*  -1 .... +1
+				*/
+				distances.push_back(uInt / 7.5 - 1);
+				//std::cout << uInt <<  " transforms to: " << (uInt / 7.5 - 1) << std::endl;
+				distances_read++;
+			}
+			//std::cout << std::endl;
+		}
+		std::cout << distances_read << " of " << num_distances << " Distances read." << std::endl;
+
+
+
+		if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
+		fin.close();
+		return *this;
+	}
+
+
 	//overloading the << operator
-	friend std::ofstream & operator<<(std::ofstream & os, const levelset & ls)//;
+	friend std::ofstream & operator<<(std::ofstream & fout, const levelset & ls)
 	{
-                os << ls.sub_levelsets;
-		return os;	
+                fout << ls.sub_levelsets;
+		return fout;	
+	}
+
+	//overloading the >> operator
+	friend std::ifstream & operator>>(std::ifstream & fin, const levelset & ls)
+	{
+                fin >> ls.sub_levelsets;
+		return fin;	
 	}
 
         void swap(levelset<GridTraitsType, LevelSetTraitsType>& l) {
