@@ -455,7 +455,7 @@ LevelSets.begin()->printLVSet("./exportedLVLSet_NEW.lvl");
 LevelSets.begin()->importLVSet("./exportedLVLSet_NEW.lvl");
 LevelSets.begin()->print();
 		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
-lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid).importLVSet("./exportedLVLSet_NEW.lvl").print();
+//lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid).importLVSet("./exportedLVLSet_NEW.lvl").print();
 
 		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
