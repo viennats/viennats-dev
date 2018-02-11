@@ -159,7 +159,11 @@ public:
 	///Can be 2 or 3-dimensional
 	const static int dimensions = D;
 	coord_type getGridDelta()const{return this->GridDelta;}
-	void setGridDelta(coord_type d) {this->GridDelta = d;}
+	void setGridDelta(coord_type grid_delta){this->GridDelta = grid_delta;}
+	index_type getMin(int dim)const{return this->Min_[dim];}
+	index_type getMax(int dim)const{return this->Max_[dim];}
+	void setMin(int dim, index_type min){this->Min_[dim] = min;}
+	void setMax(int dim, index_type max){this->Max_[dim] = max;}
 
 	///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
 	template<class A, class B, class C>
@@ -169,6 +173,18 @@ public:
 		for (int i = 0; i < D; i++) {
 			Min_[i] = min[i];
 			Max_[i] = max[i];
+			BoundaryConditions_[i] = b[i];
+		}
+	}
+
+	///GridTraitsType constructor to populate the boundary conditions
+	template</*class A,*/ class B/*, class C*/>
+	GridTraitsType(/*const A& min, const A& max, */const B& b/*, C grid_delta*/) /*:
+		GridDelta(grid_delta) */{
+
+		for (int i = 0; i < D; i++) {
+			//Min_[i] = min[i];
+			//Max_[i] = max[i];
 			BoundaryConditions_[i] = b[i];
 		}
 	}
@@ -446,17 +462,20 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
 		//print levelset
-		//LevelSets.begin()->print();
-LevelSets.begin()->exportLevelSet("./exportedLVLSet_OLD.lvl");
-		//LevelSets.begin()->importLevelSet("./exportedLVLSET_2.lvl");
-		std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
+std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
+std::ofstream fout("./LVSetWithSegmentation.txt");
+LevelSets.begin()->print(fout);
 LevelSets.begin()->print();
+fout.close();
 LevelSets.begin()->printWithoutSegmentation();
-LevelSets.begin()->printLVSet("./exportedLVLSet_NEW.lvl");
-LevelSets.begin()->importLVSet("./exportedLVLSet_NEW.lvl");
+fout = std::ofstream("./LVSetWithoutSegmentation.txt");
+LevelSets.begin()->printWithoutSegmentation(fout);
+fout.close();
+LevelSets.begin()->exportLevelSet("./exportedLVLSet_.lvl").importLevelSet("./exportedLVLSet_.lvl");
+//LevelSets.begin()->importLevelSet("./exportedLVLSet_.lvl");
 LevelSets.begin()->printWithoutSegmentation();
+
 		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
-//lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid).importLVSet("./exportedLVLSet_NEW.lvl").print();
 
 		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
