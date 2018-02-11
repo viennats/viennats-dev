@@ -745,18 +745,15 @@ namespace lvlset {
                 for (int dim=D-1;dim>=0;--dim) {
 
                     std::cout <<  dim <<  " start_indices";
-
                     int c=0;
                     for (typename std::vector<size_type>::const_iterator it=start_indices[dim].begin();it!=start_indices[dim].end();++it) {
                         if (c%10==0) std::cout << std::endl;
                         ++c;
                         std::cout << std::setw(6) << *it << " ";
-
                     }
                     std::cout << std::endl;
 
                     std::cout << dim << " run_types";
-
                     c=0;
                     for (typename std::vector<size_type>::const_iterator it=runtypes[dim].begin();it!=runtypes[dim].end();++it) {
                         if (c%10==0) std::cout << std::endl;
@@ -772,32 +769,27 @@ namespace lvlset {
                         } else {
                             std::cout << std::setw(6) << (*it) << " ";
                         }
-
                     }
                     std::cout << std::endl;
 
                     std::cout << dim << " run_breaks";
-
                     c=0;
                     for (typename std::vector<index_type>::const_iterator it=runbreaks[dim].begin();it!=runbreaks[dim].end();++it) {
                         if (c%10==0) std::cout << std::endl;
                         ++c;
                         std::cout << std::setw(6) << *it << " ";
-
                     }
                     std::cout << std::endl;
 
                 }
 
                 std::cout << "distances";
-
                 int c=0;
                 for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
                     if (c%10==0) std::cout << std::endl;
                     ++c;
                     std::cout.precision(3);
                     std::cout << std::setw(6) << *it << " ";
-
                 }
                 std::cout << std::endl;
                 std::cout << std::endl;
@@ -878,6 +870,11 @@ namespace lvlset {
             size_type size() const {
             // return the size of the vector for parallelization
                 return subs.size();
+            }
+
+            void resize(int size) {
+            // resizes the vector of parallelization
+                subs.resize(size);
             }
 
             sub_levelsets_type(const sub_levelsets_type& s) {
@@ -1140,6 +1137,75 @@ namespace lvlset {
             }
         }
 
+	void printWithoutSegmentation() const{
+	    std::cout << std::endl;
+	    std::cout << "Levelset data structure without segmentation" << std::endl << std::endl;
+
+            for (int dim=D-1;dim>=0;--dim) {
+                    std::cout <<  dim <<  " start_indices";
+                    int c=0;
+                    for (typename std::vector<size_type>::const_iterator it=sub_levelsets[0].start_indices[dim].begin();it!=sub_levelsets[0].start_indices[dim].end();++it) {
+                        if (c%10==0) std::cout << std::endl; ++c;
+                        std::cout << std::setw(6) << *it << " ";
+                    }
+                    std::cout << std::endl;
+
+                    std::cout << dim << " run_types";
+		    uint32_t last = 0, y;
+		    c=0;
+		    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+			y = last;
+                       	if (c%10==0) std::cout << std::endl; ++c;
+			for(; y<sub_levelsets[x].runtypes[dim].size(); y++){
+				size_type rt = sub_levelsets[x].runtypes[dim][y];
+				if(rt == POS_PT){// 01 - positive undefined runtype
+					std::cout << std::setw(6) << "+oo" << " ";
+					last = y;
+				}
+				else if(rt == NEG_PT){// 11 - negative undefined runtype
+					std::cout << std::setw(6) << "-oo" << " ";
+					last = y;
+				}
+				else if(rt == UNDEF_PT){// 10 - uninitialized runtype
+					std::cout << std::setw(6) << "UND" << " ";
+					last = y;
+				}
+				else if(!is_defined(rt)){// skip Segments
+					continue;
+				}
+				else {// 00 - defined runtype
+					if(last != y || (x == 0 && last == y)){
+					    std::cout << std::setw(6) << rt << " ";
+					    last = y;
+					}
+				}
+                    	}
+		    }
+                    std::cout << std::endl;
+
+                    std::cout << dim << " run_breaks";
+                    c=0;
+                    for (typename std::vector<index_type>::const_iterator it=sub_levelsets[0].runbreaks[dim].begin();it!=sub_levelsets[0].runbreaks[dim].end();++it) {
+                        if (c%10==0) std::cout << std::endl; ++c;
+                        std::cout << std::setw(6) << *it << " ";
+                    }
+                    std::cout << std::endl;
+
+                }
+
+                std::cout << "distances";
+                int c=0;
+                for (typename std::vector<value_type>::const_iterator it=sub_levelsets[0].distances.begin();it!=sub_levelsets[0].distances.end();++it) {
+                    if (c%10==0) std::cout << std::endl;
+                    ++c;
+                    std::cout.precision(3);
+                    std::cout << std::setw(6) << *it << " ";
+                }
+                std::cout << std::endl;
+                std::cout << std::endl;
+        }
+
+
 	levelset& printLVSet(std::string path){
  	/*************************************************************************************************************
 	***************************************    THE LEVELSET FILE FORMAT    ***************************************
@@ -1332,6 +1398,7 @@ namespace lvlset {
 		double gridDelta;
 		fin.read((char *)&gridDelta, sizeof(double));
 		std::cout << "Delta: " << gridDelta << std::endl;
+		sub_levelsets.resize(1);
 		for(int i=dimension;i--;){
 			std::vector<size_type>& startIndices = sub_levelsets[0].start_indices[i];
 			std::vector<size_type>& runTypes = sub_levelsets[0].runtypes[i];

@@ -451,9 +451,10 @@ LevelSets.begin()->exportLevelSet("./exportedLVLSet_OLD.lvl");
 		//LevelSets.begin()->importLevelSet("./exportedLVLSET_2.lvl");
 		std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
 LevelSets.begin()->print();
+LevelSets.begin()->printWithoutSegmentation();
 LevelSets.begin()->printLVSet("./exportedLVLSet_NEW.lvl");
 LevelSets.begin()->importLVSet("./exportedLVLSet_NEW.lvl");
-LevelSets.begin()->print();
+LevelSets.begin()->printWithoutSegmentation();
 		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
 //lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid).importLVSet("./exportedLVLSet_NEW.lvl").print();
 
