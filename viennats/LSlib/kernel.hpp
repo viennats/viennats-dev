@@ -1053,15 +1053,15 @@ namespace lvlset {
 	*	+10 1Byte    Bits Per Distance									     *
 	*	+11 4-8Bytes GridDelta (sizeof double) 								     *
 	**************************************************************************************************************
-	*	H - RLE Block Header: 15 Bytes	*								     *
+	*	H - RLE Block Header: 13 Bytes	*								     *
 	*****************************************								     *
 	*	4Bytes Number of saved Start Indices								     *
 	*	4Bytes Number of saved Runtypes									     *
 	*	4Bytes Number of saved Runbreaks								     *
-	*	1Byte  Bytes per Start Indices									     *
-	*	1Byte  Bytes per Runtypes									     *
-	*	1Byte  Bytes per Runbreaks									     *
-	************************************************	TODO	**********************************************
+	*	1Byte  Bytes per Start Index, Runtype, Runbreak, GridLimit					     *
+	*	   GridLimit Runbreak RunType Start Index							     *
+	*	      1 0       0 1     1 0     1 1								     *
+	***************************************************  TODO  ***************************************************
 	*	4Bytes Grid Minimum										     *
 	*	4Bytes Grid Maximum										     *
 	**************************************************************************************************************
@@ -1079,48 +1079,119 @@ namespace lvlset {
 		std::ofstream fout(path);
 		if(!fout.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return *this; }
 
-		char byte = 0;
+		char byte;
 		//write the file header
 		fout << "LVSTx" <<  D << MAJOR_FILE_LVLST_VERSION << MINOR_FILE_LVLST_VERSION << (bigEndian() ? 1 : 0)  << BITS_PER_RUN << BITS_PER_DISTANCE;
 		double delta = sub_levelsets[0].Grid.getGridTraitsConst().getGridDelta();
 		fout.write((char *)&(delta), sizeof(double));
 		int count;
+
+	        const int32_t UINT24_MAX = 16777215;// highest value of 3 unsigned bytes  2^24-1
+	        const int32_t INT24_MAX  =  8388607;// highest value of 3 signed   bytes  2^23-1
+	        const int32_t INT24_MIN  = -8388608;// lowest  value of 3 signed   bytes -2^23
+
                 for (int dim=D-1;dim>=0;--dim) {
 		    //get gridMinimum and gridMaximum
-		    index_type min = sub_levelsets[0].Grid.getGridTraitsConst().getMin(dim);
-		    index_type max = sub_levelsets[0].Grid.getGridTraitsConst().getMax(dim);
+		    index_type grid_min = sub_levelsets[0].Grid.getGridTraitsConst().getMin(dim);
+		    index_type grid_max = sub_levelsets[0].Grid.getGridTraitsConst().getMax(dim);
 		    //get start indices, runbreaks and runtypes
 		    std::vector<size_type> & startIndices = sub_levelsets[0].start_indices[dim];
 		    std::vector<index_type> & runBreaks = sub_levelsets[0].runbreaks[dim];
-		    uint32_t bytesPerStIndex = *(sub_levelsets[0].start_indices[dim].end()-1);
-		    int32_t bytesPerRnBreak = *(sub_levelsets[0].start_indices[dim].end()-1);
-		    if(bytesPerStIndex < UINT8_MAX) bytesPerStIndex = 1;
-		    else if(bytesPerStIndex < UINT16_MAX) bytesPerStIndex = 2;
-		    else bytesPerStIndex = 4;
-		    if(bytesPerRnBreak < INT8_MAX) bytesPerRnBreak = 1;
-		    else if(bytesPerRnBreak < INT16_MAX) bytesPerRnBreak = 2;
-		    else bytesPerRnBreak = 4;
 
-		    //15 byte H-RLE block header
+		    //instead of searching for the highest values of start indices, runtypes and runbreaks
+		    //we just take the sizes of the arrays, because
+		    //the highest start index is lower or equal to the size of runtypes(start index points to a runtype)
+		    //the highest runtype is lower or equal to the size of start indices of the next dimension or if dim==0 
+		    //lower or equal to the size of distances(defined runtype points to a distance)
+		    //the highest runbreak is lower or equal to grid_max
+		    uint32_t bytesPerStIndex = sub_levelsets[0].runtypes[dim].size();
+		    uint32_t bytesPerRnType = (dim == 0) ? sub_levelsets[0].distances.size() : sub_levelsets[0].start_indices[dim-1].size();
+		    int32_t bytesPerRnBreak = grid_max;
+		    int32_t bytesForGridMin, bytesForGridMax;
+
+		    /*/or we search for the highest values in the vectors
+		    //the highest start index is at the end
+		    uint32_t bytesPerStIndex = *(startIndices.end()-1);
+		    //runBreaks, max element may not be at the end; std:max_element has complexity of N-1 comparisons
+		    //the highest runbreak is the maximum of that vector
+		    int32_t bytesPerRnBreak = *std::max_element(runBreaks.begin(), runBreaks.end());
+		    //we have to search for the highest runtype and exclude POS_PT, NEG_PT, UNDEF_PT and SEGEMENT_PT
+		    uint32_t bytesPerRnType = 0;
+		    //size_type min_pt = std::min({POS_PT,NEG_PT,UNDEF_PT,SEGMENT_PT});
+		    //size_type max_pt = std::max({POS_PT,NEG_PT,UNDEF_PT,SEGMENT_PT});
+		    for(typename std::vector<size_type>::const_iterator it=sub_levelsets[0].runtypes[dim].begin();it!=sub_levelsets[0].runtypes[dim].end();++it){
+			//if((*it > max_pt || *it < min_pt) && *it > bytesPerRnType)
+				bytesPerRnType = *it;
+		    }
+		    */
+		    //std::cout << "Max: " << bytesForGridMax << ", MIN: " << bytesForGridMin << std::endl;
+		    //bytesize for start indices
+
+
+		    //Ternary operator instead of if; might avoid branching?
+		    bytesPerStIndex = bytesPerStIndex <= UINT8_MAX ? 1 : (bytesPerStIndex <= UINT16_MAX ? 2 : (bytesPerStIndex <= UINT24_MAX ? 3 : 4) );
+		    bytesPerRnType = bytesPerRnType <= UINT8_MAX ? 1 : (bytesPerRnType <= UINT16_MAX ? 2 : (bytesPerRnType <= UINT24_MAX ? 3 : 4) );
+		    bytesPerRnBreak = bytesPerRnBreak >= INT8_MIN && bytesPerRnBreak <= INT8_MAX ? 1 : (bytesPerRnBreak >= INT16_MIN && bytesPerRnBreak <= INT16_MAX ? 2 :
+						(bytesPerRnBreak >= INT24_MIN && bytesPerRnBreak <= INT24_MAX ? 3 : 4) );
+		    bytesForGridMin = grid_min >= INT8_MIN && grid_min <= INT8_MAX ? 1 : (grid_min >= INT16_MIN && grid_min <= INT16_MAX ? 2 :
+						(grid_min >= INT24_MIN && grid_min <= INT24_MAX ? 3 : 4) );
+		    bytesForGridMax = grid_max >= INT8_MIN && grid_max <= INT8_MAX ? 1 : (grid_max >= INT16_MIN && grid_max <= INT16_MAX ? 2 :
+						(grid_max >= INT24_MIN && grid_max <= INT24_MAX ? 3 : 4) );
+		    /*if(bytesPerStIndex < UINT8_MAX) bytesPerStIndex = 1;
+		    else if(bytesPerStIndex < UINT16_MAX) bytesPerStIndex = 2;
+    		    else if(bytesPerStIndex < UINT24_MAX) bytesPerStIndex = 3;
+		    else bytesPerStIndex = 4;
+		    //bytesize for runtypes
+		    if(bytesPerRnType < UINT8_MAX) bytesPerRnType = 1;
+		    else if(bytesPerRnType < UINT16_MAX) bytesPerRnType = 2;
+    		    else if(bytesPerRnType < UINT24_MAX) bytesPerRnType = 3;
+		    else bytesPerRnType = 4;
+		    //bytesize for runbreaks
+		    if(bytesPerRnBreak > INT8_MIN && bytesPerRnBreak < INT8_MAX) bytesPerRnBreak = 1;
+		    else if(bytesPerRnBreak > INT16_MIN && bytesPerRnBreak < INT16_MAX) bytesPerRnBreak = 2;
+		    else if(bytesPerRnBreak > INT24_MIN && bytesPerRnBreak < INT24_MAX) bytesPerRnBreak = 3;
+		    else bytesPerRnBreak = 4;
+		    //bytesize for grid_min and grid_max
+		    if(grid_min > INT8_MIN && grid_min < INT8_MAX) bytesForGridMin = 1;
+		    else if(grid_min > INT16_MIN && grid_min < INT16_MAX) bytesForGridMin = 2;
+		    else if(grid_min > INT24_MIN && grid_min < INT24_MAX) bytesForGridMin = 3;
+		    else bytesForGridMin = 4;
+		    if(grid_max > INT8_MIN && grid_max < INT8_MAX) bytesForGridMax = 1;
+		    else if(grid_max > INT16_MIN && grid_max < INT16_MAX) bytesForGridMax = 2;
+		    else if(grid_max > INT24_MIN && grid_max < INT24_MAX) bytesForGridMax = 3;
+		    else bytesForGridMax = 4;
+		    */
+
+		    byte = 0;
+		    //The number of bytes can be 1 ... 4, but with 2 bits you can store only 0 ... 3 --> -1
+		    //use 8 bits starting with the LSB
+		    byte |= bytesPerStIndex-1;
+		    byte |= (bytesPerRnType-1) << 2;
+		    byte |= (bytesPerRnBreak-1) << 4;
+		    byte |= (std::max(bytesForGridMin, bytesForGridMax)-1) << 6;
+			std::cout << "Limit: " << (std::max(bytesForGridMin, bytesForGridMax)) << std::endl;
+
+		    //13 byte H-RLE block header
 		    uint32_t num = startIndices.size();
 		    fout.write((char *)&num, 4);
 		    num = sub_levelsets[0].runtypes[dim].size();//runTypes.size()
 		    fout.write((char *)&num, 4);
 		    num = runBreaks.size();
 		    fout.write((char *)&num, 4);
-		    fout.write((char *)&bytesPerStIndex, 1);
-		    num = 4; //bytes per runtype
-		    fout.write((char *)&num, 1);
-		    fout.write((char *)&bytesPerRnBreak, 1);
+		    //3 byte version
+		    //fout.write((char *)&bytesPerStIndex, 1);
+		    //fout.write((char *)&bytesPerRnType, 1);
+		    //fout.write((char *)&bytesPerRnBreak, 1);
+		    fout.write(&byte, 1);
 
 		    //write the start indices to the file
                     for (typename std::vector<size_type>::const_iterator it=startIndices.begin();it!=startIndices.end();++it) {
-                        fout.write((char *)&(*it), bytesPerStIndex);
+                        fout.write((char *)&(*it), bytesPerStIndex);//std::cout << *it << " ";
                     }
 
 		    //write all runtypes to the file, skipping all segments and indices
 		    uint32_t last = 0, y;
-		    count = 3;
+		    count = 3;byte=0;
            	    std::vector<size_type> d_run_indices = {};
 		    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
 			y = last;
@@ -1154,19 +1225,17 @@ namespace lvlset {
 				}
                     	}
 		    }
-		    if(count >= 0 && count < 3){
+		    if(count >= 0 && count < 3)
 		        fout << byte;
-		        byte=0;
-		    }
 
 		    //write defined runtypes
 		    for (typename std::vector<size_type>::const_iterator it=d_run_indices.begin();it!=d_run_indices.end();++it) {
-                        fout.write((char *)&(*it), 4);
+                        fout.write((char *)&(*it), bytesPerRnType);//std::cout << *it << " ";
                     }
 
 		    //Write runbreaks
                     for (typename std::vector<index_type>::const_iterator it=runBreaks.begin();it!=runBreaks.end();++it) {
-			fout.write((char *)&(*it), bytesPerRnBreak);
+			fout.write((char *)&(*it), bytesPerRnBreak);//std::cout << *it << " ";
                     }
 
                 }
@@ -1174,7 +1243,7 @@ namespace lvlset {
 		std::vector<value_type> & distances = sub_levelsets[0].distances;
 		long num = distances.size();
 		fout.write((char *)&(num), 4);
-		count = 1;
+		count = 1;byte = 0;
                 for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
 			//  Levelset values range from -1 .... +1
 			//  With 4 bits we can represent values from 0 .... 15 or -8 ... +7; I chose 0 .... 15
@@ -1203,7 +1272,7 @@ namespace lvlset {
 
 		std::cout << "Reading in LevelSet from " << path << std::endl;
 		char buff[11] = {};
-		char byte = 0;
+		char byte;
 		uint32_t uInt;
 		fin.read(buff, 11);
 		int dimension = buff[5]-48;
@@ -1221,24 +1290,32 @@ namespace lvlset {
 			std::vector<size_type>& runTypes = sub_levelsets[0].runtypes[i];
 			std::vector<index_type>& runBreaks = sub_levelsets[0].runbreaks[i];
 			uint32_t num_st_indices, num_run_types, num_run_breaks;
-			int32_t bytesPerStIndices = 0, bytesPerRuntype = 0, bytesPerRunbreak = 0;
+			int32_t bytesPerStIndex = 0, bytesPerRnType = 0, bytesPerRnBreak = 0, bytesPerGridLimit = 0;
 			//int32_t gridMin, gridMax; TODO
 			fin.read((char *)&num_st_indices, 4);
 			fin.read((char *)&num_run_types, 4);
 			fin.read((char *)&num_run_breaks, 4);
-			fin.read((char *)&bytesPerStIndices, 1);
-			fin.read((char *)&bytesPerRuntype, 1);
-			fin.read((char *)&bytesPerRunbreak, 1);
-			std::cout << bytesPerStIndices << " bytes per start index." << std::endl
-				  << bytesPerRuntype << " bytes per runtype." << std::endl
-				  << bytesPerRunbreak << " bytes per runbreak." << std::endl;
+			//fin.read((char *)&bytesPerStIndex, 1);
+			//fin.read((char *)&bytesPerRnType, 1);
+			//fin.read((char *)&bytesPerRnBreak, 1);
+
+		 	fin.read(&byte, 1);
+			bytesPerStIndex = (byte & 0x3) +1;
+			bytesPerRnType = (byte >> 2 & 0x3) +1;
+			bytesPerRnBreak = (byte >> 4 & 0x3) +1;
+			bytesPerGridLimit = (byte >> 6 & 0x3) +1;
+
+			std::cout << bytesPerStIndex << " byte(s) per start index." << std::endl
+				  << bytesPerRnType << " byte(s) per runtype." << std::endl
+				  << bytesPerRnBreak << " byte(s) per runbreak." << std::endl
+				  << bytesPerGridLimit << " byte(s) per grid limit." << std::endl;
 
 			uint32_t values_read = 0;
 			//reading start indices
 			if(startIndices.size() > 0) startIndices.clear();
 			for(unsigned int x = 0; x < num_st_indices; x++){
 				uInt = 0;
-				fin.read((char*) &uInt, bytesPerStIndices);
+				fin.read((char*) &uInt, bytesPerStIndex);
 				startIndices.push_back(uInt);
 				values_read++;
 			}
@@ -1252,41 +1329,46 @@ namespace lvlset {
 				fin.read(&byte, 1);
 				for(int z = 4; z--;){
 					if(values_read == num_run_types) break;
-					uInt = ((byte & (0x03 << z*bits_per_run)) >> z*bits_per_run);
+					uInt = byte >> z*bits_per_run & 0x3;
 					if(uInt == 1) runTypes.push_back(POS_PT);
 					else if(uInt == 3) runTypes.push_back(NEG_PT);
 					else if(uInt == 2) runTypes.push_back(UNDEF_PT);
-					else if(uInt == 0) runTypes.push_back(0), count++;
+					else if(uInt == 0) runTypes.push_back(101), count++;
 					values_read++;
 				}
 			}
 			std::cout << "\t" << values_read << " of " << num_run_types << " runtypes read." << " Defined runtypes: " << count << std::endl;
 			//reading defined runtypes
 			for(unsigned int j=0; j<runTypes.size(); j++){
-				if(runTypes[j] == 0){
+				if(runTypes[j] == 101){
 					uInt = 0;
-					fin.read((char *) &uInt, bytesPerRuntype);
+					fin.read((char *) &uInt, bytesPerRnType);
 					runTypes[j] = uInt;
 				}
 			}
 
 			values_read = 0;
+			//If we have a negative number of 2 bytes we need to set the highest bytes to 0xFF because of two's complement.
+			//Two options: Either allocate enough bytes or use one 32 bit int and set initialize it correctly for negative and positive numbers.
+			//Example: We have 2 bytes and the runbreak is -7, which corresponds to FFF9(Two's complement).
+			//Now if we read it into a 4 byte integer we will have 0000 FFF9, which is not interpreted as -7, but as a positive number.
+			//-7 as a 4 byte integer is: FFFF FFF9. 
 
-			//We need to allocate the exact amount of memory one runbreak uses.
-			//Here is why: We have 2 bytes and the runbreak is -7, which corresponds to FF F9(Two's complement).
-			//Now if we read it into a 4 byte integer we will have 00 00 FF F9, which is not interpreted as -7!!!!
-
+			int32_t sInt;
 			//int8_t *sInt = new int8_t[bytesPerRunbreak];
-			int8_t *sInt = (int8_t *) malloc(bytesPerRunbreak*sizeof(int8_t));
+			//int8_t *sInt = (int8_t *) malloc(bytesPerRunbreak*sizeof(int8_t));
 			//reading runbreaks
 			if(runBreaks.size() > 0) runBreaks.clear();
 			for(unsigned int z = 0; z < num_run_breaks; z++){
-				fin.read((char *) sInt, bytesPerRunbreak);
-				runBreaks.push_back(*sInt);
+				sInt = 0;
+				fin.read((char *) &sInt, bytesPerRnBreak);
+				if( (sInt << (4-bytesPerRnBreak)*8) >> 31 == -1 )//grab the sign bit and check if it is set
+					sInt |= 0xFFFFFFFF << bytesPerRnBreak*8; //set the highest byte(s) to FF that are not needed for the number
+				runBreaks.push_back(/***/sInt);
 				values_read++;
 			}
 			//delete[] sInt;
-			free(sInt);
+			//free(sInt);
 			std::cout << "\t" << values_read << " of " << num_run_breaks << " runbreaks." << std::endl;
 		}
 
@@ -1299,7 +1381,7 @@ namespace lvlset {
 			fin.read(&byte, 1);
 			for(unsigned int z = 2; z--;){
 				if(values_read == num_distances) break; //if distances are odd, skip padding bits
-				uInt = ((byte & (0xF << z*bits_per_distance)) >> z*bits_per_distance);
+				uInt = byte >> z*bits_per_distance & 0xF;
 				// To transform the saved distances into discrete points we go from 0 .... 15 to -1 .... +1 (Levelset Range)
 				// 0  .... 15  |:7.5
 				// 0  .... +2  |-1

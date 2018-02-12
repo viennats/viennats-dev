@@ -462,18 +462,22 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
 		//print levelset
+		typename LevelSetsType::iterator LSPrint;
+		if(LevelSets.size() > 1) LSPrint = LevelSets.begin()++;
+		else LSPrint = LevelSets.begin();
+
 std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
 std::ofstream fout("./LVSetWithSegmentation.txt");
-LevelSets.begin()->print(fout);
-LevelSets.begin()->print();
+LSPrint->print(fout);
+LSPrint->print();
 fout.close();
-LevelSets.begin()->printWithoutSegmentation();
+LSPrint->printWithoutSegmentation();
 fout = std::ofstream("./LVSetWithoutSegmentation.txt");
-LevelSets.begin()->printWithoutSegmentation(fout);
+LSPrint->printWithoutSegmentation(fout);
 fout.close();
-LevelSets.begin()->exportLevelSet("./exportedLVLSet_.lvl").importLevelSet("./exportedLVLSet_.lvl");
+LSPrint->exportLevelSet("./exportedLVLSet_.lvl").importLevelSet("./exportedLVLSet_.lvl");
 //LevelSets.begin()->importLevelSet("./exportedLVLSet_.lvl");
-LevelSets.begin()->printWithoutSegmentation();
+LSPrint->printWithoutSegmentation();
 
 		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
 
