@@ -30,7 +30,7 @@
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_Cl2_CH4_PLASMA_ETCHING
 #define PROCESS_BCl3_PLASMA_ETCHING*/
-#define PROCESS_SiO2_PLASMA_ETCHING
+//#define PROCESS_SiO2_PLASMA_ETCHING
 /*#define PROCESS_SF6_CH2F2_PLASMA_ETCHING
 #define PROCESS_Cl2_N2_ETCHING
 #define PROCESS_CFx_DEPOSITION
@@ -158,12 +158,11 @@ private:
 public:
 	///Can be 2 or 3-dimensional
 	const static int dimensions = D;
-	coord_type getGridDelta()const{return this->GridDelta;}
-	void setGridDelta(coord_type grid_delta){this->GridDelta = grid_delta;}
-	index_type getMin(int dim)const{return this->Min_[dim];}
-	index_type getMax(int dim)const{return this->Max_[dim];}
-	void setMin(int dim, index_type min){this->Min_[dim] = min;}
-	void setMax(int dim, index_type max){this->Max_[dim] = max;}
+	void setGridDelta(const coord_type& grid_delta){GridDelta = grid_delta;}
+	void setMin(const int& dim, const index_type& min){Min_[dim] = min;}
+	void setMax(const int& dim, const index_type& max){Max_[dim] = max;}
+	void setBCondition(const int& dim, const lvlset::boundary_type bc){ BoundaryConditions_[dim] = bc;}
+
 
 	///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
 	template<class A, class B, class C>
@@ -177,17 +176,8 @@ public:
 		}
 	}
 
-	///GridTraitsType constructor to populate the boundary conditions
-	template</*class A,*/ class B/*, class C*/>
-	GridTraitsType(/*const A& min, const A& max, */const B& b/*, C grid_delta*/) /*:
-		GridDelta(grid_delta) */{
-
-		for (int i = 0; i < D; i++) {
-			//Min_[i] = min[i];
-			//Max_[i] = max[i];
-			BoundaryConditions_[i] = b[i];
-		}
-	}
+	//empty constructor
+	GridTraitsType(){}
 
 	///Returns the minimum index at in the "dir" axial direction
 	index_type min_index(int dir) const {
@@ -461,10 +451,10 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 		//put inactive layers to new levelset ordering
 		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
-		//print levelset
-		typename LevelSetsType::iterator LSPrint;
-		if(LevelSets.size() > 1) LSPrint = LevelSets.begin()++;
-		else LSPrint = LevelSets.begin();
+//print levelset
+typename LevelSetsType::iterator LSPrint;
+if(LevelSets.size() > 1) LSPrint = LevelSets.begin()++;
+else LSPrint = LevelSets.begin();
 
 std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
 std::ofstream fout("./LVSetWithSegmentation.txt");
@@ -475,9 +465,35 @@ LSPrint->printWithoutSegmentation();
 fout = std::ofstream("./LVSetWithoutSegmentation.txt");
 LSPrint->printWithoutSegmentation(fout);
 fout.close();
-LSPrint->exportLevelSet("./exportedLVLSet_.lvl").importLevelSet("./exportedLVLSet_.lvl");
+LSPrint->exportLevelSet(FILE_NAME).importLevelSet(FILE_NAME);
 //LevelSets.begin()->importLevelSet("./exportedLVLSet_.lvl");
-LSPrint->printWithoutSegmentation();
+//LSPrint->printWithoutSegmentation();
+
+typedef typename GridTraitsType<D>::index_type index_type;
+index_type * g_min = new index_type[D];
+index_type * g_max = new index_type[D];
+lvlset::boundary_type* bc = new lvlset::boundary_type [D];
+double gridDelta;
+lvlset::fillGridProperties(g_min, g_max, bc, gridDelta, FILE_NAME);
+GridTraitsType<D> GridP(g_min, g_max, bc, gridDelta);
+/*std::vector<LevelSetTraitsType::size_type> start_indices[D];
+std::vector<LevelSetTraitsType::size_type> runtypes[D];
+std::vector<GridTraitsType::index_type> runbreaks[D];
+std::vector<LevelSetTraitsType::value_type> distances*/
+lvlset::grid_type<GridTraitsType<D>> grid(GridP);
+lvlset::levelset<GridTraitsType<D>> l(grid);
+l.print();
+///fin.close();
+delete[] g_min;
+delete[] g_max;
+delete[] bc;
+/*
+std::vector<size_type> startIndices;
+std::vector<size_type> runTypes;
+std::vector<index_type> runBreaks;
+std::vector<value_type> distances;
+	lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
+lvlset::levelset l(startIndices, runTypes, runBreaks, distances, grid);*/
 
 		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
 
