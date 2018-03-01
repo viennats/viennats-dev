@@ -99,9 +99,6 @@ namespace lvlset {
 
     public:
 
-        const GridTraitsType&  getGridTraitsConst() const{return this->GridTraits;}
-        const GridTraitsType&  getGridTraits() {return this->GridTraits;}
-
         grid_type(const GridTraitsType& gt) : GridTraits(gt) {      //constructor
             for (int i=0;i<D;i++) {
                 BoundaryConditions_[i]=GridTraits.boundary_condition(i);
@@ -139,6 +136,20 @@ namespace lvlset {
                                         MaxGridPointCoord_(gt.MaxGridPointCoord_),
                                         parities(gt.parities) {}
 
+
+        bool operator==(grid_type &g){
+          if(this == &g) return true;
+          if(D != g.D) return false;
+          if(GridTraits != g.GridTraits) return false;
+          if(Min_!=g.Min_) return false;
+          if(Max_!=g.Max_) return false;
+          if(Ext_!=g.Ext_) return false;
+          if(BoundaryConditions_!=g.BoundaryConditions_) return false;
+          if(MinGridPointCoord_!=g.MinGridPointCoord_) return false;
+          if(MaxGridPointCoord_!=g.MaxGridPointCoord_) return false;
+          if(parities!=g.parities) return false;
+          return true;
+        }
 
         bool parity(int dim) const {
             //parity is false/true if the "grid_position" function in GridTraitsType is

@@ -21,6 +21,7 @@
 #include <string>
 #include <sstream>
 #include <bitset>
+#include <cstring>
 
 #include <iostream>     //TODO
 #include "misc.hpp"     //TODO test
@@ -31,6 +32,7 @@
 #include "math.hpp"
 //Exporting the levelset to a file specfic for the levelset structure
 #include "file_io.hpp"
+#include "output.hpp"
 
 #ifdef _OPENMP
     #include <omp.h>
@@ -82,7 +84,6 @@ namespace lvlset {
         //set data structure, and has to have the certain type and static constant definitions
         //as shown in the "DefaultLevelSetTraitsType" above
 
-
         //type and constant redefinitions
 
         static const int D=GridTraitsType::dimensions;
@@ -120,14 +121,12 @@ namespace lvlset {
                 return *this;
             }
 
-
             template<class X>
             allocation_type&  operator/=(const X& x) {
                 for (int i=0;i<D;++i) num_values[i]=static_cast<size_type>(num_values[i]/x)+1;
                 for (int i=0;i<D;++i) num_runs[i]=static_cast<size_type>(num_runs[i]/x)+1;
                 return *this;
             }
-
 
             template<class X>
             allocation_type operator*(const X& x) {
@@ -157,7 +156,7 @@ namespace lvlset {
         typedef std::vector<allocation_type> allocations_type;
 
 
-	// [Josef] The level set class, containing the Grid class.
+        // [Josef] The level set class, containing the Grid class.
         // the level set class
         class sub_levelset_type {
         public:
@@ -200,7 +199,7 @@ namespace lvlset {
                  // num_values[0] is to contain level set values, num_values[i] contains the start indices at the i-th dimension
                  // num_runs[i] is to contain the run types at the i-th dimension
                  allocation_type a;
-                 a.num_values[0]=distances.size();	// To contain level set values
+                 a.num_values[0]=distances.size();  // To contain level set values
                  a.num_runs[0]=runtypes[0].size();
                  for (int i=1;i<D;++i) {
                      a.num_values[i]=start_indices[i-1].size();
@@ -361,8 +360,9 @@ namespace lvlset {
 
                     if (start_point[dim]!=Grid.min_point_index(dim)) {
 
-                        if (start_point[dim]<=Grid.max_point_index(dim)) push_back_undefined(start_point, rt);
-
+                        if (start_point[dim]<=Grid.max_point_index(dim)){
+                          push_back_undefined(start_point, rt);
+                        }
                         start_point[dim]=Grid.min_point_index(dim);
                         ++start_point[dim+1];
                     }
@@ -376,78 +376,76 @@ namespace lvlset {
             template <class V>
             void push_back_undefined(const V& point, size_type rt) {
 
-                int level;
-                for (level=0;level<D;++level) {
-                    if (point[level]!=Grid.min_point_index(level)) break;
-                }
+              int level;
+              for (level=0;level<D;++level) {
+                if (point[level]!=Grid.min_point_index(level)) break;
+              }
 
-                size_type old_sign=0;
+              size_type old_sign=0;
+              int dim;
 
-                int dim;
-                for(dim=D-1;dim>level;--dim) {
-
-                    if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
-                       if(point[dim]!=Grid.min_point_index(dim)) {
-                           runtypes[dim].push_back(old_sign);
-                           runbreaks[dim].push_back(point[dim]);
-                       }
-                       runtypes[dim].push_back(start_indices[dim-1].size());
-                       start_indices[dim-1].push_back(runtypes[dim-1].size());
-                    } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
-                        old_sign=runtypes[dim].back();
-                        if (old_sign==rt) return;
-                        if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
-                            if (point[dim]==Grid.min_point_index(dim)) {
-                                runtypes[dim].back()=start_indices[dim-1].size();
-                            } else {
-                                runbreaks[dim].push_back(point[dim]);
-                                runtypes[dim].push_back(start_indices[dim-1].size());
-                            }
-                        } else {                                                    //if there are more than one runs
-                            if (point[dim]==runbreaks[dim].back()) {
-                                runtypes[dim].pop_back();
-                                if (!levelset::is_defined(runtypes[dim].back())) {
-                                    runtypes[dim].push_back(start_indices[dim-1].size());
-                                } else {
-                                    runbreaks[dim].pop_back();
-                                }
-                            } else {
-                                runbreaks[dim].push_back(point[dim]);
-                                runtypes[dim].push_back(start_indices[dim-1].size());
-                            }
-                        }
-                        start_indices[dim-1].push_back(runtypes[dim-1].size());
-                    }
-                }
+              for(dim=D-1;dim>level;--dim) {
 
                 if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
-                    if(point[dim]!=Grid.min_point_index(dim)) {
-                        runtypes[dim].push_back(old_sign);
-                        runbreaks[dim].push_back(point[dim]);
-                    }
-                    runtypes[dim].push_back(rt);
+                  if(point[dim]!=Grid.min_point_index(dim)) {
+                    runtypes[dim].push_back(old_sign);
+                    runbreaks[dim].push_back(point[dim]);
+                  }
+                  runtypes[dim].push_back(start_indices[dim-1].size());
+                  start_indices[dim-1].push_back(runtypes[dim-1].size());
                 } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
-                    old_sign=runtypes[dim].back();
-                    if (old_sign==rt) return;
-                    if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
-                        if (point[dim]==Grid.min_point_index(dim)) {
-                            runtypes[dim].back()=rt;
-                        } else {
-                            runbreaks[dim].push_back(point[dim]);
-                            runtypes[dim].push_back(rt);
-                        }
-                    } else {                                                    //if there are more than one runs
-                        if (point[dim]==runbreaks[dim].back()) {
-                            runtypes[dim].back()=rt;
-                        } else {
-                            runbreaks[dim].push_back(point[dim]);
-                            runtypes[dim].push_back(rt);
-                        }
+                  old_sign=runtypes[dim].back();
+                  if (old_sign==rt) return;
+                  if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
+                    if (point[dim]==Grid.min_point_index(dim)) {
+                      runtypes[dim].back()=start_indices[dim-1].size();
+                    } else {
+                      runbreaks[dim].push_back(point[dim]);
+                      runtypes[dim].push_back(start_indices[dim-1].size());
                     }
-                } else {
+                  } else {                                                    //if there are more than one runs
+                      if (point[dim]==runbreaks[dim].back()) {
+                        runtypes[dim].pop_back();
+                        if (!levelset::is_defined(runtypes[dim].back())){
+                          runtypes[dim].push_back(start_indices[dim-1].size());
+                        } else runbreaks[dim].pop_back();
+                    } else {
+                      runbreaks[dim].push_back(point[dim]);
+                      runtypes[dim].push_back(start_indices[dim-1].size());
+                    }
+                  }
+                  start_indices[dim-1].push_back(runtypes[dim-1].size());
+                }
+              }
+
+              if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
+                if(point[dim]!=Grid.min_point_index(dim)) {
+                  runtypes[dim].push_back(old_sign);
+                  runbreaks[dim].push_back(point[dim]);
+                }
+                runtypes[dim].push_back(rt);
+              } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
+                old_sign=runtypes[dim].back();
+                if (old_sign==rt) return;
+                if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
+                  if (point[dim]==Grid.min_point_index(dim)) {
+                    runtypes[dim].back()=rt;
+                  } else {
                     runbreaks[dim].push_back(point[dim]);
                     runtypes[dim].push_back(rt);
+                  }
+                } else {                                                    //if there are more than one runs
+                  if (point[dim]==runbreaks[dim].back()) {
+                    runtypes[dim].back()=rt;
+                  } else {
+                    runbreaks[dim].push_back(point[dim]);
+                    runtypes[dim].push_back(rt);
+                  }
                 }
+              } else {
+                runbreaks[dim].push_back(point[dim]);
+                runtypes[dim].push_back(rt);
+              }
             }
 
             template <class V>
@@ -566,8 +564,7 @@ namespace lvlset {
                 out << "levelset data structure" << std::endl << std::endl;
 
                 for (int dim=D-1;dim>=0;--dim) {
-
-                    out <<  dim <<  " start_indices";
+                    out <<  dim <<  " start_indices: " << start_indices[dim].size();
                     int c=0;
                     for (typename std::vector<size_type>::const_iterator it=start_indices[dim].begin();it!=start_indices[dim].end();++it) {
                         if (c%10==0) out << std::endl;
@@ -576,7 +573,7 @@ namespace lvlset {
                     }
                     out << std::endl;
 
-                    out << dim << " run_types";
+                    out << dim << " run_types: " << runtypes[dim].size();
                     c=0;
                     for (typename std::vector<size_type>::const_iterator it=runtypes[dim].begin();it!=runtypes[dim].end();++it) {
                         if (c%10==0) out << std::endl;
@@ -595,7 +592,7 @@ namespace lvlset {
                     }
                     out << std::endl;
 
-                    out << dim << " run_breaks";
+                    out << dim << " run_breaks: " << runbreaks[dim].size();
                     c=0;
                     for (typename std::vector<index_type>::const_iterator it=runbreaks[dim].begin();it!=runbreaks[dim].end();++it) {
                         if (c%10==0) out << std::endl;
@@ -605,7 +602,7 @@ namespace lvlset {
                     out << std::endl;
                 }
 
-                out << "distances";
+                out << "distances: " << distances.size();
                 int c=0;
                 for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
                     if (c%10==0) out << std::endl;
@@ -622,7 +619,7 @@ namespace lvlset {
         class sub_levelsets_type {
         // contains the vector of sub_levelset_type items that are used for parallelization
 
-            typedef sub_levelset_type* sub_levelset_ptr_type;	// pointer to memory containing sub_levelset_type object
+            typedef sub_levelset_type* sub_levelset_ptr_type;  // pointer to memory containing sub_levelset_type object
 
             typedef typename std::vector< sub_levelset_ptr_type> sub_levelsets_intern_type;
             sub_levelsets_intern_type subs;
@@ -666,7 +663,7 @@ namespace lvlset {
                 a*=allocation_factor;
                 a/=i;
 
-                #pragma omp parallel for schedule(static,1)	// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+                #pragma omp parallel for schedule(static,1)  // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
                 for (int k=0;k<static_cast<int>(subs.size());++k) {
                     subs[k]= sub_levelset_ptr_type(new sub_levelset_type(g,a));
                 }
@@ -675,13 +672,6 @@ namespace lvlset {
             size_type size() const {
                 // return the size of the vector for parallelization
                 return subs.size();
-            }
-
-            void shrinkTo1() {
-              // resizes the vector of parallelization
-              for (unsigned int i=1; i<subs.size(); i++) if (subs[i]!=0) delete subs[i];
-              //subs.clear();
-              subs.resize(1);
             }
 
             sub_levelsets_type(const sub_levelsets_type& s) {
@@ -705,7 +695,7 @@ namespace lvlset {
                 a*=allocation_factor;
                 a/=i;
 
-                #pragma omp parallel for schedule(static,1)	// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+                #pragma omp parallel for schedule(static,1)  // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
                 for (int k=0;k<static_cast<int>(subs.size());++k) {
                     subs[k]= sub_levelset_ptr_type(new sub_levelset_type(g,a));
                 }
@@ -959,57 +949,143 @@ namespace lvlset {
             }
         }
 
-	      void printWithoutSegmentation(std::ostream& out = std::cout) const{
-      	    out << std::endl;
-      	    out << "Levelset data structure without segmentation" << std::endl << std::endl;
+        bool operator==(levelset& l){
+          if(this == &l) return true;
+          if(D != l.D) return false;
+          serialize(); l.serialize();
+          for(int i = D; i--;){
+            if(startIndices(i) != l.startIndices(i)) {
+              thin_out(); l.thin_out();
+              return false;
+            }
+            if(runTypes(i) != l.runTypes(i)) {
+              thin_out(); l.thin_out();
+              return false;
+            }
+            if(runBreaks(i) != l.runBreaks(i)) {
+              thin_out(); l.thin_out();
+              return false;
+            }
+          }
+          if(distances() != l.distances()) {
+            thin_out(); l.thin_out();
+            return false;
+          }
+          thin_out(); l.thin_out();
+          return true;
+        }
+
+        std::vector<size_type>& startIndices(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].start_indices[dim];
+        }
+        std::vector<size_type>& runTypes(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].runtypes[dim];
+        }
+        std::vector<index_type>& runBreaks(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].runbreaks[dim];
+        }
+        std::vector<value_type>& distances(unsigned int segment = 0){
+          return sub_levelsets[segment].distances;
+        }
+
+/*        void printWithoutSegmentation(std::ostream& out = std::cout) const{
+            out << std::endl;
+            out << "Levelset data structure without segmentation" << std::endl << std::endl;
 
             for (int dim=D-1;dim>=0;--dim) {
                 out <<  dim <<  " start_indices";
-                int c=0;
-                for (typename std::vector<size_type>::const_iterator it=sub_levelsets[0].start_indices[dim].begin();it!=sub_levelsets[0].start_indices[dim].end();++it) {
-                    if (c%10==0) out << std::endl; ++c;
-                    out << *it << "\t";
-            }
+                int c=0, stindicesWritten = 0;
+                uint32_t offset = 0, last;
+                bool offW = true;
+                for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+                  if(!offW) offset += last;
+                  offW = false;
+                  for (typename std::vector<size_type>::const_iterator it=sub_levelsets[x].start_indices[dim].begin();it!=sub_levelsets[x].start_indices[dim].end();++it) {
+                      size_type rt = sub_levelsets[x].runtypes[dim][*it];
+                      if(rt >= SEGMENT_PT && !is_defined(rt)){
+                        if(rt - SEGMENT_PT < x && x > 0) continue;
+                        else {offset += last; offW = true; break;}
+                      }
+                      if(*it == 0 && x > 0) continue;
+                      if (c%10==0) out << std::endl; ++c;
+                      console.bgGreen();
+                      console.textBlack();
+                      out << *it + offset;stindicesWritten++;
+                      last = *it - (dim == 0 ? 0 : 1);
+                      console.reset();
+                      out << "\t";
+                  }
+                }
             out << std::endl;
 
             out << dim << " run_types";
-    		    uint32_t last = 0, y;
-    		    c=0;
-    		    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
-              y = last;
-              for(; y<sub_levelsets[x].runtypes[dim].size(); y++){
+            offset = 0;//bool offsetwritten;
+            c=0;int runTypesWritten = 0;
+            for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+              //offsetwritten = false;
+              for(unsigned int y=0; y<sub_levelsets[x].runtypes[dim].size(); y++){
                 if (c%10==0) out << std::endl;
-				            size_type rt = sub_levelsets[x].runtypes[dim][y];
-  				      if(rt == POS_PT){// 01 - positive undefined runtype
-  					           out << "+oo" << "\t";
-  					           last = y;c++;
-  				      }
+                size_type rt = sub_levelsets[x].runtypes[dim][y];
+                if(rt == POS_PT){// 01 - positive undefined runtype
+                    console.bgRed();
+                    out << "+oo";runTypesWritten++;
+                    console.reset();
+                    out << "\t";
+                    c++;
+                }
                 else if(rt == NEG_PT){// 11 - negative undefined runtype
-                  out << "-oo" << "\t";
-                  last = y;c++;
+                  console.bgBlue();
+                  out << "-oo";runTypesWritten++;
+                  console.reset();
+                  out << "\t";
+                  c++;
                 }
                 else if(rt == UNDEF_PT){// 10 - uninitialized runtype
-                  out << "UND" << "\t";
-                  last = y;c++;
+                  console.textRed();
+                  out << "UND";runTypesWritten++;
+                  console.reset();
+                  out << "\t";
+                  c++;
                 }
                 else if(!is_defined(rt)){// skip Segments
+                  if(rt-SEGMENT_PT > x) {
+                    offset += dim == 0 ? sub_levelsets[x].distances.size() : sub_levelsets[x].start_indices[dim-1].size();
+                    break;
+                  }
                   continue;
                 }
                 else {// 00 - defined runtype
-                  if(last != y || (x == 0 && last == y)){
-                    out << rt << "\t";
-                    last = y;c++;
-                  }
+                    if(rt == 0 && x > 0) continue;//the first runtype will always be 0, however in every segment after the first this will insert runtypes -> skip those
+                    //size_type nrt = sub_levelsets[x].runtypes[dim-1][sub_levelsets[x].start_indices[dim-1][rt]];
+                    //if(dim > 1 && nrt >= SEGMENT_PT && !is_defined(nrt)) continue;
+                    console.bgGreen();
+                    console.textBlack();
+                    out << rt + offset;runTypesWritten++;
+                    console.reset();
+                    out << "\t";
+                    c++;
                 }
               }
             }
             out << std::endl;
 
             out << dim << " run_breaks";
-            c=0;
-            for (typename std::vector<index_type>::const_iterator it=sub_levelsets[0].runbreaks[dim].begin();it!=sub_levelsets[0].runbreaks[dim].end();++it) {
-                if (c%10==0) out << std::endl; ++c;
-                out << *it << "\t";
+            c=0;int runBreaksWritten = 0;
+            for (unsigned int x=0;x!=sub_levelsets.size();x++){
+              const std::vector<index_type>& runBreaks = sub_levelsets[x].runbreaks[dim];
+              unsigned int rBSize = runBreaks.size();
+              //std::cout <<"\n" <<rBSize <<", "<< number_of_segments()<<", "<< segmentation[x] << std::endl;
+              for (unsigned int i=x; i<rBSize; i++) {
+                  if (c%10==0) out << std::endl;
+                  //else if(i < x && segmentation[i][dim] == runBreaks[i]) continue;
+                  if (rBSize <= number_of_segments() ||  i >= rBSize-number_of_segments()+1+x)
+                    if (segmentation[x][dim]+(dim == 0 ? 0 : 1) == runBreaks[i]) break;
+
+                  //else if(rBSize <= number_of_segments() && segmentation[x][dim]+1 == runBreaks[i])continue;
+                  //if we are at the last runbreaks those will be segmentation points
+                  if(runTypesWritten-stindicesWritten == runBreaksWritten)break;
+                  out << runBreaks[i] << "\t";runBreaksWritten++;++c;
+              }
             }
             out << std::endl;
 
@@ -1017,374 +1093,34 @@ namespace lvlset {
 
             out << "distances";
             int c=0;
-            for (typename std::vector<value_type>::const_iterator it=sub_levelsets[0].distances.begin();it!=sub_levelsets[0].distances.end();++it) {
-                if (c%10==0) out << std::endl;
-                ++c;
-                out.precision(3);
-                out << *it << "\t";
+            for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
+              for (typename std::vector<value_type>::const_iterator it=sub_levelsets[x].distances.begin();it!=sub_levelsets[x].distances.end();++it) {
+                  if (c%10==0) out << std::endl;
+                  ++c;
+                  out.precision(3);
+                  //if(*it < 0) console.textRed();
+                  //else if(*it > 0) console.textBlue();
+                  //else console.textGreen();
+                  out << *it;
+                  console.reset();
+                  out << "\t";
+              }
             }
             out << std::endl;
             out << std::endl;
-        }
+        }*/
 
 
-	levelset& exportLevelSet(std::string path){
-#undef GRID_IN_FILE_HEADER
-  /*************************************************************************************************************
-  ***************************************    THE LEVELSET FILE FORMAT    ***************************************
-  **************************************************************************************************************
-	*    File Header: 14 - 18 Bytes    *                                                                         *
-	************************************                                                                         *
-	*    +00   4 Bytes   Identification Bytes (LVST)                                                             *
-	*    +04   1 Byte    Padding Byte 'x'                                                                        *
-	*    +05   1 Byte    Dimension of the Levelset (2 or 3)                                                      *
-	*    +06   1 Byte    File Version Number                                                                     *
-	*    +07   1 Byte    Endianess - Little Endian (0) or Big Endian (1)                                         *
-	*    +08   1 Byte    Bits Per Runtype                                                                        *
-	*    +09   1 Byte    Bits Per Distance                                                                       *
-	*    +10 4-8 Bytes   GridDelta (sizeof double)                                                               *
-	****** NOTE #ifdef GRID_IN_FILE_HEADER ***********************************************************************
-	*    +10   9 Bytes   For each dimension Grid Min, Grid Max, and Boundary Condition                           *
-	* +28-37 4-8 Bytes   GridDelta (sizeof double)                                                               *
-	**************************************************************************************************************
-	*    H - RLE Block Header: 22 Bytes    *                                                                     *
-	****************************************                                                                     *
-	*    1  Byte   Bytes per Start Index, Runtype, Runbreak                                                      *
-	*    4  Bytes  Number of saved Start Indices                                                                 *
-	*    4  Bytes  Number of saved Runtypes                                                                      *
-	*    4  Bytes  Number of saved Runbreaks                                                                     *
-	******* NOTE #ifndef GRID_IN_FILE_HEADER *********************************************************************
-	*    4  Bytes  Grid Minimum                                                                                  *
-	*    4  Bytes  Grid Maximum                                                                                  *
-	*    1  Byte   Boundary Condition                                                                            *
-	**************************************************************************************************************
-	*    H - RLE Block Data    *                                                                                 *
-	****************************                                                                                 *
-	*    Start Indices               - using adaptive number of bytes (default)                                  *
-	*    Runtypes                    - using 2 bits per runtype                                                  *
-	*    Indices of defined runtypes - using adaptive number of bytes (default)                                  *
-	*    Runbreaks                   - using adaptive number of bytes (default)                                  *
-	**************************************************************************************************************
-	*    Distances Header: 4 Bytes    *                                                                          *
-	***********************************                                                                          *
-	*    4 Bytes  Number of distances                                                                            *
-	**************************************************************************************************************
-	*    Distances - using 4 bits per distance (default)                                                         *
-	**************************************************************************************************************/
-		std::ofstream fout(path);
-		if(!fout.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n"; return *this;}
-
-		char byte;
-		//write the file header
-		fout << "LVSTx" <<  D << LVST_FILE_VERSION_NUMBER << (bigEndian() ? 1 : 0)  << BITS_PER_RUNTYPE << BITS_PER_DISTANCE;
-#ifdef GRID_IN_FILE_HEADER
-    for (int dim=D-1;dim>=0;--dim) {
-		    index_type grid_min = sub_levelsets[0].Grid.getGridTraitsConst().min_index(dim);
-		    index_type grid_max = sub_levelsets[0].Grid.getGridTraitsConst().max_index(dim);
-		    boundary_type bcondition = sub_levelsets[0].Grid.getGridTraitsConst().boundary_condition(dim);
-		    fout.write((char *)&grid_min, 4);
-		    fout.write((char *)&grid_max, 4);
-		    fout.write((char *)&bcondition, 1);
-		}
-#endif
-		double delta = sub_levelsets[0].Grid.getGridTraitsConst().grid_position(0, 1);//1st argument is not used. Returns 1 * GridDelta.
-		fout.write((char *)&(delta), sizeof(double));
-
-		int count;
-    const int32_t UINT24_MAX = 16777215;// highest value of 3 unsigned bytes  2^24-1
-    const int32_t INT24_MAX  =  8388607;// highest value of 3 signed   bytes  2^23-1
-    const int32_t INT24_MIN  = -8388608;// lowest  value of 3 signed   bytes -2^23
-
-    for (int dim=D-1;dim>=0;--dim) {
-      //get start indices, runbreaks and runtypes
-      std::vector<size_type> & startIndices = sub_levelsets[0].start_indices[dim];
-      std::vector<index_type> & runBreaks = sub_levelsets[0].runbreaks[dim];
-
-      //get gridMinimum and gridMaximum, boundary condition
-      index_type grid_min = sub_levelsets[0].Grid.getGridTraitsConst().min_index(dim);
-      index_type grid_max = sub_levelsets[0].Grid.getGridTraitsConst().max_index(dim);
-      boundary_type bcondition = sub_levelsets[0].Grid.getGridTraitsConst().boundary_condition(dim);
-
-      //Getting the largest possible values for a start index, runtype and runbreak
-      //the largest start index is lower or equal to the size of runtypes(start index points to a runtype)
-      //the largest runtype is lower or equal to the size of start indices of the next dimension or
-      //if dim == 0 lower or equal to the size of distances (defined runtype points to a distance)
-      //the smallest runbreak is higher or equal to grid_min
-      //the largest runbreak is lower or equal to grid_max
-      uint32_t rnTypesSize = sub_levelsets[0].runtypes[dim].size();
-//FORCE_BYTESIZE lets you manually override the bytesize if you ever need to (you shouldn't)
-#undef FORCE_BYTESIZE
-#ifndef FORCE_BYTESIZE
-      uint32_t bytesPerStIndex;// = *(startIndices.end()-1);
-	    uint32_t bytesPerRnType = (dim == 0) ? sub_levelsets[0].distances.size() : sub_levelsets[0].start_indices[dim-1].size();
-	    int32_t bytesPerRnBreak;
-
-	    //bytesize for start indices
-	    if(rnTypesSize <= UINT8_MAX) bytesPerStIndex = 1;
-	    else if(rnTypesSize <= UINT16_MAX) bytesPerStIndex = 2;
-  		    else if(rnTypesSize <= UINT24_MAX) bytesPerStIndex = 3;
-	    else bytesPerStIndex = 4;
-	    //bytesize for runtypes
-	    if(bytesPerRnType <= UINT8_MAX) bytesPerRnType = 1;
-	    else if(bytesPerRnType <= UINT16_MAX) bytesPerRnType = 2;
-  		    else if(bytesPerRnType <= UINT24_MAX) bytesPerRnType = 3;
-	    else bytesPerRnType = 4;
-	    //bytesize for runbreaks
-	    if(grid_min >= INT8_MIN && grid_max <= INT8_MAX) bytesPerRnBreak = 1;
-	    else if(grid_min >= INT16_MIN && grid_max <= INT16_MAX) bytesPerRnBreak = 2;
-	    else if(grid_min >= INT24_MIN && grid_max <= INT24_MAX) bytesPerRnBreak = 3;
-	    else bytesPerRnBreak = 4;
-#else
-	    uint32_t bytesPerStIndex = BYTES_START_INDEX;
-	    uint32_t bytesPerRnType = BYTES_RUNTYPE;
-	    int32_t bytesPerRnBreak = BYTES_RUNBREAK;
-#endif
-	    byte = 0;
-	    //The number of bytes can be 1 ... 4, but with 2 bits you can store only 0 ... 3 --> -1
-	    byte |= bytesPerStIndex-1;
-	    byte |= (bytesPerRnType-1) << 2;
-	    byte |= (bytesPerRnBreak-1) << 4;
-
-	    //13 byte H-RLE block header
-	    fout.write(&byte, 1);
-	    uint32_t num = startIndices.size();
-	    fout.write((char *)&num, 4);
-	    fout.write((char *)&rnTypesSize, 4);
-	    num = runBreaks.size();
-	    fout.write((char *)&num, 4);
-#ifndef GRID_IN_FILE_HEADER
-	    fout.write((char *)&grid_min, 4);
-	    fout.write((char *)&grid_max, 4);
-	    fout.write((char *)&bcondition, 1);
-#endif
-	    //write the start indices to the file
-      for (typename std::vector<size_type>::const_iterator it=startIndices.begin();it!=startIndices.end();++it) {
-          fout.write((char *)&(*it), bytesPerStIndex);//std::cout << *it << " ";
-      }
-
-	    //write all runtypes to the file, skipping all segments and indices
-	    uint32_t last = 0, y;
-	    count = 3;byte=0;
-      std::vector<size_type> d_run_indices = {};
-	    for (typename sub_levelsets_type::size_type x=0;x!=sub_levelsets.size();++x){
-          y = last;
-          for(; y<sub_levelsets[x].runtypes[dim].size(); y++){
-            size_type rt = sub_levelsets[x].runtypes[dim][y];
-            if(rt == POS_PT){// 01 - positive undefined runtype
-              byte |= 1 << count * BITS_PER_RUNTYPE;
-              last = y;count--;
-			      }
-            else if(rt == NEG_PT){// 11 - negative undefined runtype
-              byte |= 3 << count * BITS_PER_RUNTYPE;
-              last = y;count--;
-			      }
-			      else if(rt == UNDEF_PT){// 10 - uninitialized runtype
-              byte |= 2 << count * BITS_PER_RUNTYPE;
-              last = y;count--;
-            }
-            else if(!is_defined(rt)){// skip Segments
-              continue;
-            }
-            else {// 00 - defined runtype
-              if(last != y || (x == 0 && last == y)){
-                byte |= 0 << count * BITS_PER_RUNTYPE;
-                d_run_indices.push_back(rt);
-                last = y;count--;
-				      }
-            }
-            if(count < 0){
-              fout << byte;
-              count = 3;byte=0;
-            }
-          }
-        }
-        if(count >= 0 && count < 3)
-            fout << byte;
-
-		    //write defined runtypes
-		    for (typename std::vector<size_type>::const_iterator it=d_run_indices.begin();it!=d_run_indices.end();++it) {
-          fout.write((char *)&(*it), bytesPerRnType);//std::cout << *it << " ";
-        }
-
-		    //Write runbreaks
-        for (typename std::vector<index_type>::const_iterator it=runBreaks.begin();it!=runBreaks.end();++it) {
-          fout.write((char *)&(*it), bytesPerRnBreak);//std::cout << *it << " ";
-        }
-    }
-		//get distances
-		std::vector<value_type> & distances = sub_levelsets[0].distances;
-		long num = distances.size();
-		fout.write((char *)&(num), 4);
-		count = CHAR_BIT/BITS_PER_DISTANCE-1;byte = 0;
-		double value = (std::pow(2, BITS_PER_DISTANCE)-1)/2;
-    for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
-			//  Levelset values range from -1 .... +1
-			//  With 4 bits we can represent values from 0 .... 15 or -8 ... +7; I chose 0 .... 15
-			// -1   .... +1    |*7.5
-			// -7.5 .... +7.5  |+7.5
-			//  0   .... +15
-			byte |= std::lround(*it * value + value) << count * BITS_PER_DISTANCE;
-			count--;
-			if(count < 0){
-				fout << byte;
-				count = CHAR_BIT/BITS_PER_DISTANCE-1;byte=0;
-			}
-    }
-		if(count == 0)
-		    fout << byte;
-
-		if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << "\n";
-		fout.close();
-		return *this;
-	}
+  levelset& exportLevelSet(std::string path){
+    exportLevelsetToFile(*this, path);
+    return *this;
+  }
 
 
-	template <class GTT, class LSTT>friend void importLevelSet(const levelset<GTT, LSTT>& l, std::string path);
-
-	levelset& importLevelSet(std::string path){
-		std::ifstream fin(path);
-		if(!fin.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n";return *this;}
-		std::cout << "Reading in LevelSet from " << path << std::endl;
-		char buff[10] = {};
-		char byte;
-
-		uint32_t uInt;
-		fin.read(buff, 10);
-		const int dimension = buff[5]-48;
-		if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) std::cout << "WARNING: File version does not match!" << std::endl;
-		if(bigEndian() != buff[7]-48) std::cout << "WARNING: File was written in a different byte order than it is being read. Results may be incorrect!" << std::endl;
-		int bits_per_run = buff[8]-48;
-		int bits_per_distance = buff[9]-48;
-		std::cout << "Dimensions: " << dimension << std::endl << "Bits per runtype:" << bits_per_run << std::endl << "Bits per distance:" << bits_per_distance << std::endl;
-#ifdef GRID_IN_FILE_HEADER
-		for(int i=dimension;i--;){
-			int32_t grid_min, grid_max;
-			boundary_type bcondition = 0;
-			fin.read((char *)&grid_min, 4);
-			fin.read((char *)&grid_max, 4);
-			fin.read((char *)&bcondition, 1);
-			std::cout << "Dimension: " << i << std::endl << "Grid min: " << grid_min << std::endl
-				  << "Grid max: " << grid_max << std::endl
-				  << "Boundary Condition: " << bcondition << std::endl;
-		}
-#endif
-		double gridDelta; //TODO
-		fin.read((char *)&gridDelta, sizeof(double));
-		std::cout << "Delta: " << gridDelta << std::endl;
-		//sub_levelsets.shrinkTo1();
-		for(int i=dimension;i--;){
-			std::vector<size_type>& startIndices = sub_levelsets[0].start_indices[i];
-			std::vector<size_type>& runTypes = sub_levelsets[0].runtypes[i];
-			std::vector<index_type>& runBreaks = sub_levelsets[0].runbreaks[i];
-			uint32_t num_st_indices, num_run_types, num_run_breaks;
-			int32_t bytesPerStIndex, bytesPerRnType, bytesPerRnBreak;
-			int32_t grid_min, grid_max;
-			boundary_type bcondition = 0;
-			//reading in the HRLE header
-		 	fin.read(&byte, 1);
-			fin.read((char *)&num_st_indices, 4);
-			fin.read((char *)&num_run_types, 4);
-			fin.read((char *)&num_run_breaks, 4);
-#ifndef GRID_IN_FILE_HEADER
-			fin.read((char *)&grid_min, 4);
-			fin.read((char *)&grid_max, 4);
-			fin.read((char *)&bcondition, 1);
-			std::cout << "Grid min: " << grid_min << std::endl
-				  << "Grid max: " << grid_max << std::endl
-				  << "Boundary Condition: " << bcondition << std::endl;
-#endif
-			bytesPerStIndex = (byte & 0x3) +1;
-			bytesPerRnType = (byte >> 2 & 0x3) +1;
-			bytesPerRnBreak = (byte >> 4 & 0x3) +1;
-
-			std::cout << bytesPerStIndex << " byte(s) per start index." << std::endl
-				  << bytesPerRnType << " byte(s) per runtype." << std::endl
-				  << bytesPerRnBreak << " byte(s) per runbreak." << std::endl;
-
-			uint32_t values_read = 0;
-			//reading start indices
-			if(startIndices.size() > 0) startIndices.clear();
-			for(unsigned int x = 0; x < num_st_indices; x++){
-				uInt = 0;
-				fin.read((char*) &uInt, bytesPerStIndex);
-				startIndices.push_back(uInt);
-				values_read++;
-			}
-			std::cout << "Dimension " << i << std::endl << "\t" << values_read << " of " << num_st_indices << " start indices read." << std::endl;
-
-			uint32_t count = 0;
-			values_read = 0;
-			//reading runtypes
-			if(runTypes.size() > 0) runTypes.clear();
-			for(int y = 0; y < std::ceil(num_run_types/4.0); y++){
-				fin.read(&byte, 1);
-				for(int z = 4; z--;){
-					if(values_read == num_run_types) break;
-					uInt = byte >> z*bits_per_run & 0x3;
-					if(uInt == 1) runTypes.push_back(POS_PT);
-					else if(uInt == 3) runTypes.push_back(NEG_PT);
-					else if(uInt == 2) runTypes.push_back(UNDEF_PT);
-					else if(uInt == 0) runTypes.push_back(101), count++;
-					values_read++;
-				}
-			}
-			std::cout << "\t" << values_read << " of " << num_run_types << " runtypes read." << " Defined runtypes: " << count << std::endl;
-			//reading defined runtypes
-			for(unsigned int j=0; j<runTypes.size(); j++){
-				if(runTypes[j] == 101){
-					uInt = 0;
-					fin.read((char *) &uInt, bytesPerRnType);
-					runTypes[j] = uInt;
-				}
-			}
-
-			values_read = 0;
-
-			//Allocate the exact amount of bytes you need for a runbreak
-			//Example: We have 2 bytes and the runbreak is -7, which corresponds to FFF9 (Two's complement).
-			//Now if we read it into a 4 byte integer we will have 0000 FFF9, which is not interpreted as -7, but as a positive number.
-			//-7 as a 4 byte integer is: FFFF FFF9.
-
-			//int8_t *sInt = new int8_t[bytesPerRnBreak];
-			int8_t *sInt = (int8_t *) malloc(bytesPerRnBreak*sizeof(int8_t));
-			//reading runbreaks
-			if(runBreaks.size() > 0) runBreaks.clear();
-			for(unsigned int z = 0; z < num_run_breaks; z++){
-				fin.read((char *) sInt, bytesPerRnBreak);
-				runBreaks.push_back(*sInt);
-				values_read++;
-			}
-			//delete[] sInt;
-			free(sInt);
-			std::cout << "\t" << values_read << " of " << num_run_breaks << " runbreaks." << std::endl;
-		}
-
-		uint32_t num_distances = 0, values_read = 0;
-		//reading the number of distances to read
-		fin.read((char *)&num_distances, 4);
-		std::vector<value_type> & distances = sub_levelsets[0].distances;
-		//
-		double value = (std::pow(2, bits_per_distance)-1)/2;
-		int count = CHAR_BIT/bits_per_distance;
-		int num_reads = std::ceil(num_distances/count);
-		char mask = 0xFF >> bits_per_distance;
-		//reading distances
-		if(distances.size() > 0) distances.clear();
-		for(int i = 0; i < num_reads; i++){
-			fin.read(&byte, 1);
-			for(unsigned int z = count; z--;){
-				if(values_read == num_distances) break; //if distances are odd, skip padding bits
-				uInt = byte >> z*bits_per_distance & mask;
-				distances.push_back(uInt / value - 1);
-				values_read++;
-			}
-		}
-		std::cout << values_read << " of " << num_distances << " distances read." << std::endl;
-
-		if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
-		fin.close();
-		return *this;
-	}
+  levelset& importLevelSet(std::string path){
+    importLevelsetFromFile(*this, path);
+    return *this;
+  }
 
 
         void swap(levelset<GridTraitsType, LevelSetTraitsType>& l) {
@@ -1498,7 +1234,7 @@ namespace lvlset {
 
             //size_type distances_pos(0);     //start_indices_pos
 
-        	int sub=std::upper_bound(segmentation.begin(), segmentation.end(), coords)-segmentation.begin();
+          int sub=std::upper_bound(segmentation.begin(), segmentation.end(), coords)-segmentation.begin();
 
             //shfdhsfhdskjhgf assert(sub>=0);
             //shfdhsfhdskjhgf assert(sub<sub_levelsets.size());
@@ -1632,7 +1368,7 @@ namespace lvlset {
         }
 
         bool is_active(size_type pt_id) {           //returns if the grid point given by the "pt_id"
-          return (active_pt_id(pt_id)!=INACTIVE);		//is an active grid point
+          return (active_pt_id(pt_id)!=INACTIVE);    //is an active grid point
         }
 
 
@@ -1696,6 +1432,9 @@ namespace lvlset {
         template <typename A, typename B, typename C> levelset(const A& , const A& , const B& , const C& , const grid_type2& );
         //constructor that creates the levelset from start indices, runtypes, runbreaks and distances
 
+        levelset(const grid_type2&, std::string path);
+        //constructor that creates a levelset from a levelset file. See also output.hpp for file format
+
         template <class PointsType> levelset(const grid_type2&, const PointsType& point_defs);
         //this is a constructor, creating a new level set from a sorted list of index/level set value-pairs
 
@@ -1715,7 +1454,7 @@ namespace lvlset {
 
         levelset(const grid_type2&);
         //initializes a levelset function without any defined points
-        //if sign = POS_SIGN(default) one undefined run of specified sign
+        //if sign = POS_SIGN(default) one  undefined run of specified sign
         //is created containing all grid points
 
         levelset(const grid_type2&,  value_type, int, bool );
@@ -1842,12 +1581,12 @@ namespace lvlset {
 
             points_type tmp_segmentation;
 
-            int n=1;		//TODO
+            int n=1;    //TODO
             #ifdef _OPENMP
                 n=omp_get_max_threads();
             #endif
 
-            size_type n_pts=num_pts();	// number of defined grid points
+            size_type n_pts=num_pts();  // number of defined grid points
             size_type sum=0;
 
             for (unsigned int g=0;g<static_cast<unsigned int>(n-1);++g) {
@@ -1903,7 +1642,7 @@ namespace lvlset {
                             //changing the signs of the level set values, and
                             //by interchanging positive and negative undefined runs
 
-        void serialize();
+        void serialize();   //this function is used to serialize a segmented levelset
 
         void rebuild();     //this function is used to rebuild the level set function
                             //after time integration, after rebuilding the level set function
@@ -2067,8 +1806,7 @@ namespace lvlset {
         //by the surface
 
         //TODO: is not parallelized yet
-
-    	assert(!point_defs.empty());
+        assert(!point_defs.empty());
 
         //std::vector<vec<index_type, D > > tmp_segmentation;
         points_type tmp_segmentation;
@@ -2221,9 +1959,9 @@ namespace lvlset {
       allocation_type a;
       // num_values[0] is to contain level set values, num_values[i] contains the start indices at the i-th dimension
       // num_runs[i] is to contain the run types at the i-th dimension
-      a.num_values[0]=dist.size();	// To contain level set values
+      a.num_values[0]=dist.size();  // To contain level set values
       a.num_runs[0]=rnTypes[0].size();
-      for (int i=1;i<D;++i) {
+      for (unsigned int i=1;i<D;++i) {
           a.num_values[i]=stIndices[i-1].size();
           a.num_runs[i]=rnTypes[i].size();
       }
@@ -2231,12 +1969,8 @@ namespace lvlset {
       assert(rnBreaks[D-1].size()==a.num_runs[D-1]-1);
       for (int i=1;i<D;++i)
           assert(rnBreaks[i-1].size()==a.num_runs[i-1]-a.num_values[i]);
-#ifdef _OPENMP
-      unsigned int n_layers = 1;//omp_get_num_threads();
-#else
-      unsigned int n_layers = 1;
-#endif
-      initialize(n_layers, g, a);
+
+      sub_levelsets.initialize(1, g, a);
       for(int i=0; i<D; i++){
         sub_levelsets[0].start_indices[i] = stIndices[i];
         sub_levelsets[0].runtypes[i] = rnTypes[i];
@@ -2244,14 +1978,176 @@ namespace lvlset {
       }
       sub_levelsets[0].distances = dist;
       sub_levelsets[0].num_active_points=0;
-      for(int i=0; i<dist.size(); i++){
+      for(unsigned int i=0; i<dist.size(); i++){
         if (math::abs(dist[i])<=value_type(0.5)) {
             sub_levelsets[0].active.push_back(sub_levelsets[0].num_active_points);
             ++sub_levelsets[0].num_active_points;
         } else
             sub_levelsets[0].active.push_back(INACTIVE);
       }
+      finalize(2);
+      //thin_out();
+      std::cout << "Exit1" << std::endl;
+    }
 
+    template <class GridTraitsType, class LevelSetTraitsType>
+    levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g, std::string path)
+    :  Grid(g) {
+      allocation_type a;
+      sub_levelsets.initialize(1, g, a);
+
+
+      std::ifstream fin(path);
+      if(!fin.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n";return;}
+      std::cout << "Reading in LevelSet from " << path << std::endl;
+      char buff[11] = {};
+      char byte;
+
+      uint32_t uInt;
+      fin.read(buff, 11);
+      if(strncmp((char *)&buff, "LVSTx", 5)) {std::cout << "Error: File is not a levelset file." << std::endl; return;}
+      const int dim = buff[5]-48;
+      if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) std::cout << "WARNING: File version does not match!" << std::endl;
+      if(bigEndian() != buff[7]-48) std::cout << "WARNING: File was written in a different byte order than it is being read. Results may be incorrect!" << std::endl;
+      int bits_per_run = buff[8]-48;
+      int bits_per_distance = buff[9]-48;
+      std::cout << "Dimensions: " << dim << std::endl << "Bits per runtype:" << bits_per_run << std::endl << "Bits per distance:" << bits_per_distance << std::endl;
+      std::cout << "Bytes per min/max: " << (buff[10] >> 4) << ", Bytes per delta: " << (buff[10] & 0xF) << std::endl;
+      fin.seekg(int(fin.tellg()) + ((buff[10]>>4)*2+1)*dim + (buff[10] & 0xF));
+      /*for(int i=dim;i--;){
+        int32_t grid_min, grid_max;
+        boundary_type bcondition = 0;
+        fin.read((char *)&grid_min, buff[10] >> 4);
+        fin.read((char *)&grid_max, buff[10] >> 4);
+        fin.read((char *)&bcondition, 1);
+        std::cout << "Dimension: " << i << std::endl << "Grid min: " << grid_min << std::endl
+            << "Grid max: " << grid_max << std::endl
+            << "Boundary Condition: " << bcondition << std::endl;
+      }
+
+      double gridDelta; //TODO
+      fin.read((char *)&gridDelta, buff[10] & 0xF);
+      std::cout << "Delta: " << gridDelta << std::endl;*/
+
+      for(int i=dim;i--;){
+        std::vector<size_type>& startIndices = sub_levelsets[0].start_indices[i];
+        std::vector<size_type>& runTypes = sub_levelsets[0].runtypes[i];
+        std::vector<index_type>& runBreaks = sub_levelsets[0].runbreaks[i];
+        uint32_t num_st_indices, num_run_types, num_run_breaks;
+        int32_t bytesPerStIndex, bytesPerRnType, bytesPerRnBreak;
+        //reading in the HRLE header
+        fin.read(&byte, 1);
+        fin.read((char *)&num_st_indices, 4);
+        fin.read((char *)&num_run_types, 4);
+        fin.read((char *)&num_run_breaks, 4);
+
+        bytesPerStIndex = (byte & 0x3) +1;
+        bytesPerRnType = (byte >> 2 & 0x3) +1;
+        bytesPerRnBreak = (byte >> 4 & 0x3) +1;
+
+        std::cout << bytesPerStIndex << " byte(s) per start index." << std::endl
+            << bytesPerRnType << " byte(s) per runtype." << std::endl
+            << bytesPerRnBreak << " byte(s) per runbreak." << std::endl;
+
+        uint32_t values_read = 0;
+        //reading start indices
+        if(startIndices.size() > 0) startIndices.clear();
+        for(unsigned int x = 0; x < num_st_indices; x++){
+          uInt = 0;
+          fin.read((char*) &uInt, bytesPerStIndex);
+          startIndices.push_back(uInt);
+          values_read++;
+        }
+        std::cout << "Dimension " << i << std::endl << "\t" << values_read << " of " << num_st_indices << " start indices read." << std::endl;
+
+        uint32_t count = 0;
+        values_read = 0;
+        //reading runtypes
+        if(runTypes.size() > 0) runTypes.clear();
+        for(int y = 0; y < std::ceil(num_run_types/4.0); y++){
+          fin.read(&byte, 1);
+          for(int z = 4; z--;){
+            if(values_read == num_run_types) break;
+            uInt = byte >> z*bits_per_run & 0x3;
+            if(uInt == 1) runTypes.push_back(POS_PT);
+            else if(uInt == 3) runTypes.push_back(NEG_PT);
+            else if(uInt == 2) runTypes.push_back(UNDEF_PT);
+            else if(uInt == 0) runTypes.push_back(101), count++;
+            values_read++;
+          }
+        }
+        std::cout << "\t" << values_read << " of " << num_run_types << " runtypes read." << " Defined runtypes: " << count << std::endl;
+        //reading defined runtypes
+        for(unsigned int j=0; j<runTypes.size(); j++){
+          if(runTypes[j] == 101){
+            uInt = 0;
+            fin.read((char *) &uInt, bytesPerRnType);
+            runTypes[j] = uInt;
+          }
+        }
+
+        values_read = 0;
+
+        //Allocate the exact amount of bytes you need for a runbreak
+        //Example: We have 2 bytes and the runbreak is -7, which corresponds to FFF9 (Two's complement).
+        //Now if we read it into a 4 byte integer we will have 0000 FFF9, which is not interpreted as -7, but as a positive number.
+        //-7 as a 4 byte integer is: FFFF FFF9.
+
+        //int8_t *sInt = new int8_t[bytesPerRnBreak];
+        int8_t *sInt = (int8_t *) malloc(bytesPerRnBreak*sizeof(int8_t));
+        //reading runbreaks
+        if(runBreaks.size() > 0) runBreaks.clear();
+        for(unsigned int z = 0; z < num_run_breaks; z++){
+          fin.read((char *) sInt, bytesPerRnBreak);
+          runBreaks.push_back(*sInt);
+          values_read++;
+        }
+        //delete[] sInt;
+        free(sInt);
+        std::cout << "\t" << values_read << " of " << num_run_breaks << " runbreaks." << std::endl;
+      }
+
+      uint32_t num_distances = 0, values_read = 0;
+      //reading the number of distances to read
+      fin.read((char *)&num_distances, 4);
+      std::vector<value_type> & distances = sub_levelsets[0].distances;
+      //
+      double value = (std::pow(2, bits_per_distance)-1)/2;
+      int count = CHAR_BIT/bits_per_distance;
+      int num_reads = std::ceil(num_distances/count);
+      char mask = 0xFF >> (CHAR_BIT-bits_per_distance);
+      //reading distances
+      if(distances.size() > 0) distances.clear();
+      uint8_t uInt8;
+      for(int i = 0; i < num_reads; i++){
+        fin.read(&byte, 1);
+        for(unsigned int z = count; z--;){
+          if(values_read == num_distances) break; //if distances are odd, skip padding bits
+          uInt8 = byte >> z*bits_per_distance & mask;
+          distances.push_back(uInt8 / value - 1);
+          values_read++;
+        }
+      }
+      std::cout << values_read << " of " << num_distances << " distances read." << std::endl;
+
+      if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
+      fin.close();
+
+
+      for(int i=0; i<D; i++){
+      }
+
+      /*
+      sub_levelsets[0].num_active_points=0;
+      for(unsigned int i=0; i<dist.size(); i++){
+        if (math::abs(dist[i])<=value_type(0.5)) {
+            sub_levelsets[0].active.push_back(sub_levelsets[0].num_active_points);
+            ++sub_levelsets[0].num_active_points;
+        } else
+            sub_levelsets[0].active.push_back(INACTIVE);
+      }*/
+      finalize(2);
+      thin_out();
     }
 
     template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g, value_type c, int direction, bool is_direction_negative)  :  segmentation(points_type()), Grid(g)  {
@@ -2515,8 +2411,8 @@ namespace lvlset {
                 }
             }
 
-			#pragma omp barrier //wait until all other threads in section reach the same point.
-			#pragma omp single //section of code that must be run by a single available thread.
+      #pragma omp barrier //wait until all other threads in section reach the same point.
+      #pragma omp single //section of code that must be run by a single available thread.
             {
                 finalize(2);
                 data.set_size(num_active_pts());
@@ -2586,22 +2482,22 @@ namespace lvlset {
                 while (pos<end_v) {
 
                     typename LevelSetType::value_type d=min_or_max(itA.value(),itB.value());
-//                	typename LevelSetType::value_type d;
+//                  typename LevelSetType::value_type d;
 
 //                    if (std::abs(itA.value()-itB.value())<0.001) d=POS_VALUE;
 
-//                	if ((itA.value()-itB.value())<-0.001) {
-//                		d=POS_VALUE;
-//                	} else if (std::abs(itA.value())<std::abs(itB.value())) {
-//                		d=itA.value();
-//                	} else {
-//                		d=itB.value();
-//                	}
+//                  if ((itA.value()-itB.value())<-0.001) {
+//                    d=POS_VALUE;
+//                  } else if (std::abs(itA.value())<std::abs(itB.value())) {
+//                    d=itA.value();
+//                  } else {
+//                    d=itB.value();
+//                  }
 
-//                	min_or_max(itA.value(),itB.value());
+//                  min_or_max(itA.value(),itB.value());
 
 //                    if ((itA.value()<0)&&(itB.value()<0)) {
-//                    	std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
+//                      std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
 //                    }
 
                     if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
@@ -2713,7 +2609,6 @@ namespace lvlset {
             finalize(old_lvlset.number_of_layers());
         }
     }
-
 
 
     template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::expand(int end_width, int start_width) {
@@ -3079,9 +2974,9 @@ namespace lvlset {
             //this function requires that the level set function consists at least of 3 layers of grid points,
             //which means that all neighbor grid points of active grid points are defined
 
-            const value_type pos	=	l.Grid.grid_position_of_local_index(dir,indices(dir));
-            const value_type d_p	=	l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
-            const value_type d_n	=	l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+            const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+            const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+            const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
 
             const value_type phi_0=center().value();
             const value_type phi_p=neighbor(dir,0).value();
@@ -4070,13 +3965,13 @@ namespace lvlset {
                         ++start_indices_pos[s_level];
                     } else {
 
-                    	if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
-							move_inverse.set(s_level);
-						} else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
-							move_inverse.reset(s_level);
-						}
+                      if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
+              move_inverse.set(s_level);
+            } else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
+              move_inverse.reset(s_level);
+            }
 
-                    	if (move_inverse.test(s_level)) {
+                      if (move_inverse.test(s_level)) {
                             //shfdhsfhdskjhgf assert(start_indices_pos[s_level]>0);
                             --start_indices_pos[s_level];
                             --rel_coords[s_level];
@@ -4116,17 +4011,17 @@ namespace lvlset {
                         --rel_coords[s_level];
                         --start_indices_pos[s_level];
                     } else {
-                    	if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
-                    		move_inverse.reset(s_level);
-                    	} else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
-                    		move_inverse.set(s_level);
-                    	}
+                      if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
+                        move_inverse.reset(s_level);
+                      } else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
+                        move_inverse.set(s_level);
+                      }
                         if (move_inverse.test(s_level)) {
-							++start_indices_pos[s_level];
-							++rel_coords[s_level];
+              ++start_indices_pos[s_level];
+              ++rel_coords[s_level];
                         } else {
-							--start_indices_pos[s_level];
-							--rel_coords[s_level];
+              --start_indices_pos[s_level];
+              --rel_coords[s_level];
                         }
                     }
 

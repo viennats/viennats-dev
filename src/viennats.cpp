@@ -23,9 +23,9 @@
 //Processes
 #define PROCESS_CONSTANT_RATES
 // Processes are not needed for testing file io
-/*#define PROCESS_SIMPLE_DEPOSITION
-#define PROCESS_TiN_ALD
-#define PROCESS_TiN_PEALD
+//#define PROCESS_SIMPLE_DEPOSITION
+//#define PROCESS_TiN_ALD
+/*#define PROCESS_TiN_PEALD
 #define PROCESS_TiO2_ALD
 #define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_Cl2_CH4_PLASMA_ETCHING
@@ -41,13 +41,13 @@
 #define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
 #define PROCESS_FIB
-
+*/
 
 //LS Processes
 #define PROCESS_PLANARIZATION
 #define PROCESS_MASK
 #define PROCESS_BOOLEANOPS
-*/
+
 //Flux calculation
 #define PROCESS_CALCULATEFLUX
 
@@ -56,6 +56,26 @@
 #define COMPILE_UP_DOWN_LINKED_TREE
 
 #define MAX_NUM_THREADS 110
+
+//Options for levelset output
+#define FILE_NAME "./exported_LVST.lvl"
+#define LVST_FILE_VERSION_NUMBER 1
+#define BITS_PER_RUNTYPE 2
+#define BITS_PER_DISTANCE 4
+
+//#if BITS_PER_DISTANCE > CHAR_BIT
+//_Pragma ("GCC error  \"You are trying to use more BITS_PER_DISTANCE than one char can hold. This will result in an invalid levelset.\"")
+//#endif // BITS LONGER_THAN_CHAR
+
+#define FORCE_BYTESIZE
+//if bytesizes are forced
+#define BYTES_START_INDEX 4
+#define BYTES_RUNTYPE 4
+#define BYTES_RUNBREAK 4
+//Limits for 3 byte output
+#define UINT24_MAX 16777215 // highest value of 3 unsigned bytes  2^24-1
+#define INT24_MAX 8388607  //  highest value of 3 signed   bytes  2^23-1
+#define INT24_MIN -8388608 //  lowest  value of 3 signed   bytes -2^23
 
 //##################################################
 
@@ -158,10 +178,9 @@ private:
 public:
 	///Can be 2 or 3-dimensional
 	const static int dimensions = D;
-	void setGridDelta(const coord_type& grid_delta){GridDelta = grid_delta;}
-	void setMin(const int& dim, const index_type& min){Min_[dim] = min;}
-	void setMax(const int& dim, const index_type& max){Max_[dim] = max;}
-	void setBCondition(const int& dim, const lvlset::boundary_type bc){ BoundaryConditions_[dim] = bc;}
+	const index_type* getMinima() const {return Min_;}
+	const index_type* getMaxima() const {return Max_;}
+	const lvlset::boundary_type* getBoundaryConditions() const {return BoundaryConditions_;}
 
 
 	///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
@@ -198,7 +217,49 @@ public:
 	lvlset::boundary_type boundary_condition(int dir) const {
 		return BoundaryConditions_[dir];
 	}
+
+	bool operator==(GridTraitsType& g){
+		if(this == &g) return true;
+		if(D != g.D) return false;
+		for (int i = 0; i < D; i++) {
+			if(Min_[i] != g.Min_[i]) return false;
+			if(Max_[i] != g.Max_[i]) return false;
+			if(BoundaryConditions_[i] != g.BoundaryConditions_[i]) return false;
+		}
+		if(gridDelta != g.gridDelta) return false;
+		return true;
+	}
+
+	bool operator!=(GridTraitsType& g){
+		return !(*this == g);
+	}
 };
+
+/*template <int D> GridTraitsType<D> getGridFromLVSTFile(std::string path){
+
+	std::ifstream fin(path);
+	char buff[11] = {};
+	fin.read(buff, 11);
+	const int dimension = buff[5]-48;
+
+	double gridDelta; //TODO
+	int32_t grid_min[D];
+	int32_t grid_max[D];
+	lvlset::boundary_type bconditions[D];
+
+	for(int i=dimension;i--;){
+		fin.read((char *)&grid_min[i], 4);
+		fin.read((char *)&grid_max[i], 4);
+		fin.read((char *)&bconditions[i], 1);
+		//grid_min[i] = gd_min;
+		//grid_max[i] = gd_max;
+		//boundary_conditions[i] = bcondition;
+	}
+	fin.read((char *)&gridDelta, sizeof(double));
+	fin.close();
+	return GridTraitsType<D>(grid_min, grid_max, bconditions, gridDelta);
+
+}*/
 
 ///Defines the size_type (unsigned int) and value_type (double) for the level set function
 class LevelSetTraitsType {
@@ -453,49 +514,36 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 //print levelset
 typename LevelSetsType::iterator LSPrint;
-if(LevelSets.size() > 1) LSPrint = LevelSets.begin()++;
-else LSPrint = LevelSets.begin();
+/*if(LevelSets.size() > 1) LSPrint = LevelSets.begin()++;
+else */LSPrint = LevelSets.begin();
 
-std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
-std::ofstream fout("./LVSetWithSegmentation.txt");
+//std::cout << "Levelsets Vector size: " << LevelSets.size() << std::endl;
+std::ostringstream oss;
+oss << "./LVSetWithSegmentation_"<<LSPrint->number_of_segments()<<".txt";
+std::ofstream fout(oss.str());
 LSPrint->print(fout);
-LSPrint->print();
 fout.close();
-LSPrint->printWithoutSegmentation();
-fout = std::ofstream("./LVSetWithoutSegmentation.txt");
-LSPrint->printWithoutSegmentation(fout);
-fout.close();
-LSPrint->exportLevelSet(FILE_NAME).importLevelSet(FILE_NAME);
-//LevelSets.begin()->importLevelSet("./exportedLVLSet_.lvl");
-//LSPrint->printWithoutSegmentation();
+LSPrint->exportLevelSet(FILE_NAME);
+lvlset::exportLevelsetToFile(*LSPrint, "./exported_LVST2.lvl");
+GridTraitsType<D> GridProperties = lvlset::getGridFromLVSTFile<GridTraitsType<D>>(FILE_NAME);
+lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
+std::vector<unsigned int> startIndices [D];
+std::vector<unsigned int> runTypes [D];
+std::vector<int> runBreaks [D];
+std::vector<double> distances;
+lvlset::importLevelSetData<GridTraitsType<D>,lvlset::DefaultLevelSetTraitsType>(startIndices, runTypes, runBreaks, distances, std::string(FILE_NAME));
+lvlset::levelset<GridTraitsType<D>> l(startIndices, runTypes, runBreaks, distances, grid);
+lvlset::levelset<GridTraitsType<D>> l2(grid, std::string("./exported_LVST.lvl"));
+lvlset::levelset<GridTraitsType<D>> l3(grid);
+l3.importLevelSet(std::string("./exported_LVST2.lvl"));
 
-typedef typename GridTraitsType<D>::index_type index_type;
-index_type * g_min = new index_type[D];
-index_type * g_max = new index_type[D];
-lvlset::boundary_type* bc = new lvlset::boundary_type [D];
-double gridDelta;
-lvlset::fillGridProperties(g_min, g_max, bc, gridDelta, FILE_NAME);
-GridTraitsType<D> GridP(g_min, g_max, bc, gridDelta);
-/*std::vector<LevelSetTraitsType::size_type> start_indices[D];
-std::vector<LevelSetTraitsType::size_type> runtypes[D];
-std::vector<GridTraitsType::index_type> runbreaks[D];
-std::vector<LevelSetTraitsType::value_type> distances*/
-lvlset::grid_type<GridTraitsType<D>> grid(GridP);
-lvlset::levelset<GridTraitsType<D>> l(grid);
 l.print();
-///fin.close();
-delete[] g_min;
-delete[] g_max;
-delete[] bc;
-/*
-std::vector<size_type> startIndices;
-std::vector<size_type> runTypes;
-std::vector<index_type> runBreaks;
-std::vector<value_type> distances;
-	lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
-lvlset::levelset l(startIndices, runTypes, runBreaks, distances, grid);*/
-
-		//lvlset::write_explicit_surface_vtk(*(LevelSets.begin()), "./output/importedLVST.vtk");
+l2.print();
+l3.print();
+std:: cout << (l == l2) << "\n" << (l == l3) << "\n" << (l2==l3) <<"\n"<< (l==l) << std::endl;
+lvlset::write_explicit_surface_vtk(l, "./output/importedLVST.vtk");
+lvlset::write_explicit_surface_vtk(l2, "./output/importedLVST2.vtk");
+lvlset::write_explicit_surface_vtk(*LSPrint, "./output/importedLVST_original.vtk");
 
 		std::cout << "Inactive/Mask/Active: ";
 		for(unsigned int i=0; i<LevelSets.size(); ++i){
