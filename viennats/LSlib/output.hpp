@@ -625,7 +625,7 @@ namespace lvlset {
               byte |= 2 << count * BITS_PER_RUNTYPE;
               count--;
             }
-            else if(!ls.is_defined(*it)){// skip Segments --> there shouldn't be any
+            else if(!ls.is_defined(*it)){// skip Segments --> there shouldn't be any because serialize()
               continue;
             }
             else {// 00sub_levelsets[0].start_indices - defined runtype
@@ -827,6 +827,7 @@ namespace lvlset {
       if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
       fin.close();
       ls.finalize(2);
+      ls.thin_out();
     }
 
 } //NAMESPACE LEVELSET END
