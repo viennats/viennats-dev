@@ -477,7 +477,7 @@ namespace proc {
                 const ParameterType& Parameter,
                 const ProcessParameterType& ProcessParameter,
                 OutputInfoType & output_info
-        ) {std::cout << "ex1";
+        ) {
 
 
 	    typedef typename LevelSetsType::value_type LevelSetType;
@@ -501,7 +501,7 @@ namespace proc {
                 const ParameterType& Parameter,
                 const ProcessParameterType& ProcessParameter,
                 OutputInfoType & output_info
-        ) {std::cout << "ex2";
+        ) {
 
 //        assert(LevelSets.size()>=2);
 
@@ -586,7 +586,7 @@ namespace proc {
                 const ParameterType& Parameter,
                 const ProcessParameterType& ProcessParameter,
                 OutputInfoType & output_info
-        ) {std::cout << "ex3";
+        ) {
 
 	    if (Model.level()==0) return;
 
@@ -748,7 +748,7 @@ namespace proc {
                                 std::vector<double>& Coverages//,
 //                                std::vector<double> Rates//,
 //                                int step_cycle
-) {std::cout << "ex4";
+) {
     const int D=LevelSetsType::value_type::dimensions;
 
 	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
@@ -1281,7 +1281,7 @@ namespace proc {
 				const ParameterType& Parameter,
 				const ProcessParameterType& ProcessParameter,
 				OutputInfoType & output_info
-		) {std::cout << "ex5";
+		) {
 		const int D=LevelSetsType::value_type::dimensions;
 
 
