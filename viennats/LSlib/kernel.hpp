@@ -682,21 +682,6 @@ namespace lvlset {
 
             sub_levelsets_type() {}
 
-            sub_levelsets_type(size_type i, const grid_type2& g,  allocation_type a=allocation_type()) {
-                // initialize the parallelization by implementing i number of sub_levelset_type objects
-                // through a sub_levelset_ptr_type object, that each correspond to a parallel core
-
-                subs.resize(i);//,sub_levelset_ptr_type(0));
-
-                a*=allocation_factor;
-                a/=i;
-
-                #pragma omp parallel for schedule(static,1)  // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
-                for (int k=0;k<static_cast<int>(subs.size());++k) {
-                    subs[k]= sub_levelset_ptr_type(new sub_levelset_type(g,a));
-                }
-            }
-
             ~sub_levelsets_type() {
                 // sub_levelsets_type destructor used to delete all pointers for clean-up
                 for (typename sub_levelsets_intern_type::iterator it=subs.begin();it!=subs.end();++it) if (*it!=0) delete *it;
