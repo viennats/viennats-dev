@@ -478,6 +478,15 @@ namespace lvlset {
 
     }
 
+    union {
+      uint16_t shortVar;    // binary  number of length 16 Bits
+      uint8_t  charVar[2];  // 2 binary numbers, each 8 Bits
+    } test_endianness;
+
+    bool bigEndian(){
+      test_endianness.shortVar = 0x8000; // MSB of 16
+      return test_endianness.charVar[0] != 0;
+    }
 
     template <class GridTraitsType, class LevelSetTraitsType>
     void exportLevelsetToFile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path) {
@@ -695,7 +704,7 @@ namespace lvlset {
       char byte;
       uint32_t uInt;
       fin.read(buff, 11);
-      if(strncmp((char *)&buff, "LVSTx", 5)) {std::cout << "Error: File is not a levelset file." << std::endl; return;}
+      if(std::string(buff).compare(0, 5, "LVSTx")) {std::cout << "Error: File is not a levelset file." << std::endl; return;}
 
       const int dim = buff[5]-48;
       if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) std::cout << "WARNING: File version does not match!" << std::endl;

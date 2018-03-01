@@ -21,7 +21,6 @@
 #include <string>
 #include <sstream>
 #include <bitset>
-#include <cstring>
 
 #include <iostream>     //TODO
 #include "misc.hpp"     //TODO test
@@ -30,9 +29,6 @@
 #include "vector.hpp"
 #include "grid.hpp"
 #include "math.hpp"
-//Exporting the levelset to a file specfic for the levelset structure
-#include "file_io.hpp"
-#include "output.hpp"
 
 #ifdef _OPENMP
     #include <omp.h>

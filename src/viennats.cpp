@@ -195,9 +195,6 @@ public:
 		}
 	}
 
-	//empty constructor
-	GridTraitsType(){}
-
 	///Returns the minimum index at in the "dir" axial direction
 	index_type min_index(int dir) const {
 		return Min_[dir];
