@@ -75,7 +75,7 @@ namespace lvlset {
     public:
         typedef typename GridTraitsType::index_type index_type;
         typedef typename GridTraitsType::coord_type coord_type;
-        typedef GridTraitsType grid_traits_type;
+        //typedef GridTraitsType grid_traits_type;
 
         static const int dimensions=GridTraitsType::dimensions;
 
@@ -135,21 +135,8 @@ namespace lvlset {
                                         MinGridPointCoord_(gt.MinGridPointCoord_),
                                         MaxGridPointCoord_(gt.MaxGridPointCoord_),
                                         parities(gt.parities) {}
-
-
-        bool operator==(grid_type &g){
-          if(this == &g) return true;
-          if(D != g.D) return false;
-          if(GridTraits != g.GridTraits) return false;
-          if(Min_!=g.Min_) return false;
-          if(Max_!=g.Max_) return false;
-          if(Ext_!=g.Ext_) return false;
-          if(BoundaryConditions_!=g.BoundaryConditions_) return false;
-          if(MinGridPointCoord_!=g.MinGridPointCoord_) return false;
-          if(MaxGridPointCoord_!=g.MaxGridPointCoord_) return false;
-          if(parities!=g.parities) return false;
-          return true;
-        }
+        //empty constructor
+        grid_type():GridTraits(GridTraitsType()){}
 
         bool parity(int dim) const {
             //parity is false/true if the "grid_position" function in GridTraitsType is
@@ -206,10 +193,10 @@ namespace lvlset {
 
         template <class V>
         bool is_cell_member(const V& vec) const {
-        	for (int i=0;i<D;++i) {
-        		if ((vec[i]<min_grid_index(i)) || (vec[i]>=max_grid_index(i))) return false;
-        	}
-        	return true;
+          for (int i=0;i<D;++i) {
+            if ((vec[i]<min_grid_index(i)) || (vec[i]>=max_grid_index(i))) return false;
+          }
+          return true;
         }
 
         inline index_type max_point_index(int dim) const {
@@ -354,7 +341,7 @@ namespace lvlset {
             }
         }
 
-	//[Josef] This function certainly has a role to play
+  //[Josef] This function certainly has a role to play
         coord_type global_index_2_global_coordinate(int dir, coord_type c) const {
             //this function transforms the coordinate c in respect to the rectilinear grid into the
             //real coordinates
@@ -450,7 +437,7 @@ namespace lvlset {
             }
         }*/
 
-        const grid_traits_type& grid_traits() const {
+        const GridTraitsType& grid_traits() const {
             return GridTraits;
         }
 
