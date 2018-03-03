@@ -936,32 +936,6 @@ namespace lvlset {
           thin_out();
         }
 
-        bool operator==(levelset& l){
-          if(this == &l) return true;
-          if(D != l.D) return false;
-          serialize(); l.serialize();
-          for(int i = D; i--;){
-            if(startIndices(i) != l.startIndices(i)) {
-              thin_out(); l.thin_out();
-              return false;
-            }
-            if(runTypes(i) != l.runTypes(i)) {
-              thin_out(); l.thin_out();
-              return false;
-            }
-            if(runBreaks(i) != l.runBreaks(i)) {
-              thin_out(); l.thin_out();
-              return false;
-            }
-          }
-          if(distances() != l.distances()) {
-            thin_out(); l.thin_out();
-            return false;
-          }
-          thin_out(); l.thin_out();
-          return true;
-        }
-
         std::vector<size_type>& startIndices(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].start_indices[dim];
         }
