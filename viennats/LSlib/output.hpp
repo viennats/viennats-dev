@@ -45,10 +45,10 @@ namespace lvlset {
                 for (unsigned int i=0;i<Nodes.size();i++) temp.push_back(vec<float, D>(Nodes[i]));
                 Nodes.clear();
                 for (unsigned int i=0;i<temp.size()+1;i++) {
-                	if (i==loc) {
-                		Nodes.push_back(vec<float, D>(v));
-                	}
-                	Nodes.push_back(vec<float, D>(temp[i]));
+                  if (i==loc) {
+                    Nodes.push_back(vec<float, D>(v));
+                  }
+                  Nodes.push_back(vec<float, D>(temp[i]));
                 }
                 return Nodes.size()-1;
             }
@@ -59,19 +59,19 @@ namespace lvlset {
 
         };
 
-    	template <int D> class SurfaceList {
-    	public:
+      template <int D> class SurfaceList {
+      public:
 
-    		typedef Surface<D> Surfaces;
+        typedef Surface<D> Surfaces;
 
-    		int dim;
-    		int nsurfaces;
-    		int open_boundary_direction;
-    		float bottom;
-    		std::list<Surfaces > surfaces;
+        int dim;
+        int nsurfaces;
+        int open_boundary_direction;
+        float bottom;
+        std::list<Surfaces > surfaces;
 
-    		SurfaceList(int nb_surf):dim(D), nsurfaces(nb_surf) {}
-    	};
+        SurfaceList(int nb_surf):dim(D), nsurfaces(nb_surf) {}
+      };
     }
 
     namespace {
@@ -456,26 +456,25 @@ namespace lvlset {
     template <class GridTraitsType> GridTraitsType getGridFromLVSTFile(std::string path){
       //reads the grid information from a levelset file
 
-    	std::ifstream fin(path);
-    	char buff[11] = {};
-    	fin.read(buff, 11);
-    	const int dim = buff[5]-48;
+      std::ifstream fin(path);
+      char buff[11] = {};
+      fin.read(buff, 11);
+      const int dim = buff[5]-48;
       const int D = GridTraitsType::dimensions;
 
-    	double gridDelta;
-    	int32_t grid_min[D];
-    	int32_t grid_max[D];
-    	boundary_type bconditions[D];
+      double gridDelta;
+      int32_t grid_min[D];
+      int32_t grid_max[D];
+      char bconditions[D];
 
-    	for(int i=dim;i--;){
-    		fin.read((char *)&grid_min[i], 4);
-    		fin.read((char *)&grid_max[i], 4);
-    		fin.read((char *)&bconditions[i], 1);
-    	}
-    	fin.read((char *)&gridDelta, sizeof(double));
-    	fin.close();
-    	return GridTraitsType(grid_min, grid_max, bconditions, gridDelta);
-
+      for(int i=dim;i--;){
+        fin.read((char *)&grid_min[i], 4);
+        fin.read((char *)&grid_max[i], 4);
+        fin.read((char *)&bconditions[i], 1);
+      }
+      fin.read((char *)&gridDelta, sizeof(double));
+      fin.close();
+      return GridTraitsType(grid_min, grid_max, bconditions, gridDelta);
     }
 
     union {
@@ -543,15 +542,15 @@ namespace lvlset {
         const index_type* gridMaxima = ls.grid().grid_traits().getMaxima();
         const boundary_type* gridBConditions = ls.grid().grid_traits().getBoundaryConditions();
         char byte = 0;
-        byte |= 4 << 4;//4 bytes per min/max
-        byte |= sizeof(double);//bytes for grid Delta
+        //write grid properties
+        byte |= BYTES_GRID_LIMITS << 4;//bytes used to store grid min and grid max
+        byte |= sizeof(double);//bytes used to store grid delta
         fout << byte;
         for (int dim=D;dim--;) {
-            fout.write((char *)&gridMinima[dim], 4);
-            fout.write((char *)&gridMaxima[dim], 4);
+            fout.write((char *)&gridMinima[dim], BYTES_GRID_LIMITS);
+            fout.write((char *)&gridMaxima[dim], BYTES_GRID_LIMITS);
             fout.write((char *)&gridBConditions[dim], 1);
         }
-
         double delta = ls.grid().grid_traits().grid_position(0, 1);//1st argument is not used. Returns 1 * GridDelta.
         fout.write((char *)&delta, sizeof(double));
 
@@ -561,16 +560,22 @@ namespace lvlset {
 
         for (int dim=D-1;dim>=0;--dim) {
           //get start indices, runbreaks and runtypes
-          std::vector<size_type> & startIndices = ls.startIndices(dim);
-          std::vector<size_type> & runTypes = ls.runTypes(dim);
-          std::vector<index_type> & runBreaks = ls.runBreaks(dim);
+          //NOTE: the functions return non-const references
+          const std::vector<size_type> & startIndices = ls.startIndices(dim);
+          const std::vector<size_type> & runTypes = ls.runTypes(dim);
+          const std::vector<index_type> & runBreaks = ls.runBreaks(dim);
 
           //Getting the largest possible values for a start index, runtype and runbreak
+          //this is used to use the minimum amount of bytes per start index, runtype and runbreak per dimension
+
           //the largest start index is lower or equal to the size of runtypes(start index points to a runtype)
+
           //the largest runtype is lower or equal to the size of start indices of the next dimension or
           //if dim == 0 lower or equal to the size of distances (defined runtype points to a distance)
+
           //the smallest runbreak is higher or equal to grid_min
           //the largest runbreak is lower or equal to grid_max
+
     //FORCE_BYTESIZE lets you manually override the bytesize if you ever need to (you shouldn't)
     #undef FORCE_BYTESIZE
     #ifndef FORCE_BYTESIZE
@@ -594,17 +599,20 @@ namespace lvlset {
           else if(gridMinima[dim] >= INT24_MIN && gridMaxima[dim] <= INT24_MAX) bytesPerRnBreak = 3;
           else bytesPerRnBreak = 4;
     #else
+          //if bytesize has to be forced manually (in case 4 bytes is not enough)
           uint32_t bytesPerStIndex = BYTES_START_INDEX;
           uint32_t bytesPerRnType = BYTES_RUNTYPE;
           int32_t bytesPerRnBreak = BYTES_RUNBREAK;
+          //TODO: if bytesize is larger than 4 we need more than one byte to store the information, see below
     #endif
           byte = 0;
+          //use 2 bits to store the number of bytes needed
           //The number of bytes can be 1 ... 4, but with 2 bits you can store only 0 ... 3 --> -1
           byte |= bytesPerStIndex-1;
           byte |= (bytesPerRnType-1) << 2;
           byte |= (bytesPerRnBreak-1) << 4;
 
-          //13 byte H-RLE block header
+          //write 13 byte H-RLE block header
           fout.write(&byte, 1);
           uint32_t num = startIndices.size();
           fout.write((char *)&num, 4);
@@ -618,7 +626,7 @@ namespace lvlset {
               fout.write((char *)&(*it), bytesPerStIndex);
           }
 
-          //write all runtypes to the file, skipping all segments and indices
+          //write all runtypes to the file, skipping all segments and indices (using 2 bits per runtype)
           count = 3;byte=0;
           std::vector<size_type> d_run_indices = {};
           for (typename std::vector<size_type>::const_iterator it=runTypes.begin();it!=runTypes.end();++it) {
@@ -634,20 +642,21 @@ namespace lvlset {
               byte |= 2 << count * BITS_PER_RUNTYPE;
               count--;
             }
-            else if(!ls.is_defined(*it)){// skip Segments --> there shouldn't be any because serialize()
+            else if(!ls.is_defined(*it)){// skip Segments --> there shouldn't be any because of serialize()
+              std::cout << "Warning: Segment detected during levelset export.";
               continue;
             }
-            else {// 00sub_levelsets[0].start_indices - defined runtype
+            else {// 00 - defined runtype
                 byte |= 0 << count * BITS_PER_RUNTYPE;
                 d_run_indices.push_back(*it);
                 count--;
             }
-            if(count < 0){
+            if(count < 0){ //if 4 runtypes are written inside the byte, write it to the file
               fout << byte;
               count = 3;byte=0;
             }
           }
-          if(count >= 0 && count < 3)
+          if(count >= 0 && count < 3) //number of runtypes % 4 > 0
               fout << byte;
 
           //write defined runtypes
@@ -685,7 +694,7 @@ namespace lvlset {
 
         if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << std::endl;
         fout.close();
-        //ls.finalize();
+        ls.finalize(2);
         ls.thin_out();// sets up segmentation for one levelset
     }
 
@@ -704,6 +713,7 @@ namespace lvlset {
       char byte;
       uint32_t uInt;
       fin.read(buff, 11);
+      //Comparing Identification Bytes
       if(std::string(buff).compare(0, 5, "LVSTx")) {std::cout << "Error: File is not a levelset file." << std::endl; return;}
 
       const int dim = buff[5]-48;
@@ -713,8 +723,10 @@ namespace lvlset {
       int bits_per_distance = buff[9]-48;
       std::cout << "Dimensions: " << dim << std::endl << "Bits per runtype:" << bits_per_run << std::endl << "Bits per distance:" << bits_per_distance << std::endl;
       std::cout << "Bytes per min/max: " << (buff[10] >> 4) << ", Bytes per delta: " << (buff[10] & 0xF) << std::endl;
+      //Skip Grid: From our current position  fin.tellg()
+      //We go 2 * Bytes per grid min/max + 1 Byte per boundary condition, per dimension  ((buff[10]>>4)*2+1)* dim
+      //plus the additional number of bytes for the grid delta  buff[10] & 0xF
       fin.seekg(int(fin.tellg()) + ((buff[10]>>4)*2+1)*dim + (buff[10] & 0xF));
-      //skip grid
       /*
       for(int i=dimension;i--;){
         int32_t grid_min, grid_max;
@@ -722,17 +734,17 @@ namespace lvlset {
         fin.read((char *)&grid_min, buff[10] >> 4);
         fin.read((char *)&grid_max, buff[10] >> 4);
         fin.read((char *)&bcondition, 1);
-        std::cout << "Dimension: " << i << std::endl << "Grid min: " << grid_min << std::endl
-            << "Grid max: " << grid_max << std::endl
-            << "Boundary Condition: " << bcondition << std::endl;
       }
 
       double gridDelta; //TODO
       fin.read((char *)&gridDelta, buff[10] & 0xF);
-      std::cout << "Delta: " << gridDelta << std::endl;
       */
+
+      //initialize the empty levelset to sublevelsets size 1
       ls.initialize();
+
       for(int i=dim;i--;){
+        //get the start indices, runtypes and runbreaks vectors
         std::vector<size_type>& startIndices = ls.startIndices(i);
         std::vector<size_type>& runTypes = ls.runTypes(i);
         std::vector<index_type>& runBreaks = ls.runBreaks(i);
@@ -835,10 +847,11 @@ namespace lvlset {
 
       if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
       fin.close();
+
       ls.finalize(2);
       ls.thin_out();
     }
 
-} //NAMESPACE LEVELSET END
+} //NAMESPACE LVLSET END
 
 #endif /*OUTPUT_HPP_*/
