@@ -213,6 +213,7 @@ namespace par {
       double FurtherTrackingDistance;
 
       //output file format
+      bool print_lvst;     //TODO
       bool print_vtk;     //TODO
       bool print_dx;      //TODO
 
@@ -318,6 +319,7 @@ namespace par {
               rule_ReceptorRadius,
               rule_FurtherTrackingDistance,
               rule_print_vtk,
+              rule_print_lvst,
               rule_print_dx,
 
               rule_print_velocities,
@@ -400,6 +402,7 @@ namespace par {
             rule_ReceptorRadius = (str_p("ReceptorRadius") | str_p("receptor_radius")) >> '=' >> real_p[assign_a(p.ReceptorRadius)] >> ';';
             rule_FurtherTrackingDistance = (str_p("FurtherTrackingDistance") | str_p("further_tracking_distance")) >> '=' >> real_p[assign_a(p.FurtherTrackingDistance)] >> ';';
             rule_print_vtk = (str_p("print_vtk")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_vtk)]) >> ';');
+            rule_print_lvst = (str_p("print_lvst")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_lvst)]) >> ';');
             rule_print_dx = (str_p("print_dx")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_dx)]) >> ';');
             rule_print_velocities = (str_p("print_velocities")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_velocities)]) >> ';');
             rule_print_coverages = (str_p("print_coverages")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(p.print_coverages)]) >> ';');
@@ -574,6 +577,7 @@ namespace par {
                   rule_ReceptorRadius |
                   rule_FurtherTrackingDistance |
                   rule_print_vtk |
+                  rule_print_lvst |
                   rule_print_dx |
                   rule_print_velocities |
                   rule_print_coverages |
@@ -654,6 +658,7 @@ namespace par {
 
         print_dx=false;
         print_vtk=true;
+        print_lvst=true;
 
         print_coverages=false;
         print_rates=false;
