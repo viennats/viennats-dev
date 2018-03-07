@@ -41,13 +41,13 @@ namespace msg {
         std::cout << std::endl;
     }
 
+    void print_message_2(const std::string& s) {
+        std::cout << s << std::endl;
+    }
+
     void print_message(const std::string& s) {
         std::cout << s << std::endl << std::endl;
     }
-
-//    void print_message(const std::string& s, double &v) {
-//        std::cout << s << v << std::endl << std::endl;
-//    }
 
     void print_message(const std::string& s, double v) {
         std::cout << s << v << std::endl << std::endl;

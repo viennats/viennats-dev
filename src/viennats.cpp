@@ -14,7 +14,7 @@
 
 //COMPILE OPTIONS#####################################
 #define TEST_MODE
-//#define VERBOSE
+#define VERBOSE
 
 //Dimensions
 #define DIMENSION_3
@@ -62,10 +62,12 @@
 #define BITS_PER_RUNTYPE 2
 //NOTE: BITS_PER_DISTANCE is limited by std::pow(2, BITS_PER_DISTANCE)
 #define BITS_PER_DISTANCE 4
+//How many bytes the grid min and grid max each use in the levelset file
 #define BYTES_GRID_LIMITS 4
-
+//override default bytesizes of start indices, (defined) runtypes and runbreaks
 #define FORCE_BYTESIZE
-//if bytesizes are forced
+//if bytesize is forced use the following
+//NOTE: Currently any bytesize above 4 is not supported.
 #define BYTES_START_INDEX 4
 #define BYTES_RUNTYPE 4
 #define BYTES_RUNBREAK 4
@@ -288,7 +290,6 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   lvlset::grid_type<GridTraitsType<D>> grid;
 
   if(num_surfaces > 0){//reading geometry files...
-    double startTime = my::time::GetTime();
     if (p.surface_geometry) {
       //!If surface geometries are passed, read .vtk surface geometries
       //!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
@@ -425,34 +426,37 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     msg::print_start("Distance transformation...");
 
     //!Initialize each level set with "lvlset::init(...)"
+    //Each surface is transformed into a corresponding level set
     for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
       LevelSets.push_back(LevelSetType(grid));
       lvlset::init(LevelSets.back(), *it, p.report_import_errors);
     }
     msg::print_done();
-    double endTime = my::time::GetTime()-startTime;
-    std::stringstream ss;
-    ss << endTime;
-    msg::print_message("Read surface - time: "+ss.str()+" s");
   }
 
   if(p.InputLevelsetFiles.size() > 0){//reading levelset files
-    double startTime = my::time::GetTime();
     std::cout << "The geometry consists of " << p.InputLevelsetFiles.size() << " input levelsets." << std::endl;
     //We only need the grid once, because all the levelsets should have the same grid.
-    GridTraitsType<D> gridP = lvlset::getGridFromLVSTFile<GridTraitsType<D>>(p.InputLevelsetFiles[0]);
+    GridTraitsType<D> gridProperties = lvlset::getGridFromLVSTFile<GridTraitsType<D>>(p.InputLevelsetFiles[0]);
+    grid = lvlset::grid_type<GridTraitsType<D>>(gridProperties);
     for (typename std::vector<std::string>::const_iterator it = p.InputLevelsetFiles.begin(); it != p.InputLevelsetFiles.end(); ++it) {
-      std:: cout << "Read levelset input file " << *it << "...";
-      grid = lvlset::grid_type<GridTraitsType<D>>(gridP);
+      msg::print_start("Read levelset input file " + *it + "...");
       LevelSets.push_back(LevelSetType(grid));
       LevelSets.back().importLevelset(*it);
       msg::print_done();
     }
-    double endTime = my::time::GetTime()-startTime;
-    std::stringstream ss;
-    ss << endTime;
-    msg::print_message("Read levelset - time: "+ss.str()+" s");
   }
+
+  //Output of initial level sets
+  int LevelsetCounter = 0;
+  for (typename LevelSetsType::iterator it = LevelSets.begin(); it != LevelSets.end(); ++it) {
+    std::ostringstream oss;
+    oss << p.OutputPath << "Interface" << "Initial" << "_"
+        << LevelsetCounter << ".lvl";
+    it->exportLevelset(oss.str());
+    ++LevelsetCounter;
+  }
+
   msg::print_start("Add Initial Layers...");
   proc::AddLayer(LevelSets, p.AddLayer);
   msg::print_done();

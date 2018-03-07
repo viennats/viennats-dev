@@ -1444,6 +1444,8 @@ namespace proc {
             TimeSmoothing+=my::time::GetTime();
         }
 
+        //This thin out sets up the segmentation properly - without the unecessary points
+        for(auto l:LevelSets) l.thin_out();
       /*
       //Output statistics for level sets
       if (Parameter.PrintStatistics) {

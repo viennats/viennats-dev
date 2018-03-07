@@ -149,6 +149,7 @@ namespace lvlset {
             allocation_type():num_values(size_type(0)), num_runs(size_type(0)) {}
         };
 
+        //NOTE: This vector is not used anywhere.
         typedef std::vector<allocation_type> allocations_type;
 
 
@@ -553,7 +554,6 @@ namespace lvlset {
                 }
             }
 
-            //TODO
             void print(std::ostream& out = std::cout) const {
 
                 out << std::endl;
@@ -755,6 +755,7 @@ namespace lvlset {
         static const size_type UNDEF_PT;    //this constant is used as runtype for uninitialized runs
         static const size_type SEGMENT_PT;    //this constant is used as runtype for uninitialized runs
 
+        //Public dimension, D is private
         static const int dimensions=GridTraitsType::dimensions;
 
         //########################################################################
@@ -936,25 +937,30 @@ namespace lvlset {
           thin_out();
         }
 
+        //returns a non-const reference to the start indices of a segment
         std::vector<size_type>& startIndices(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].start_indices[dim];
         }
+        //returns a non-const reference to the runtypes of a segment
         std::vector<size_type>& runTypes(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].runtypes[dim];
         }
+        //returns a non-const reference to the runbreaks of a segment
         std::vector<index_type>& runBreaks(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].runbreaks[dim];
         }
+        //returns a non-const reference to the distances of a segment
         std::vector<value_type>& distances(unsigned int segment = 0){
           return sub_levelsets[segment].distances;
         }
 
-
+        //writes the levelset to a file
         levelset& exportLevelset(const std::string& path){
           exportLevelsetToFile(*this, path);
           return *this;
         }
 
+        //reads the levelset from a levelset file
         levelset& importLevelset(const std::string& path){
           importLevelsetFromFile(*this, path);
           return *this;
@@ -1266,12 +1272,6 @@ namespace lvlset {
              return (a*sub_levelsets.size());
              //return a;
         }
-
-        template <typename A, typename B, typename C> levelset(const A& , const A& , const B& , const C& , const grid_type2& );
-        //constructor that creates the levelset from start indices, runtypes, runbreaks and distances
-
-        levelset(const grid_type2&, std::string path);
-        //constructor that creates a levelset from a levelset file. See also output.hpp for file format
 
         template <class PointsType> levelset(const grid_type2&, const PointsType& point_defs);
         //this is a constructor, creating a new level set from a sorted list of index/level set value-pairs
@@ -1878,6 +1878,15 @@ namespace lvlset {
         }
     }
 
+    /*
+    NOTE: This function removes grid points, that have no opposite signed neighbor.
+    At the same time it sets up the segmentation for parallelization. However this function runs parallel aready,
+    so it removes the points AFTER it sets up the segmentation. That means the segmentation will include the points that the function removes.
+    As a result, the distances are not split evenly across all threads. Suggestion: Split the function into one function that sets up segmentation
+    and another function that removes the grid points that have no opposite signed neighbor.
+    A second call will set up a new segmentation with the points already removed, but this is not the ideal solution.
+    TODO: Fix load balancing issue that is caused by setting up the segmentation before the grid points are "thinned out".
+    */
     template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::thin_out() {
         //this function creates a new level set function,
         //where all defined grid points are removed,

@@ -16,10 +16,10 @@
 
 #include <vector>
 #include <fstream>
-
+#include <float.h>
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
-#include <float.h>
+#include "../message.h"
 
 namespace lvlset {
 
@@ -453,30 +453,8 @@ namespace lvlset {
         f.close();
     }
 
-    template <class GridTraitsType> GridTraitsType getGridFromLVSTFile(std::string path){
-      //reads the grid information from a levelset file
 
-      std::ifstream fin(path);
-      char buff[11] = {};
-      fin.read(buff, 11);
-      const int dim = buff[5]-48;
-      const int D = GridTraitsType::dimensions;
-
-      double gridDelta;
-      int32_t grid_min[D];
-      int32_t grid_max[D];
-      char bconditions[D];
-
-      for(int i=dim;i--;){
-        fin.read((char *)&grid_min[i], 4);
-        fin.read((char *)&grid_max[i], 4);
-        fin.read((char *)&bconditions[i], 1);
-      }
-      fin.read((char *)&gridDelta, sizeof(double));
-      fin.close();
-      return GridTraitsType(grid_min, grid_max, bconditions, gridDelta);
-    }
-
+    //used to test the systems endianess, which is needed for levelset file io
     union {
       uint16_t shortVar;    // binary  number of length 16 Bits
       uint8_t  charVar[2];  // 2 binary numbers, each 8 Bits
@@ -487,50 +465,87 @@ namespace lvlset {
       return test_endianness.charVar[0] != 0;
     }
 
+    template <class GridTraitsType> GridTraitsType getGridFromLVSTFile(std::string path){
+      //reads the grid information from a levelset file
+
+      std::ifstream fin(path);
+      if(!fin.is_open()) msg::print_error("ERROR: Couldn't open the file: " + path);
+      char buff[11] = {};
+      fin.read(buff, 11);
+      const int dim = buff[5]-48;
+      const int D = GridTraitsType::dimensions;
+      //Comparing Identification Bytes
+      if(std::string(buff).compare(0, 5, "LVSTx")) msg::print_error("File is not a levelset file.");
+      if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) msg::print_warning("File version does not match!");
+      if(bigEndian() != buff[7]-48) msg::print_warning("File was written in a different byte order than it is being read. Results may be incorrect!");
+
+      double gridDelta;
+      int32_t grid_min[D];
+      int32_t grid_max[D];
+      char bconditions[D];
+
+      //read in the grid properties
+      for(int i=dim;i--;){
+        fin.read((char *)&grid_min[i], buff[10]>>4);
+        fin.read((char *)&grid_max[i], buff[10]>>4);
+        fin.read((char *)&bconditions[i], 1);
+      }
+      fin.read((char *)&gridDelta, buff[10] & 0xF);
+      if(fin.fail()) msg::print_error("Couldn't read grid properties from file: " + path);
+      fin.close();
+      return GridTraitsType(grid_min, grid_max, bconditions, gridDelta);
+    }
+
     template <class GridTraitsType, class LevelSetTraitsType>
     void exportLevelsetToFile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path) {
-      /*************************************************************************************************************
-      ***************************************    THE LEVELSET FILE FORMAT    ***************************************
-      **************************************************************************************************************
-      *    File Header: 33 - 46 Bytes    *                                                                         *
-      ************************************                                                                         *
-      *    +00   5 Bytes   Identification Bytes (LVSTx)                                                            *
-      *    +05   1 Byte    Dimension of the Levelset (2 or 3)                                                      *
-      *    +06   1 Byte    File Version Number                                                                     *
-      *    +07   1 Byte    Endianess - Little Endian (0) or Big Endian (1)                                         *
-      *    +08   1 Byte    Bits Per Runtype                                                                        *
-      *    +09   1 Byte    Bits Per Distance                                                                       *
-      *    +10   1 Byte    Bytes per grid min/max (4bits) and grid delta (4bits)                                   *
-      *   NOTE: For each dimension                                                                                 *
-      *    +10   4 Bytes   Grid minimum                                                                            *
-      *    +14   4 Bytes   Grid maximum                                                                            *
-      *    +18   1 Byte    Boundary Condition                                                                      *
-      * +28-37 4-8 Bytes   GridDelta (sizeof double)                                                               *
-      **************************************************************************************************************
-      *    H - RLE Block Header: 13 Bytes    *                                                                     *
-      ****************************************                                                                     *
-      *    1  Byte   Bytes per Start Index, Runtype, Runbreak                                                      *
-      *    4  Bytes  Number of saved Start Indices                                                                 *
-      *    4  Bytes  Number of saved Runtypes                                                                      *
-      *    4  Bytes  Number of saved Runbreaks                                                                     *
-      **************************************************************************************************************
-      *    H - RLE Block Data    *                                                                                 *
-      ****************************                                                                                 *
-      *    Start Indices               - using adaptive number of bytes (default)                                  *
-      *    Runtypes                    - using 2 bits per runtype                                                  *
-      *    Indices of defined runtypes - using adaptive number of bytes (default)                                  *
-      *    Runbreaks                   - using adaptive number of bytes (default)                                  *
-      **************************************************************************************************************
-      *    Distances Header: 4 Bytes    *                                                                          *
-      ***********************************                                                                          *
-      *    4 Bytes  Number of distances                                                                            *
-      **************************************************************************************************************
-      *    Distances - using 4 bits per distance (default)                                                         *
-      **************************************************************************************************************/
+        /*************************************************************************************************************
+        ***************************************    THE LEVELSET FILE FORMAT    ***************************************
+        **************************************************************************************************************
+        *    File Header: 33 - 46 Bytes    *                                                                         *
+        ************************************                                                                         *
+        *     5 Bytes   Identification Bytes (LVSTx)                                                                 *
+        *     1 Byte    Dimension of the Levelset (2 or 3)                                                           *
+        *     1 Byte    File Version Number                                                                          *
+        *     1 Byte    Endianess - Little Endian (0) or Big Endian (1)                                              *
+        *     1 Byte    Bits Per Runtype                                                                             *
+        *     1 Byte    Bits Per Distance                                                                            *
+        *     1 Byte    This byte contains the number of bytes used for the grid min and grid max of each dimension. *
+        *               In addition it also contains the number of bytes used for the grid delta.                    *
+        *  For example: 0x48 means that each grid min/max takes 4 bytes each and the grid delta 8 bytes.             *
+        *   NOTE: The following block is repeated for each dimension.                                                *
+        *     4 Bytes   Grid minimum                                                                                 *
+        *     4 Bytes   Grid maximum                                                                                 *
+        *     1 Byte    Boundary Condition                                                                           *
+        *   NOTE: END                                                                                                *
+        *   4-8 Bytes   GridDelta (sizeof double)                                                                    *
+        **************************************************************************************************************
+        *    H - RLE Block Header: 13 Bytes    *                                                                     *
+        ****************************************                                                                     *
+        *    1  Byte   This byte contains the number of bytes used for each start index, runtype and runbreak.       *
+        *              The bytesize goes from [1, 4], but since only 2 bit are used it is shifted(-1) to [0, 3].     *
+        *              //TODO: If bytesize is larger than 4 we need more than one byte to store the information.     *
+        *    4  Bytes  Number of saved Start Indices                                                                 *
+        *    4  Bytes  Number of saved Runtypes                                                                      *
+        *    4  Bytes  Number of saved Runbreaks                                                                     *
+        **************************************************************************************************************
+        *    H - RLE Block Data    *                                                                                 *
+        ****************************                                                                                 *
+        *    Start Indices               - using adaptive number of bytes (default)                                  *
+        *    Runtypes                    - using 2 bits per runtype(-oo, +oo, defined)                                                  *
+        *    Indices of defined runtypes - using adaptive number of bytes (default)                                  *
+        *    Runbreaks                   - using adaptive number of bytes (default)                                  *
+        **************************************************************************************************************
+        *    Distances Header: 4 Bytes    *                                                                          *
+        ***********************************                                                                          *
+        *    4 Bytes  Number of distances                                                                            *
+        **************************************************************************************************************
+        *    Distances - using 4 bits per distance (default)                                                         *
+        *    //NOTE: Currently up to 8 bits are supported.                                                           *
+        **************************************************************************************************************/
         std::ofstream fout(path);
-        if(!fout.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << std::endl; return;}
+        if(!fout.is_open()) {msg::print_error("Couldn't open the file: " + path); return;}
 
-        //type & constant definitions
+        //type & constant redefinitions
         typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
         typedef typename levelset<GridTraitsType, LevelSetTraitsType>::index_type index_type;
         typedef typename levelset<GridTraitsType, LevelSetTraitsType>::value_type value_type;
@@ -543,7 +558,7 @@ namespace lvlset {
         const boundary_type* gridBConditions = ls.grid().grid_traits().getBoundaryConditions();
         char byte = 0;
         //write grid properties
-        byte |= BYTES_GRID_LIMITS << 4;//bytes used to store grid min and grid max
+        byte |= BYTES_GRID_LIMITS << 4;//bytes used to store grid min and grid max; boundary condition is always 1 byte
         byte |= sizeof(double);//bytes used to store grid delta
         fout << byte;
         for (int dim=D;dim--;) {
@@ -556,7 +571,8 @@ namespace lvlset {
 
         int count;
 
-        ls.serialize();// makes parallelized sublevelset into one levelset
+        // makes parallelized sublevelset into one levelset
+        ls.serialize();
 
         for (int dim=D-1;dim>=0;--dim) {
           //get start indices, runbreaks and runtypes
@@ -566,19 +582,24 @@ namespace lvlset {
           const std::vector<index_type> & runBreaks = ls.runBreaks(dim);
 
           //Getting the largest possible values for a start index, runtype and runbreak
-          //this is used to use the minimum amount of bytes per start index, runtype and runbreak per dimension
+          //This is done to use the minimum amount of bytes per start index, runtype and runbreak per dimension.
 
-          //the largest start index is lower or equal to the size of runtypes(start index points to a runtype)
+          //The largest start index is <= the size of runtypes. (start index points to a runtype)
 
-          //the largest runtype is lower or equal to the size of start indices of the next dimension or
-          //if dim == 0 lower or equal to the size of distances (defined runtype points to a distance)
+          //The largest runtype is <= the size of start indices of the next dimension.
+          //If dim == 0 the largest runtype <= the size of distances. (defined runtype points to a start index/distance)
 
-          //the smallest runbreak is higher or equal to grid_min
-          //the largest runbreak is lower or equal to grid_max
+          //The smallest runbreak is >= grid_min.
+          //The largest runbreak is <= grid_max.
 
     //FORCE_BYTESIZE lets you manually override the bytesize if you ever need to (you shouldn't)
     #undef FORCE_BYTESIZE
-    #ifndef FORCE_BYTESIZE
+    #ifdef FORCE_BYTESIZE
+          //if bytesize has to be forced manually
+          uint32_t bytesPerStIndex = BYTES_START_INDEX;
+          uint32_t bytesPerRnType = BYTES_RUNTYPE;
+          int32_t bytesPerRnBreak = BYTES_RUNBREAK;
+    #else
           uint32_t bytesPerStIndex;// = *(startIndices.end()-1);
           uint32_t bytesPerRnType = (dim == 0) ? ls.distances().size() : ls.startIndices(dim-1).size();
           int32_t bytesPerRnBreak;
@@ -598,16 +619,10 @@ namespace lvlset {
           else if(gridMinima[dim] >= INT16_MIN && gridMaxima[dim] <= INT16_MAX) bytesPerRnBreak = 2;
           else if(gridMinima[dim] >= INT24_MIN && gridMaxima[dim] <= INT24_MAX) bytesPerRnBreak = 3;
           else bytesPerRnBreak = 4;
-    #else
-          //if bytesize has to be forced manually (in case 4 bytes is not enough)
-          uint32_t bytesPerStIndex = BYTES_START_INDEX;
-          uint32_t bytesPerRnType = BYTES_RUNTYPE;
-          int32_t bytesPerRnBreak = BYTES_RUNBREAK;
-          //TODO: if bytesize is larger than 4 we need more than one byte to store the information, see below
     #endif
           byte = 0;
           //use 2 bits to store the number of bytes needed
-          //The number of bytes can be 1 ... 4, but with 2 bits you can store only 0 ... 3 --> -1
+          //The number of bytes can be [1, 4], but with 2 bits you can store only [0, 3]
           byte |= bytesPerStIndex-1;
           byte |= (bytesPerRnType-1) << 2;
           byte |= (bytesPerRnBreak-1) << 4;
@@ -628,7 +643,7 @@ namespace lvlset {
 
           //write all runtypes to the file, skipping all segments and indices (using 2 bits per runtype)
           count = 3;byte=0;
-          std::vector<size_type> d_run_indices = {};
+          std::vector<size_type> def_run_indices = {}; //store all indices for defined runtypes
           for (typename std::vector<size_type>::const_iterator it=runTypes.begin();it!=runTypes.end();++it) {
             if(*it == ls.POS_PT){// 01 - positive undefined runtype
               byte |= 1 << count * BITS_PER_RUNTYPE;
@@ -643,15 +658,15 @@ namespace lvlset {
               count--;
             }
             else if(!ls.is_defined(*it)){// skip Segments --> there shouldn't be any because of serialize()
-              std::cout << "Warning: Segment detected during levelset export.";
+              msg::print_warning("Segment detected during levelset file export.");
               continue;
             }
             else {// 00 - defined runtype
                 byte |= 0 << count * BITS_PER_RUNTYPE;
-                d_run_indices.push_back(*it);
+                def_run_indices.push_back(*it);
                 count--;
             }
-            if(count < 0){ //if 4 runtypes are written inside the byte, write it to the file
+            if(count < 0){ //if 4 runtypes are written into the byte, write it to the file
               fout << byte;
               count = 3;byte=0;
             }
@@ -660,7 +675,7 @@ namespace lvlset {
               fout << byte;
 
           //write defined runtypes
-          for (typename std::vector<size_type>::const_iterator it=d_run_indices.begin();it!=d_run_indices.end();++it) {
+          for (typename std::vector<size_type>::const_iterator it=def_run_indices.begin();it!=def_run_indices.end();++it) {
             fout.write((char *)&(*it), bytesPerRnType);
           }
 
@@ -670,18 +685,19 @@ namespace lvlset {
           }
         }
         //get distances
-        std::vector<value_type> & distances = ls.distances();
+        const std::vector<value_type> & distances = ls.distances();
         long num = distances.size();
         fout.write((char *)&num, 4);
         count = CHAR_BIT/BITS_PER_DISTANCE-1;
         byte = 0;
         double value = (std::pow(2, BITS_PER_DISTANCE)-1)/2;
+
         for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
           //  Levelset values range from -1 .... +1
-          //  With 4 bits we can represent values from 0 .... 15 or -8 ... +7; I chose 0 .... 15
-          // -1   .... +1    |*7.5
-          // -7.5 .... +7.5  |+7.5
-          //  0   .... +15
+          //  With n bits we can represent values from 0 .... (2^n -1)
+          //         -1 .... +1          |*(2^n-1)/2
+          // -(2^n-1)/2 .... +(2^n-1)/2  |+(2^n-1)/2
+          //          0 .... +(2^n-1)
           byte |= std::lround(*it * value + value) << count * BITS_PER_DISTANCE;
           count--;
           if(count < 0){
@@ -692,53 +708,49 @@ namespace lvlset {
         if(count == 0)
             fout << byte;
 
-        if(fout.fail()) std::cout << "ERROR: Couldn't write to file: " << path << std::endl;
+        if(fout.fail()) msg::print_error("ERROR: Couldn't write to file: " + path);
         fout.close();
         ls.finalize(2);
-        ls.thin_out();// sets up segmentation for one levelset
+        ls.thin_out();// sets up segmentation for one levelset, calls finalize
     }
 
     template <class GridTraitsType, class LevelSetTraitsType>
     void importLevelsetFromFile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path){
       //this function takes an empty levelset and reads from a file
       std::ifstream fin(path);
-      if(!fin.is_open()) { std::cout << "ERROR: Couldn't open the file: " << path << "\n";return;}
+      std::ostringstream oss;
+      if(!fin.is_open()) {msg::print_error("Couldn't open the file: " + path);return;}
 
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::index_type index_type;
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::value_type value_type;
 
-      std::cout << "Reading in LevelSet from " << path << std::endl;
+      //std::cout << "Reading in LevelSet from " << path << std::endl;
       char buff[11] = {};
       char byte;
       uint32_t uInt;
       fin.read(buff, 11);
       //Comparing Identification Bytes
-      if(std::string(buff).compare(0, 5, "LVSTx")) {std::cout << "Error: File is not a levelset file." << std::endl; return;}
+      if(std::string(buff).compare(0, 5, "LVSTx")) {msg::print_error("File is not a levelset file."); return;}
 
       const int dim = buff[5]-48;
-      if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) std::cout << "WARNING: File version does not match!" << std::endl;
-      if(bigEndian() != buff[7]-48) std::cout << "WARNING: File was written in a different byte order than it is being read. Results may be incorrect!" << std::endl;
-      int bits_per_run = buff[8]-48;
+      if(LVST_FILE_VERSION_NUMBER !=  buff[6]-48) msg::print_warning("File version does not match!");
+      if(bigEndian() != buff[7]-48) msg::print_warning("File was written in a different byte order than it is being read. Results may be incorrect!");
+      int bits_per_runtype = buff[8]-48;
       int bits_per_distance = buff[9]-48;
-      std::cout << "Dimensions: " << dim << std::endl << "Bits per runtype:" << bits_per_run << std::endl << "Bits per distance:" << bits_per_distance << std::endl;
-      std::cout << "Bytes per min/max: " << (buff[10] >> 4) << ", Bytes per delta: " << (buff[10] & 0xF) << std::endl;
-      //Skip Grid: From our current position  fin.tellg()
-      //We go 2 * Bytes per grid min/max + 1 Byte per boundary condition, per dimension  ((buff[10]>>4)*2+1)* dim
-      //plus the additional number of bytes for the grid delta  buff[10] & 0xF
-      fin.seekg(int(fin.tellg()) + ((buff[10]>>4)*2+1)*dim + (buff[10] & 0xF));
+#ifdef VERBOSE
+      oss << std::endl << "Dimensions: " << dim << std::endl << "Bits per runtype:" << bits_per_runtype << std::endl
+          << "Bits per distance:" << bits_per_distance << std::endl << "Bytes per grid min/max: " << (buff[10] >> 4) << std::endl
+          << "Bytes per grid delta: " << (buff[10] & 0xF);
+      msg::print_message_2(oss.str());
+#endif
       /*
-      for(int i=dimension;i--;){
-        int32_t grid_min, grid_max;
-        boundary_type bcondition = 0;
-        fin.read((char *)&grid_min, buff[10] >> 4);
-        fin.read((char *)&grid_max, buff[10] >> 4);
-        fin.read((char *)&bcondition, 1);
-      }
-
-      double gridDelta; //TODO
-      fin.read((char *)&gridDelta, buff[10] & 0xF);
+      Skip grid properties because they was read before we read the levelset:
+      From our current position  fin.tellg()
+      We go 2 * Bytes per grid min/max + 1 Byte per boundary condition, per dimension  (  (buff[10]>>4) *2  +1)  *dim
+      plus the additional number of bytes for the grid delta  (buff[10] & 0xF)
       */
+      fin.seekg(int(fin.tellg()) + ((buff[10]>>4)*2+1)*dim + (buff[10] & 0xF));
 
       //initialize the empty levelset to sublevelsets size 1
       ls.initialize();
@@ -759,11 +771,13 @@ namespace lvlset {
         bytesPerStIndex = (byte & 0x3) +1;
         bytesPerRnType = (byte >> 2 & 0x3) +1;
         bytesPerRnBreak = (byte >> 4 & 0x3) +1;
-
-        std::cout << bytesPerStIndex << " byte(s) per start index." << std::endl
+#ifdef VERBOSE
+        oss.str("");
+        oss << bytesPerStIndex << " byte(s) per start index." << std::endl
             << bytesPerRnType << " byte(s) per runtype." << std::endl
-            << bytesPerRnBreak << " byte(s) per runbreak." << std::endl;
-
+            << bytesPerRnBreak << " byte(s) per runbreak.";
+        msg::print_message_2(oss.str());
+#endif
         uint32_t values_read = 0;
         //reading start indices
         if(startIndices.size() > 0) startIndices.clear();
@@ -773,8 +787,14 @@ namespace lvlset {
           startIndices.push_back(uInt);
           values_read++;
         }
-        std::cout << "Dimension " << i << std::endl << "\t" << values_read << " of " << num_st_indices << " start indices read." << std::endl;
-
+#ifdef VERBOSE
+        oss.str("");
+        oss << "Dimension " << i;
+        msg::print_message_2(oss.str());
+        oss.str("");
+        oss << "\t" << values_read << " of " << num_st_indices << " start indices read.";
+        msg::print_message_2(oss.str());
+#endif
         uint32_t count = 0;
         values_read = 0;
         //reading runtypes
@@ -783,7 +803,7 @@ namespace lvlset {
           fin.read(&byte, 1);
           for(int z = 4; z--;){
             if(values_read == num_run_types) break;
-            uInt = byte >> z*bits_per_run & 0x3;
+            uInt = byte >> z*bits_per_runtype & 0x3;
             if(uInt == 1) runTypes.push_back(ls.POS_PT);
             else if(uInt == 3) runTypes.push_back(ls.NEG_PT);
             else if(uInt == 2) runTypes.push_back(ls.UNDEF_PT);
@@ -791,7 +811,12 @@ namespace lvlset {
             values_read++;
           }
         }
-        std::cout << "\t" << values_read << " of " << num_run_types << " runtypes read." << " Defined runtypes: " << count << std::endl;
+
+#ifdef VERBOSE
+        oss.str("");
+        oss << "\t" << values_read << " of " << num_run_types << " runtypes read." << " Defined runtypes: " << count;
+        msg::print_message_2(oss.str());
+#endif
         //reading defined runtypes
         for(unsigned int j=0; j<runTypes.size(); j++){
           if(runTypes[j] == 101){
@@ -819,14 +844,18 @@ namespace lvlset {
         }
         //delete[] sInt;
         free(sInt);
-        std::cout << "\t" << values_read << " of " << num_run_breaks << " runbreaks." << std::endl;
+#ifdef VERBOSE
+        oss.str("");
+        oss << "\t" << values_read << " of " << num_run_breaks << " runbreaks.";
+        msg::print_message_2(oss.str());
+#endif
       }
 
       uint32_t num_distances = 0, values_read = 0;
       //reading the number of distances to read
       fin.read((char *)&num_distances, 4);
       std::vector<value_type> & distances = ls.distances();
-      //
+
       double value = (std::pow(2, bits_per_distance)-1)/2;
       int count = CHAR_BIT/bits_per_distance;
       int num_reads = std::ceil(num_distances/count);
@@ -839,13 +868,16 @@ namespace lvlset {
         for(unsigned int z = count; z--;){
           if(values_read == num_distances) break; //if distances are odd, skip padding bits
           uInt8 = byte >> z*bits_per_distance & mask;
-          distances.push_back(uInt8 / value - 1);
+          distances.push_back(uInt8 / value - 1.0);
           values_read++;
         }
       }
-      std::cout << values_read << " of " << num_distances << " distances read." << std::endl;
-
-      if(fin.fail()) std::cout << "ERROR: Couldn't read from file: " << path << "\n";
+#ifdef VERBOSE
+      oss.str("");
+      oss << values_read << " of " << num_distances << " distances read.";
+      msg::print_message_2(oss.str());
+#endif
+      if(fin.fail()) msg::print_error("Couldn't read from file: " + path);
       fin.close();
 
       ls.finalize(2);
