@@ -111,7 +111,7 @@ namespace model {
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
-            if (!b) msg::print_error("Failed interpreting process parameters!");
+            if(!b) msg::print_error("Failed interpreting process parameters!");
 
 		    unsigned int num_particles=static_cast<unsigned int>(Accuracy);
 

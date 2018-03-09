@@ -456,28 +456,31 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		//add mask layers on top of inactive
 		if(!pIter->MaskLayers.empty()){
-			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i) pIter->MaskLayers[i] -= 1;	//kernel numbering
+			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i){
+				pIter->MaskLayers[i] -= 1;	//kernel numbering
+				assert(unsigned(pIter->MaskLayers[i]) < LevelSets.size());	//check if numbering is correct
+			}
 			LSIter = LevelSets.begin();
 			for(int a=0; a<pIter->MaskLayers[0]; a++)	LSIter++;	// advance iterator to first mask layer
 			temp_levelSets.push_back(*LSIter); 		//this is now the only mask layer, all the other ones are AND'ed onto it
 			std::cout << "\b/" << pIter->MaskLayers[0];
 			for(unsigned int i=1; i<pIter->MaskLayers.size(); i++){
 				std::cout << "," << pIter->MaskLayers[i];
-				if((unsigned int)pIter->MaskLayers[i]>LevelSets.size()) assert(0);
 				LSIter = LevelSets.begin();
 				for(int a=0; a<pIter->MaskLayers[i]; a++)	LSIter++;		//Advance iterator to corresponding levelset
 				temp_levelSets.back().min(*LSIter);			// Union second mask levelset with first
-				temp_levelSets.back().thin_out();
+				temp_levelSets.back().prune();		//remove unnecessary points
 			}
+			temp_levelSets.back().segment();		//segment levelset to balance load
 		}
 
 		if(!layer_order.empty()){
 			std::cout << "/";
 			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder active Levelsets for next step
 				std::cout << layer_order[i] << ",";
-				if((unsigned int)layer_order[i]>LevelSets.size()) assert(0);
+				assert(unsigned(layer_order[i]) < LevelSets.size());
 				LSIter = LevelSets.begin();
-				for(int a=0; a<layer_order[i]; a++)	LSIter++;	//Advance iterator to corresponding levelset
+				for(int a=0; a<layer_order[i]; ++a)	LSIter++;	//Advance iterator to corresponding levelset
 				temp_levelSets.push_back(*LSIter);			//push levelset to temporary list
 			}
 			std::cout << '\b' << " ";
@@ -485,16 +488,12 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 		//wrap new top levelset around lower layers
 		LSIter = temp_levelSets.begin();	//Advance iterator to first reassigned LS
-		for(unsigned int i=0; i<temp_levelSets.size()-layer_order.size(); i++){
-			LSIter_old=LSIter;
+		for(unsigned i=0; i<temp_levelSets.size()-1; ++i){
+			temp_levelSets.back().min(*LSIter);
+			temp_levelSets.back().prune();
 			++LSIter;
 		}
-
-		while(LSIter!=temp_levelSets.end()){		//wrap new top levelset around lower layers
-			LSIter->min(*LSIter_old);
-			LSIter->thin_out();
-			++LSIter;
-		}
+		temp_levelSets.back().segment();
 
 		std::swap(LevelSets, temp_levelSets);
 

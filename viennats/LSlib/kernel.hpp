@@ -947,6 +947,12 @@ namespace lvlset {
 
     public:
 
+        void print_segment_sizes(){
+            for (typename sub_levelsets_type::size_type i=0;i!=sub_levelsets.size();++i) {
+                std::cout << sub_levelsets[i].distances.size() << std::endl;
+            }
+        }
+
         void print() const {
             for (typename sub_levelsets_type::size_type i=0;i!=sub_levelsets.size();++i) {
                 sub_levelsets[i].print();
@@ -1536,10 +1542,9 @@ namespace lvlset {
         void reduce(int width);         //this function reduces the level set function
                                         //to the given number of layers (>=1)
 
-        void thin_out();                //this function removes all grid points, which do not have an opposite signed
-                                        //neighbor grid point. Afterwards the level set function consist of at most 2 layers (depending on
-                                        //how much layers the level set function had before)
-                                        //after the call each defined grid point has at least one neighbor with opposite sign
+        void segment();                 //segments the levelset in the available sub_levelsets to balance correctly
+
+        void prune();                 //removes all grid points, which do not have at least one opposite signed neighbour and distributes points across sub_levelsets to approximately balance the number of points across threads
 
         void add_voxel_corners();       //this function expands the level set functions to 5 layers, in addition it adds defined grid points, so that
                                         //each voxel (grid cell) which has at least one active grid point as corner, has all its corner grid points defined
@@ -1865,13 +1870,8 @@ namespace lvlset {
         }
     }
 
-    template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::thin_out() {
-        //this function creates a new level set function,
-        //where all defined grid points are removed,
-        //which have no opposite signed neighbor grid point
-
-        //shfdhsfhdskjhgf assert(num_layers>0);
-
+    template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::segment(){
+        //segments the levelset in the available sub_levelsets to balance correctly
         //create new Level-Set
         levelset<GridTraitsType, LevelSetTraitsType> old_lvlset(grid());
         swap(old_lvlset);
@@ -1880,41 +1880,67 @@ namespace lvlset {
 
         #pragma omp parallel num_threads(sub_levelsets.size()) //use num_threads(sub_levelsets.size()) threads
         {
-            //#pragma omp for schedule(static, 1)
-            //for (int p=0;p<static_cast<int>(sub_levelsets.size());++p) {
-//            {
-                int p=0;
-                #ifdef _OPENMP
-                p=omp_get_thread_num();
-                #endif
+            int p=0;
+            #ifdef _OPENMP
+            p=omp_get_thread_num();
+            #endif
 
-                sub_levelset_type & s=sub_levelsets[p];
+            sub_levelset_type & s=sub_levelsets[p];
 
-                const_iterator_neighbor_filtered<filter_all,1> it(old_lvlset, filter_all(), (p==0)?grid().min_point_index():segmentation[p-1]);
-                vec<index_type, D> end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:grid().increment_indices(grid().max_point_index());
+            const_iterator_runs it(old_lvlset, (p==0)?grid().min_point_index():segmentation[p-1]);
+            vec<index_type, D> end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:grid().max_point_index();
 
-                for (;it.indices()<end_v;it.next()) {
-
-                    if (it.center().is_defined()) {
-                        int i=0;
-                        sign_type sgn=it.center().sign2();
-                        for(;i<2*D;i++) {
-                            if (it.neighbor(i).sign()!=sgn) break;
-                        }
-                        if (i!=2*D) {
-                            s.push_back(it.indices(),it.center().value());
-                        } else {
-                            s.push_back_undefined(it.indices(),(sgn==POS_SIGN)?POS_PT:NEG_PT);
-                        }
-                    } else {
-                        s.push_back_undefined(it.indices(),(it.center().sign()==POS_SIGN)?POS_PT:NEG_PT);
-                    }
+            for (;it.start_indices()<end_v;it.next()) {
+                if (it.is_defined()) {
+                    s.push_back(it.start_indices(),it.value());
+                } else {
+                    s.push_back_undefined(it.start_indices(),(it.sign()==POS_SIGN)?POS_PT:NEG_PT);
                 }
-//            }
+            }
         }
 
         finalize(std::min(old_lvlset.num_layers,static_cast<int>(2)));
+    }
 
+    template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::prune() {
+        //removes all grid points, which do not have at least one opposite signed neighbour and distributes points across sub_levelsets to approximately balance the number of points
+        levelset<GridTraitsType, LevelSetTraitsType> old_lvlset(grid()); //create new Level-Set
+        swap(old_lvlset);
+
+        initialize(old_lvlset.get_new_segmentation(), old_lvlset.get_allocation());
+
+        #pragma omp parallel num_threads(sub_levelsets.size()) //use num_threads(sub_levelsets.size()) threads
+        {
+            int p=0;
+            #ifdef _OPENMP
+            p=omp_get_thread_num();
+            #endif
+
+            sub_levelset_type & s=sub_levelsets[p];
+
+            const_iterator_neighbor_filtered<filter_all,1> it(old_lvlset, filter_all(), (p==0)?grid().min_point_index():segmentation[p-1]);
+            vec<index_type, D> end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:grid().increment_indices(grid().max_point_index());
+
+            for (;it.indices()<end_v;it.next()) {
+
+                if (it.center().is_defined()) {
+                    int i=0;
+                    sign_type sgn=it.center().sign2();
+                    for(;i<2*D;i++) {
+                        if (it.neighbor(i).sign()!=sgn) break;
+                    }
+                    if (i!=2*D) {
+                        s.push_back(it.indices(),it.center().value());
+                    } else {
+                        s.push_back_undefined(it.indices(),(sgn==POS_SIGN)?POS_PT:NEG_PT);
+                    }
+                } else {
+                    s.push_back_undefined(it.indices(),(it.center().sign()==POS_SIGN)?POS_PT:NEG_PT);
+                }
+            }
+        }
+
+        finalize(std::min(old_lvlset.num_layers,static_cast<int>(2)));
     }
 
     template <class GridTraitsType, class LevelSetTraitsType>

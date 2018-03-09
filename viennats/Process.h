@@ -485,7 +485,8 @@ namespace proc {
 
 	    for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
 	        it->max(LevelSets.back());         //adjust all level set functions below the plane
-            it->thin_out();                    //remove grid points which do not have at least one opposite signed neighbor
+            it->prune();                    //remove grid points which do not have at least one opposite signed neighbor
+			it->segment();
         }
 
 	    if (!Model.fill_up()) LevelSets.pop_back();
@@ -562,7 +563,8 @@ namespace proc {
 
 	    if (LevelSets.size()<2) {
 			LevelSets.push_front(mask_ls);
-			LevelSets.back().thin_out();
+			LevelSets.back().prune();
+			LevelSets.back().segment();
 	    } else {
 		    LevelSets.push_back(mask_ls);
 		    LevelSetType & l1=LevelSets.back();
@@ -573,7 +575,8 @@ namespace proc {
 		    l1.max(mask_ls);
 		    l1.min(l2);
 
-		    l1.thin_out();
+		    l1.prune();
+			l1.segment();
 	    }
         //TODO output and time
 
@@ -662,7 +665,8 @@ namespace proc {
 
             while (ls_it!=LevelSets.end()) {
                 ls_it->min(*boolop_ls);
-                ls_it->thin_out();
+                ls_it->prune();
+				ls_it->segment();
                 ++ls_it;
             }
 
@@ -684,7 +688,8 @@ namespace proc {
             while (ls_it!=LevelSets.end()) {
                 ls_it->max(*boolop_ls);
                 if (j>0) ls_it->min(*ls_it_old);
-                ls_it->thin_out();
+                ls_it->prune();
+				ls_it->segment();
                 ++ls_it;
             }
 			if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
@@ -728,17 +733,6 @@ namespace proc {
 		output_info.output_counter++;
 
 		msg::print_done();
-
-/*
-
-        LevelSetType & l1=LevelSets.back();
-        const LevelSetType & l2 =*(++LevelSets.rbegin());
-
-        l1.max(mask_ls);
-        l1.min(l2);
-
-        l1.thin_out();
-*/
     }
 
 	//Topography simulation - execute a topography changing process according to required model and parameters
@@ -1712,7 +1706,7 @@ namespace proc {
 						}
 						LS.invert();
 						LS.max(boundaryBox);		// Logic AND(intersect) boundary with levelset
-						LS.thin_out();
+						LS.prune();					//remove unnecessary points
 
 						//print surface
 						std::ostringstream oss;
