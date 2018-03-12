@@ -845,7 +845,8 @@ namespace lvlset {
         //tmp=-my::time::GetTime();
         for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
             ptr::deref(*it).max(ptr::deref(LevelSets.back()));	//adjust all level set functions below the top most level set function
-            ptr::deref(*it).thin_out();                            					//remove grid points which do not have at least one opposite signed neighbor
+            ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor
+            ptr::deref(*it).segment();
         }
         //tmp+=my::time::GetTime();
         //std::cout << " " << tmp << std::endl;

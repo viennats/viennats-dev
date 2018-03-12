@@ -32,8 +32,12 @@ namespace model {
 
         bool wrap;
 
+        int lvlset;
+
     public:
-        int lvlset = -1;
+        const int& levelset() const{
+            return lvlset;
+        }
 
         const std::string & file_name() const {
             return fn;
@@ -59,7 +63,7 @@ namespace model {
             return wrap;
         }
 
-        BooleanOps(const std::string & Parameters):lvl(0),inv(false),wrap(false)  {
+        BooleanOps(const std::string & Parameters):lvl(0),inv(false),wrap(false),lvlset(-1)  {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 

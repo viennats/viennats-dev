@@ -15,7 +15,7 @@ namespace model {
     	class TiO2_ALD {
 
 //            double times;
-            
+
             const static double temperature;
             const static double k_B;
             const static double gas;
@@ -30,7 +30,7 @@ namespace model {
             const static double Cov0_H2O;
             const static double k2_pyrolysis;
             const static double k_hydrolysis;
-            
+
             const static double error;
 
                 double molecular_thickness;
@@ -87,7 +87,7 @@ namespace model {
                     						          >> real_p[assign_a(StartDirection[1])] >> ","
                     						          >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("reaction_order")       >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
-            
+
                             (str_p("sticking_TTIP")        >> '='  >> real_p[assign_a(sticking[0])]  >> ';') |
                             (str_p("sticking_H2O")         >> '='  >> real_p[assign_a(sticking[1])]  >> ';') |
                             (str_p("end_probability")      >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
@@ -98,7 +98,7 @@ namespace model {
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
-            if (!b) msg::print_error("Failed interpreting process parameters!");
+            if(!b) msg::print_error("Failed interpreting process parameters!");
 
 		    unsigned int num_particles=static_cast<unsigned int>(Accuracy);
 
@@ -151,7 +151,7 @@ namespace model {
                                         - k_hydrolysis*Coverages0*Coverages1)/Cov0_H2O;
 //                                C_H2O /= Cov0_H2O;
                     const double t_H2O = std::min(0.01/std::abs(C_H2O),0.001);
-                    
+
                     delta_time = std::min(t_TTIP,t_H2O);
 
                     Coverages[0] += delta_time*(C_TTIP);
@@ -232,9 +232,9 @@ namespace model {
 //                            int D,
 //                            double dot // dot product between the incoming particle direction and the normal vector
 			) const {
-                    
+
                     double new_probability;
-                    
+
 //                    	if (Coverages[p.Type]>0.) {
 //				new_probability=p.Probability*(1.-sticking[p.Type]*std::pow(Coverages[p.Type],reaction_order-1));
 //			} else {
@@ -319,7 +319,7 @@ namespace model {
 //                double ProcTime;
 //
 //	public:
-//            
+//
 //	class ParticleType {
 //	public:
 //		double Direction[3];
@@ -395,7 +395,7 @@ namespace model {
 ////                    Coverages[2]=std::max(Rates[1],Coverages[2]);
 ////                    Coverages[1]=std::max(Coverages[1]-Rates[0],0.);
 ////                    Coverages[0]=1.-Coverages[1]-Coverages[2];
-//                    
+//
 //                    Coverages[5]=Rates[0];
 //                    Coverages[6]=Rates[1];
 //                    Coverages[7]=std::max(Coverages[2]-Coverages[5],0.);
@@ -420,7 +420,7 @@ namespace model {
 ////            if (Coverages[1]>0.) std::cout<<"Coverages[1]="<<Coverages[1]<<"\n";
 ////			Rates[0]+=p.Flux*p.Probability*std::max(Coverages[1],0.);
 ////                        Rates[1]+=p.Flux*p.Probability*0.2*std::max(1-Coverages[1]-Coverages[2],0.);
-//            
+//
 //                    double C_T_N=3.8;
 //                    double C_TiN_N=1.2;
 //                    double n_N=1.2;
@@ -428,7 +428,7 @@ namespace model {
 //                    Rates[0]+=std::max(C_T_N  * std::pow(Coverages[2]-Rates[0],         n_N),0.);
 //                    Rates[1]+=std::max(C_TiN_N* std::pow(Coverages[4]+Rates[0]-Rates[1],n_N),0.);
 //
-//                        
+//
 //		}
 //
 //

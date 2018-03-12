@@ -374,7 +374,8 @@ namespace lvlset {
 			}
         }
 
-        l.thin_out();       //remove active grid point which have no opposite signed neighbor grid point
+        l.prune();       //remove active grid point which have no opposite signed neighbor grid point
+        l.segment();    //distribute points evenly across threads
     }
 
 }

@@ -141,8 +141,8 @@ namespace model {
 
         template <class NormVecType>
         void CalculateVelocity(double &Velocity, const NormVecType NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-            //Velocity=std::min(0.,Rates[0]/(e0*target_density));
-            Velocity=-Rates[0]/(e0*target_density);
+            Velocity=std::min(0.,Rates[0]/(e0*target_density));
+            //Velocity=-Rates[0]/(e0*target_density);
             //std::cout << "velocity: " << Velocity << std::endl;
         }
 

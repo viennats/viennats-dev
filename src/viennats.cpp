@@ -469,6 +469,180 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   //!    Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
   //!    HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
   //!    and BooleanOperation
+  /*
+void main_(ParameterType2& p2) {					//TODO changed from const to not const
+
+	ParameterDimType<ParameterType2, D> p = p2;		//TODO changed to not const
+
+	int grid_min[D]={ };
+	int grid_max[D]={ };
+
+	//!Read Geometry and populate geometry class
+	geometry::geometry<D> g;
+	int num_surfaces=p.geometry_files.size();
+	geometry::surface<D> *s = new geometry::surface<D> [num_surfaces];
+
+	if (p.surface_geometry) {
+		//!If surface geometries are passed, read .vtk surface geometries
+		//!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
+		std::cout << "The geometry consists of " << p.geometry_files.size() <<" input surfaces. \n";
+		for(int cs=0;cs<num_surfaces;cs++) {
+			msg::print_start("Read surface input file "+p.geometry_files[cs]+"...");
+			s[cs].ReadVTK(p.geometry_files[num_surfaces-cs-1], p.input_scale, p.input_transformation,
+					      p.input_transformation_signs, p.change_input_parity, p.input_shift);
+
+			for (int h = 0; h < D; ++h) {
+				grid_min[h] = std::min(grid_min[h],int(std::ceil(s[cs].Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
+				grid_max[h] = std::max(grid_max[h],int(std::floor(s[cs].Max[h] / p.grid_delta + p.snap_to_boundary_eps)));
+			}
+			msg::print_done();
+#ifdef VERBOSE
+	std::cout << "min = " << (s[cs].Min) << "   " << "max = " << (s[cs].Max)
+			<< std::endl;
+	std::cout << "min = " << (s[cs].Min / p.grid_delta) << "   " << "max = "
+			<< (s[cs].Max / p.grid_delta) << std::endl;
+#endif
+		}
+	} else {
+		//!If volume geometry is passed, read the volume geometry.
+		//!surface.Read(...) reads a geometry file and modifies it according to the user-set parameters
+		// g.Read reads a geometry file and modifies it according to the user-set parameters
+		msg::print_start("Read geometry input file...");
+		g.Read(p.geometry_files[0], p.input_scale, p.input_transformation,
+			p.input_transformation_signs, p.change_input_parity, p.material_mapping,
+			p.input_shift, p.ignore_materials);
+		{
+			// output to a .vtk file the modified initial geometry
+			std::ostringstream oss;
+			oss << p.output_path << "Initial_Volume_Mesh.vtk";
+			g.Write(oss.str());
+		}
+		for (int h = 0; h < D; ++h) {
+			grid_min[h]	= std::ceil(g.Min[h] / p.grid_delta - p.snap_to_boundary_eps);
+			grid_max[h] = std::floor(g.Max[h] / p.grid_delta
+						+ p.snap_to_boundary_eps);
+		}
+#ifdef VERBOSE
+	std::cout << "min = " << (g.Min) << "   " << "max = " << (g.Max)
+			<< std::endl;
+	std::cout << "min = " << (g.Min / p.grid_delta) << "   " << "max = "
+			<< (g.Max / p.grid_delta) << std::endl;
+#endif
+		msg::print_done();
+	}
+
+	//!Determine boundary conditions for level set domain
+	lvlset::boundary_type bnc[D];
+	for (int hh = 0; hh < D; ++hh) {
+		if ((p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY)
+				&& (p.boundary_conditions[hh].max == bnc::PERIODIC_BOUNDARY)) {
+			bnc[hh] = lvlset::PERIODIC_BOUNDARY;
+		} else if ((p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY)
+				&& (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY)) {
+			bnc[hh] = lvlset::INFINITE_BOUNDARY;
+		} else if (p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY) {
+			bnc[hh] = lvlset::NEG_INFINITE_BOUNDARY;
+		} else if (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+			bnc[hh] = lvlset::POS_INFINITE_BOUNDARY;
+		} else {
+			bnc[hh] = lvlset::SYMMETRIC_BOUNDARY;
+		}
+	}
+
+	//level set grid
+
+#ifdef VERBOSE
+		//std::cout << "dim " << h << " min=" << grid_min[h] << " max="
+		//		<< grid_max[h] << std::endl;
+#endif
+//	}
+
+	//!Set the level set grid "GridTraitsType<D> GridProperties(grid_min, grid_max, boundary conditions, grid_delta)"
+	GridTraitsType<D> GridProperties(grid_min, grid_max, bnc, p.grid_delta);
+
+	//!Generate the grid_type with the set GridProperties
+	lvlset::grid_type<GridTraitsType<D> > grid(GridProperties);
+
+	//!Transform the input volume geometry to surfaces and interfaces "geometry::TransformGeometryToSurfaces(...)"
+	msg::print_start("Extract surface and interfaces...");
+	typedef std::list<geometry::surface<D> > SurfacesType;
+	SurfacesType Surfaces;
+	{
+		std::bitset<2 * D> remove_flags;
+
+		for (int i = 0; i < D; ++i) {
+			if (p.boundary_conditions[i].min == bnc::PERIODIC_BOUNDARY
+					|| p.boundary_conditions[i].min == bnc::REFLECTIVE_BOUNDARY
+					|| p.boundary_conditions[i].min == bnc::EXTENDED_BOUNDARY) {
+				remove_flags.set(i);
+			} else {
+				if (i == p.open_boundary
+						&& !p.open_boundary_negative && p.remove_bottom)
+					remove_flags.set(i);
+			}
+			if (p.boundary_conditions[i].max == bnc::PERIODIC_BOUNDARY
+					|| p.boundary_conditions[i].max == bnc::REFLECTIVE_BOUNDARY
+					|| p.boundary_conditions[i].max == bnc::EXTENDED_BOUNDARY) {
+				remove_flags.set(i + D);
+			} else {
+				if (i == p.open_boundary
+						&& p.open_boundary_negative && p.remove_bottom)
+					remove_flags.set(i + D);
+			}
+		}
+
+		if (p.surface_geometry) {
+			for(int cs=num_surfaces-1;cs>=0;cs--) Surfaces.push_back(s[cs]);
+		} else {
+			std::cout << "transform to surface\n";
+			geometry::TransformGeometryToSurfaces(g, Surfaces, remove_flags,
+												  p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
+		}
+	}
+	msg::print_done();
+
+	//Output of initial surfaces
+	int SurfaceCounter = 0;
+	for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {//unsigned int i=0;i<Surfaces.size();++i) {
+		std::ostringstream oss, oss2;
+		oss << p.output_path << "Interface" << "Initial" << "_"
+				<< SurfaceCounter << ".dx";
+		oss2 << p.output_path << "Interface" << "Initial" << "_"
+				<< SurfaceCounter << ".vtk";
+		it->Write(oss.str());
+		it->WriteVTK(oss2.str());
+		++SurfaceCounter;
+	}
+	//Create levelsets
+	//!Create the LevelSets - a list of all level set functions
+	typedef std::list<lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType> > LevelSetsType;
+	LevelSetsType LevelSets; //list of all level set functions
+
+	msg::print_start("Distance transformation...");
+
+	//!Initialize each level set with "lvlset::init(...)"
+	for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
+		LevelSets.push_back(lvlset::levelset<GridTraitsType<D> , LevelSetTraitsType>(grid));
+		lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+	}
+
+	msg::print_done();
+
+	if(p.add_layer>0){
+		std::stringstream oss;
+		oss << "Adding " << p.add_layer << " initial layer" << ((p.add_layer==1)?"...":"s...");
+		msg::print_start(oss.str());
+		proc::AddLayer(LevelSets, p.add_layer);
+		msg::print_done();
+	}
+
+	//organization of the output information by initiation of required models
+	OutputInfoType output_info;
+
+	//!Initialize the required models and call "proc::ExecuteProcess(...)"
+	//!		Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
+	//!		HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
+	//!		and BooleanOperation*/
 
 #ifdef PROCESS_TiO2_ALD
             std::vector<double> CoveragesALD_TiO2(4*LevelSets.back().num_active_pts(),0.);
@@ -482,91 +656,94 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
             for (unsigned int i=0;i<CoveragesPEALD_TiN.size();i++) CoveragesPEALD_TiN[i]=(i%12==10)?1.:0.;
 #endif
 
-  for (typename std::list<typename ParameterType2::ProcessParameterType>::iterator
-      pIter = p.ProcessParameters.begin(); pIter
-      != p.ProcessParameters.end(); ++pIter) {
-    {
-      std::ostringstream oss;
-      oss << "Start execution of process \"" + pIter->ModelName + "\""
-          << std::endl << "(processing time = " << pIter->ProcessTime
-          << ")";
-      msg::print_message(oss.str());
-    }
-    output_info.end_time += pIter->ProcessTime;
+	for (typename std::list<typename ParameterType2::ProcessParameterType>::iterator
+			pIter = p.process_parameters.begin(); pIter
+			!= p.process_parameters.end(); ++pIter) {
+		{
+			std::ostringstream oss;
+			oss << "Start execution of process \"" + pIter->ModelName + "\""
+					<< std::endl << "(processing time = " << pIter->ProcessTime
+					<< ")";
+			msg::print_message(oss.str());
+		}
+		output_info.end_time += pIter->ProcessTime;
 
-    //Reassign Active layers to correspond to kernel layer numbering
-    if(pIter->ActiveLayers.size()>LevelSets.size()) assert(0);
+		//Reassign Active layers to correspond to kernel layer numbering
+		if(pIter->ActiveLayers.size()>LevelSets.size()) assert(0);
 
-    LevelSetsType temp_levelSets;
+		LevelSetsType temp_levelSets;
 
-    std::vector<int> layer_order;
-    for(unsigned int i=0; i<pIter->ActiveLayers.size(); i++){
-      layer_order.push_back(pIter->ActiveLayers[i]-1);
-      pIter->ActiveLayers[i] = LevelSets.size() - pIter->ActiveLayers[i];  //reorder for model use
-    }
-    //if(pIter->ActiveLayers.empty()) temp_levelSets = LevelSets;  //if no materials specified, etch highest one
+		std::vector<int> layer_order;
+		for(unsigned int i=0; i<pIter->ActiveLayers.size(); i++){
+			layer_order.push_back(pIter->ActiveLayers[i]-1);
+			pIter->ActiveLayers[i] = LevelSets.size() - pIter->ActiveLayers[i];	//reorder for model use
+		}
+		//if(pIter->ActiveLayers.empty()) temp_levelSets = LevelSets;	//if no materials specified, etch highest one
 
-    //put inactive layers to new levelset ordering
-    typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
+		//put inactive layers to new levelset ordering
+		typename LevelSetsType::iterator LSIter = LevelSets.begin(), LSIter_old;
 
-    std::cout << "Inactive/Mask/Active: ";
-    for(unsigned int i=0; i<LevelSets.size(); ++i){
-      if(!my::stat::AnyElement<int>(layer_order, i) && (pIter->MaskLayers.empty() || pIter->MaskLayers[0] != int(i+1))){  //neither mask nor active
-        std::cout << i << ",";
-        temp_levelSets.push_back(*LSIter);
-      }
-      ++LSIter;
-    }
-    std::cout << '\b' << " ";
+		std::cout << "Inactive/Mask/Active: ";
+		for(unsigned int i=0; i<LevelSets.size(); ++i){
+			if(!my::stat::AnyElement<int>(layer_order, i) && (pIter->MaskLayers.empty() || pIter->MaskLayers[0] != int(i+1))){	//neither mask nor active
+				std::cout << i << ",";
+				temp_levelSets.push_back(*LSIter);
+			}
+			++LSIter;
+		}
+		std::cout << '\b' << " ";
 
-    //add mask layers on top of inactive
-    if(!pIter->MaskLayers.empty()){
-      for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i) pIter->MaskLayers[i] -= 1;  //kernel numbering
-      LSIter = LevelSets.begin();
-      for(int a=0; a<pIter->MaskLayers[0]; a++)  LSIter++;  // advance iterator to first mask layer
-      temp_levelSets.push_back(*LSIter);     //this is now the only mask layer, all the other ones are AND'ed onto it
-      std::cout << "\b/" << pIter->MaskLayers[0];
-      for(unsigned int i=1; i<pIter->MaskLayers.size(); i++){
-        std::cout << "," << pIter->MaskLayers[i];
-        if((unsigned int)pIter->MaskLayers[i]>LevelSets.size()) assert(0);
-        LSIter = LevelSets.begin();
-        for(int a=0; a<pIter->MaskLayers[i]; a++)  LSIter++;    //Advance iterator to corresponding levelset
-        temp_levelSets.back().min(*LSIter);      // AND second mask levelset with first
-        temp_levelSets.back().thin_out();
-      }
-    }
+		//add mask layers on top of inactive
+		if(!pIter->MaskLayers.empty()){
+			for(unsigned int i=0; i<pIter->MaskLayers.size(); ++i){
+				pIter->MaskLayers[i] -= 1;	//kernel numbering
+				assert(unsigned(pIter->MaskLayers[i]) < LevelSets.size());	//check if numbering is correct
+			}
+			LSIter = LevelSets.begin();
+			for(int a=0; a<pIter->MaskLayers[0]; a++)	LSIter++;	// advance iterator to first mask layer
+			temp_levelSets.push_back(*LSIter); 		//this is now the only mask layer, all the other ones are AND'ed onto it
+			std::cout << "\b/" << pIter->MaskLayers[0];
+			for(unsigned int i=1; i<pIter->MaskLayers.size(); i++){
+				std::cout << "," << pIter->MaskLayers[i];
+				LSIter = LevelSets.begin();
+				for(int a=0; a<pIter->MaskLayers[i]; a++)	LSIter++;		//Advance iterator to corresponding levelset
+				temp_levelSets.back().min(*LSIter);			// Union second mask levelset with first
+				temp_levelSets.back().prune();		//remove unnecessary points
+			}
+			temp_levelSets.back().segment();		//segment levelset to balance load
+		}
 
-    if(!layer_order.empty()){
-      std::cout << "/";
-      for(unsigned int i=0; i<layer_order.size(); i++){    //Reorder active Levelsets for next step
-        std::cout << layer_order[i] << ",";
-        if((unsigned int)layer_order[i]>LevelSets.size()) assert(0);
-        LSIter = LevelSets.begin();
-        for(int a=0; a<layer_order[i]; a++)  LSIter++;  //Advance iterator to corresponding levelset
-        temp_levelSets.push_back(*LSIter);      //push levelset to temporary list
-      }
-      std::cout << '\b' << " ";
-    }
+		if(!layer_order.empty()){
+			std::cout << "/";
+			for(unsigned int i=0; i<layer_order.size(); i++){		//Reorder active Levelsets for next step
+				std::cout << layer_order[i] << ",";
+				assert(unsigned(layer_order[i]) < LevelSets.size());
+				LSIter = LevelSets.begin();
+				for(int a=0; a<layer_order[i]; ++a)	LSIter++;	//Advance iterator to corresponding levelset
+				temp_levelSets.push_back(*LSIter);			//push levelset to temporary list
+			}
+			std::cout << '\b' << " ";
+		}
 
-    //wrap new top levelset around lower layers
-    LSIter = temp_levelSets.begin();  //Advance iterator to first reassigned LS
-    for(unsigned int i=0; i<temp_levelSets.size()-layer_order.size(); i++){
-      LSIter_old=LSIter;
-      ++LSIter;
-    }
+		//wrap new top levelset around lower layers
+		LSIter = temp_levelSets.begin();	//Advance iterator to first reassigned LS
+		for(unsigned i=0; i<temp_levelSets.size()-1; ++i){
+			temp_levelSets.back().min(*LSIter);
+			temp_levelSets.back().prune();
+			++LSIter;
+		}
+		temp_levelSets.back().segment();
 
-    while(LSIter!=temp_levelSets.end()){    //wrap new top levelset around lower layers
-      LSIter->min(*LSIter_old);
-      LSIter->thin_out();
-      ++LSIter;
-    }
+		std::swap(LevelSets, temp_levelSets);
 
-    std::swap(LevelSets, temp_levelSets);
+		std::cout << std::endl;
+		if(pIter->AddLayer>0){
+			std::cout << "Add Layer = " << pIter->AddLayer << "\n";
+			proc::AddLayer(LevelSets, pIter->AddLayer);
+		}
 
-    std::cout << std::endl << "AddLayer = " << pIter->AddLayer << "\n";
-    proc::AddLayer(LevelSets, pIter->AddLayer);
-    for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
-    std::cout << "Active/Total Layers: " << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
+		for(int i=0; i<pIter->AddLayer; i++) pIter->ActiveLayers.push_back(i+1);
+		std::cout << "Active/Total Layers: " << pIter->ActiveLayers.size() << "/" << LevelSets.size() << "\n\n";
 
 
 #ifdef PROCESS_CONSTANT_RATES
@@ -754,23 +931,23 @@ int main(int argc, char *argv[]) {
   //check intrinsic double-type
   assert(std::numeric_limits<double>::is_iec559);
 
-  //!Read Parameters-File and populate Parameters class
-  par::Parameters p(argv[1]);
+	//!Read Parameters-File and populate Parameters class
+	client::Parameters p(argv[1]);
 
   //!Set maximum number of threads
 #ifdef _OPENMP
-  if (p.OpenMP_threads>0) omp_set_num_threads(p.OpenMP_threads);
+	if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
 #endif
 
 //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
 #ifdef DIMENSION_2
-  if (p.Dimensions == 2)
-    main_<2, par::Parameters> (p);
+	if (p.num_dimensions == 2)
+		main_<2, client::Parameters> (p);
 #endif
 
 #ifdef DIMENSION_3
-  if (p.Dimensions == 3)
-    main_<3, par::Parameters> (p);
+	if (p.num_dimensions == 3)
+		main_<3, client::Parameters> (p);
 #endif
 
   double exec_time = my::time::GetTime()-timer;
