@@ -942,9 +942,6 @@ namespace proc {
             }
 
             if ((Model.CalculateNormalVectors) || (Model.NumberOfParticleTypes>0)){
-#ifdef VERBOSE
-        msg::print_message("calculate normal vectors");
-#endif
 
 #ifdef VERBOSE
         msg::print_message("expansion");
@@ -1444,8 +1441,6 @@ namespace proc {
             TimeSmoothing+=my::time::GetTime();
         }
 
-        //This thin out sets up the segmentation properly - without the unecessary points
-        for(auto l:LevelSets) l.thin_out();
       /*
       //Output statistics for level sets
       if (Parameter.PrintStatistics) {
@@ -1490,14 +1485,10 @@ namespace proc {
             }
 
             if ((Model.CalculateNormalVectors) || (Model.NumberOfParticleTypes>0)){
-// #ifdef VERBOSE
-//         msg::print_message("calculate normal vectors");
-// #endif
-
 #ifdef VERBOSE
         msg::print_message("expansion");
 #endif
-        TimeExpansion-=my::time::GetTime();
+                TimeExpansion-=my::time::GetTime();
                 LevelSets.back().expand(3);
                 TimeExpansion+=my::time::GetTime();
 #ifdef VERBOSE
@@ -1672,6 +1663,8 @@ namespace proc {
 #ifdef VERBOSE
                         msg::print_message("print lvst");
 #endif
+for(auto l:LevelSets) l.print();
+
                         exportLevelsetToFile(*it,oss.str());
 
                     }

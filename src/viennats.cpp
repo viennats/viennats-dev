@@ -59,19 +59,20 @@
 
 //Options for levelset output
 #define LVST_FILE_VERSION_NUMBER 1
-#define BITS_PER_RUNTYPE 2
 //NOTE: BITS_PER_DISTANCE is limited by std::pow(2, BITS_PER_DISTANCE)
 #define BITS_PER_DISTANCE 4
+#if BITS_PER_DISTANCE == 0
+  #error "You cannot store any information in 0 bits. Please adjust BITS_PER_DISTANCE."
+#endif
 //How many bytes the grid min and grid max each use in the levelset file
 #define BYTES_GRID_LIMITS 4
 //override default bytesizes of start indices, (defined) runtypes and runbreaks
 #define FORCE_BYTESIZE
-//if bytesize is forced use the following
-//NOTE: Currently any bytesize above 4 is not supported.
+//If bytesize is forced use the following (NOTE: Maximum bytesize is 15 bytes)
 #define BYTES_START_INDEX 4
 #define BYTES_RUNTYPE 4
 #define BYTES_RUNBREAK 4
-//Limits for 3 byte output
+//Limits for 3 byte output; only change if one byte does not have 8 bits
 #define UINT24_MAX 16777215 // highest value of 3 unsigned bytes  2^24-1
 #define INT24_MAX 8388607  //  highest value of 3 signed   bytes  2^23-1
 #define INT24_MIN -8388608 //  lowest  value of 3 signed   bytes -2^23
