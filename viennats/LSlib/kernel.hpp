@@ -940,7 +940,8 @@ namespace lvlset {
         void printWithoutSegmentation(std::ostream& out = std::cout){
           serialize();
           print(out);
-          thin_out();
+          prune();
+          segment();
         }
 
         //returns a non-const reference to the start indices of a segment
@@ -961,8 +962,8 @@ namespace lvlset {
         }
 
         //writes the levelset to a file
-        levelset& exportLevelset(const std::string& path){
-          exportLevelsetToFile(*this, path);
+        levelset& exportLevelset(const std::string& path, int bits_per_distance = 4){
+          exportLevelsetToFile(*this, path, bits_per_distance);
           return *this;
         }
 
@@ -1411,7 +1412,7 @@ namespace lvlset {
 
              const_iterator_runs it(*this, tmp);
 
-             if (it.pt_id()!=rem_pt) {
+             if (it.pt_id()!=rem_pt) {std::cout << "PT_ID != REM_PT";
                  std::cout << num_pts() << std::endl;
                  std::cout << rem_pt << std::endl;
                  std::cout << it.pt_id() << std::endl;
@@ -2242,7 +2243,7 @@ namespace lvlset {
         }
 
         finalize(std::min(width, old_lvlset.number_of_layers()));
-
+        segment();
         /*std::string err= misc::test(*this);     //check level set function      //TODO
         if (err.size()) {                   //if inconsistent print out error message
             std::cout << "reduce failed!" << std::endl;
@@ -2356,7 +2357,8 @@ namespace lvlset {
             //std::cout << "     time2 = " << tmp << std::endl;
 
         }
-
+        //setting up the segmentation correctly
+        segment();
     }
 
 

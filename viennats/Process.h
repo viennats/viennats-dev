@@ -1627,10 +1627,12 @@ namespace proc {
 
                 typename LevelSetsType::iterator it=LevelSets.begin();
                 for (unsigned int i=0;i<LevelSets.size();i++) {
-
+									//for each levelset remove non opposite signed neighbors before outputting it to a file
+									it->prune();
+									it->segment();
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
-                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".dx";
 #ifdef VERBOSE
                         msg::print_message("print dx");
 #endif
@@ -1643,7 +1645,7 @@ namespace proc {
                     }
                     if (Parameter.print_vtk) {
                         std::ostringstream oss;
-                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".vtk";
 #ifdef VERBOSE
                         msg::print_message("print vtk");
 #endif
@@ -1656,13 +1658,12 @@ namespace proc {
                     }
                     if (Parameter.print_lvst) {
                         std::ostringstream oss;
-                        oss << Parameter.OutputPath<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".lvl";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".lvst";
 #ifdef VERBOSE
                         msg::print_message("print lvst");
 #endif
-for(auto l:LevelSets) l.print();
 
-                        exportLevelsetToFile(*it,oss.str());
+                        exportLevelsetToFile(*it, oss.str(), Parameter.bits_per_distance);
 
                     }
                     it++;

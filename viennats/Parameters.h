@@ -234,6 +234,7 @@ struct ReportError {
             double domain_extention;
             double receptor_radius;
             double further_tracking_distance;
+            int bits_per_distance;
             bool print_vtk;
             bool print_dx;
             bool print_lvst;
@@ -308,6 +309,7 @@ struct ReportError {
         (double, domain_extention)
         (double, receptor_radius)
         (double, further_tracking_distance)
+        (int, bits_per_distance)
         (bool, print_vtk)
         (bool, print_dx)
         (bool, print_lvst)
@@ -371,11 +373,6 @@ struct ReportError {
             return value;
         }
 
-              output_times_periodicity=1;
-              output_times_period_length=0;
-              initial_output=false;
-              final_output=false;
-              MaskLayer=false;
 
         template <typename Iterator>
         struct skipper_grammar : qi::grammar<Iterator>{
@@ -446,6 +443,7 @@ struct ReportError {
                 domain_extension %= lit("domain_extension") > '=' > lexeme[int_] > ';';
                 receptor_radius %= lit("receptor_radius") > '=' > lexeme[double_] > ';';
                 further_tracking_distance %= lit("further_tracking_distance") > '=' > lexeme[double_] > ';';
+                bits_per_distance %= lit("bits_per_distance") > '=' > lexeme[int_] > ';';
                 print_vtk %= lit("print_vtk") > '=' > boolean > ';';
                 print_dx %= lit("print_dx") > '=' > boolean > ';';
                 print_lvst %= lit("print_lvst") > '=' > boolean > ';';
@@ -513,7 +511,7 @@ struct ReportError {
                 cfl_condition ^ input_scale ^ grid_delta ^ input_transformation ^
                 input_shift ^ default_disc_orientation ^ ignore_materials ^
                 change_input_parity ^ random_seed ^ num_dimensions ^ omp_threads ^ domain_extension ^
-                receptor_radius ^ further_tracking_distance ^ print_vtk ^ print_dx ^
+                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ print_vtk ^ print_dx ^ print_lvst ^
                 print_velocities ^ print_coverages ^ print_rates ^ print_materials ^
                 print_statistics ^ max_extended_starting_position ^ open_boundary ^
                 remove_bottom ^ snap_to_boundary_eps ^ process_cycles ^ material_mapping ^
@@ -590,6 +588,7 @@ struct ReportError {
             qi::rule<Iterator, int(), Skipper> random_seed,
                 num_dimensions,
                 omp_threads,
+                bits_per_distance,
                 max_extended_starting_position,
                 open_boundary,
                 process_cycles,
@@ -617,6 +616,7 @@ struct ReportError {
         domain_extention=0.;
         receptor_radius=0.8;
         further_tracking_distance=3.;
+        bits_per_distance=4;
         print_vtk=true;
         print_dx=false;
         print_lvst=true;
@@ -721,6 +721,15 @@ struct ReportError {
             }
             --open_boundary;
         }
+
+        //fix bits_per_distance so there are no overflow bits when writing to lvst file
+        int bpd = 1;
+        while( bpd < bits_per_distance || (bpd < CHAR_BIT ? CHAR_BIT % bpd : bpd % CHAR_BIT) ){
+          if(bpd < CHAR_BIT) bpd++;
+          else bpd += CHAR_BIT; //once bpd (bits per distance) reaches the amount of bits per char, the increase will be CHAR_BIT instead of 1
+        }
+        if(bits_per_distance == 0) bits_per_distance = CHAR_BIT;
+        else bits_per_distance = bpd;
 
         //Create directory, if it does not exist
 	    if(!boost::filesystem::exists(output_path)) {
