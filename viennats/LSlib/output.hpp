@@ -817,36 +817,10 @@ namespace lvlset {
         int bits_per_byte = overflow_num_bytes > 0 ? CHAR_BIT : bits_per_distance; //for 8 bits 1 ... 8
         byte = 0;
         long double value = std::pow((long double) 2, (long double) bits_per_distance-1)-0.5L;
-        /*switch (bits_per_distance) {
-          case 16:
-            value = UINT16_MAX/2.0L;
-            break;
-          case 24:
-            value = UINT24_MAX/2.0L;
-            break;
-          case 32:
-            value = UINT32_MAX/2.0L;
-            break;
-          case 40:
-            value = UINT40_MAX/2.0L;
-            break;
-          case 48:
-            value = UINT48_MAX/2.0L;
-            break;
-          case 56:
-            value = UINT56_MAX/2.0L;
-            break;
-          case 64:
-            value = UINT64_MAX/2.0L;
-            break;
-          default:
-            value = std::pow((long double) 2, (long double) bits_per_distance - 1) - 0.5L;
-            break;
-        }*/
 #ifdef VERBOSE
         oss.str("");
         oss << "Value: " << value << std::endl;
-        oss << "Number of overflow bytes: : " << overflow_num_bytes << std::endl;
+        oss << "Number of overflow bytes: " << overflow_num_bytes << std::endl;
         msg::print_message_2(oss.str());
 #endif
         /************************************************************************************
@@ -857,10 +831,14 @@ namespace lvlset {
         * -(2^n-1)/2 .... +(2^n-1)/2    |+ (2^n-1)/2                                        *
         *          0 .... +(2^n-1)                                                          *
         *************************************************************************************/
+        unsigned long long discrete_distance, overflow;
+        long double tmp;
         for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
-          unsigned long long discrete_distance = std::llround(*it * value + value);
-          unsigned long long overflow = discrete_distance >> bits_per_byte;
-          byte |= discrete_distance  << count * bits_per_byte;
+          tmp = *it * value + value + 0.5L; //+0.5 for rounding
+          discrete_distance = (unsigned long long)tmp;//std::llround(tmp); -> reaches its limit with 64 bits, works with 56 bits
+          overflow = discrete_distance >> bits_per_byte;
+          discrete_distance  <<= count * bits_per_byte;
+          byte |= discrete_distance;
           count--;
           if(count < 0){
             fout << byte;
@@ -871,7 +849,7 @@ namespace lvlset {
               byte = 0;
               byte |= overflow;
               fout << byte;
-              overflow = overflow >> bits_per_byte;
+              overflow >>= bits_per_byte;
             }
             byte=0;
           }
@@ -1043,7 +1021,7 @@ namespace lvlset {
           //fin.read((char *) sInt, bytesPerRnBreak);
           fin.read((char *) &sInt, bytesPerRnBreak);
           //if the sign bit is set, fill up the upper bits
-          if(sInt >> (bytesPerRnBreak * CHAR_BIT-1) & 0x1 ) sInt |= sign_bit_mask;
+          if(sInt >> (bytesPerRnBreak * CHAR_BIT -1) & 0x1 ) sInt |= sign_bit_mask;
           runBreaks.push_back(sInt);
           values_read++;
         }
@@ -1063,43 +1041,38 @@ namespace lvlset {
       msg::print_message_2(oss.str());
 #endif
       std::vector<value_type> & distances = ls.distances();
-      long double value = (std::pow((long double) 2, (long double) bits_per_distance)-1.0L)/2.0L;
+      long double value = std::pow((long double) 2, (long double) bits_per_distance-1)-0.5L;
       int count = char_bit/bits_per_distance;
       if(count < 1) count  = 1;
       const int overflow_num_bytes = bits_per_distance/char_bit -1; //-1 because bpd is mapped to the next higher power of 2
       int bits_per_byte = overflow_num_bytes > 0 ? char_bit : bits_per_distance; //for 8 bits 1 ... 8
       int num_reads = std::ceil((double)num_distances/count);
       unsigned char mask = 0xFF >> bits_per_distance%char_bit; //for bits per distance > 8 the mask will be 0xFF
-      unsigned long long m = 0;
-      --m >>= sizeof(long long)*CHAR_BIT-bits_per_distance;
-      byte = 0;
+      //unsigned long long m = 0;
+      //--m >>= sizeof(long long)*CHAR_BIT-bits_per_distance;
       //reading distances
       if(distances.size() > 0) distances.clear();
       unsigned long long discrete_distance = 0;
       unsigned long long tmp_distance = 0;
       for(int i = 0; i < num_reads; i++){
-        //byte = 0;
         fin.read((char *)&byte, 1);
         for(int z = count; z--;){
           if(values_read == num_distances) break; //if distances are odd, skip padding bits
           discrete_distance = 0;
-          //tmp_distance = 0;
           discrete_distance |= byte >> z*bits_per_byte & mask;
           //read in overflow
           for(int j=0; j<overflow_num_bytes; j++){
-            //byte = 0;
             fin.read((char *)&byte, 1);
-            tmp_distance = byte & mask;
+            tmp_distance = byte; //& mask;
             tmp_distance <<= (j+1) * bits_per_byte;//shift the byte to the correct position
             discrete_distance |= tmp_distance;
-            //if you dont use a temporary instead this will fail with bits > 32, because temporary values have 32 bits only!!!!
+            //if you use a temporary instead this will fail with bits > 32, because temporary values have 32 bits only?
           }
-          discrete_distance &= m; //for some reason the program adds FF as padding. remove those ....
+          //discrete_distance &= m; //for some reason the program adds FF as padding. remove those ....
           distances.push_back( (discrete_distance - value) / value); //- 1.0L);
 
           values_read++;
         }
-        std::cout << std::dec;
       }
 #ifdef VERBOSE
       oss.str("");

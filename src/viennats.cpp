@@ -719,36 +719,86 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
 
 int main(int argc, char *argv[]) {
 
-  double timer = my::time::GetTime();
+	if(argv[1][0] == '-'){//if option was passed
+		std::string option(argv[1]);
+		std::ostringstream oss;
+		if(option.substr(0, option.size()-3) == "-lvst2vtk"){
+			msg::print_start("Converting levelset file to vtk file...");
+			std::string file(argv[2]);
+			const int D = option[option.size()-2] -48;
+			typedef GridTraitsType<2> GridTraits2;
+			typedef GridTraitsType<3> GridTraits3;
+			if(D == 2){
+				GridTraits2 gridP2 = lvlset::getGridFromLVSTFile<GridTraits2>(file);
+			  lvlset::grid_type<GridTraits2> grid(gridP2);
+				lvlset::levelset<GridTraits2> ls(grid);
+				ls.importLevelset(file);
+				oss.str("");
+		  	oss << "./" << file.substr(0, file.find(".lvst")) << ".vtk";
+				write_explicit_surface_vtk(ls, oss.str());
+			}
+			else if(D == 3){
+				GridTraits3 gridP3 = lvlset::getGridFromLVSTFile<GridTraits3>(file);
+			  lvlset::grid_type<GridTraits3> grid(gridP3);
+				lvlset::levelset<GridTraits3> ls(grid);
+				ls.importLevelset(file);
+				oss.str("");
+				oss << "./" << file.substr(0, file.find(".lvst")) << ".vtk";
+				write_explicit_surface_vtk(ls, oss.str());
+			}
+			msg::print_done();
+		}
+		else if(option.substr(0) == "--help"){
+			std::cout << "USAGE: viennats OPTION FILE" << std::endl;
+			std::cout << "Convert:" << std::endl;
+			std::cout << "   -lvst2vtk[n]   Convert LVST FILE of dimension n to VTK FILE." << std::endl;
+			std::cout << "Other:" << std::endl;
+			std::cout << "  --help          Shows extended help." << std::endl;
+			std::cout << "   -h             Shows help." << std::endl;
+			std::cout << "NOTE:If no OPTION was entered FILE will be used as a parameter file for ViennaTS." << std::endl;
+		}
+		else if(option.substr(0) == "-h"){
+			std::cout << "USAGE: viennats [OPTION] [FILE]" << std::endl;
+			std::cout << "Try viennats --help for more information." << std::endl;
+		}
+		else {
+			oss << argv[1] << " is not an available option.\nSee --help for more information.";
+			msg::print_message_2(oss.str());
+		}
 
-	msg::print_welcome();
+	}
+	else{
+	  double timer = my::time::GetTime();
 
-	//check intrinsic double-type
-	assert(std::numeric_limits<double>::is_iec559);
+		msg::print_welcome();
 
-	//!Read Parameters-File and populate Parameters class
-	client::Parameters p(argv[1]);
+		//check intrinsic double-type
+		assert(std::numeric_limits<double>::is_iec559);
 
-	//!Set maximum number of threads
-#ifdef _OPENMP
-	if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
-#endif
+		//!Read Parameters-File and populate Parameters class
+		client::Parameters p(argv[1]);
 
-//!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
-#ifdef DIMENSION_2
-	if (p.num_dimensions == 2)
-		main_<2, client::Parameters> (p);
-#endif
+		//!Set maximum number of threads
+	#ifdef _OPENMP
+		if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
+	#endif
 
-#ifdef DIMENSION_3
-	if (p.num_dimensions == 3)
-		main_<3, client::Parameters> (p);
-#endif
+	//!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
+	#ifdef DIMENSION_2
+		if (p.num_dimensions == 2)
+			main_<2, client::Parameters> (p);
+	#endif
 
-  double exec_time = my::time::GetTime()-timer;
-  std::stringstream ss;
-  ss << exec_time;
-	msg::print_message("Finished - exec-time: "+ss.str()+" s");
+	#ifdef DIMENSION_3
+		if (p.num_dimensions == 3)
+			main_<3, client::Parameters> (p);
+	#endif
+
+	  double exec_time = my::time::GetTime()-timer;
+	  std::stringstream ss;
+	  ss << exec_time;
+		msg::print_message("Finished - exec-time: "+ss.str()+" s");
+	}
 
 	return 0;
 
