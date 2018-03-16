@@ -30,16 +30,16 @@ namespace lvlset {
             std::ofstream f;
             if(!std::ifstream(FileName.c_str())) {
                 f.open(FileName.c_str());
-                f << "Number of Grid Points"		<<";";
-                f << "Number of active Points"		<<";";
-                f << "Overhead (number of ints)"	<<";";
+                f << "Number of Grid Points"    <<";";
+                f << "Number of active Points"    <<";";
+                f << "Overhead (number of ints)"  <<";";
                 f << std::endl;
             } else {
                 f.open(FileName.c_str(),std::ios_base::app);
             }
-            f << l.num_pts()			<<";";
-            f << l.num_active_pts()		<<";";
-            f << "TODO"					<<std::endl;
+            f << l.num_pts()      <<";";
+            f << l.num_active_pts()    <<";";
+            f << "TODO"          <<std::endl;
             f.close();
         }
 

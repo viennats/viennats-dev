@@ -39,7 +39,7 @@
 
 ///Process related objects and methods.
 namespace proc {
-	template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
+  template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
 
       for (int i=0;i<num_layers;++i) {
             LS.push_back(LS.back());
@@ -481,12 +481,12 @@ namespace proc {
 
       typedef typename LevelSetsType::value_type LevelSetType;
 
-	    LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.grid_delta, Parameter.open_boundary, Parameter.open_boundary_negative));
+      LevelSets.push_back(LevelSetType(LevelSets.back().grid(), Model.get_coordinate()/Parameter.grid_delta, Parameter.open_boundary, Parameter.open_boundary_negative));
 
-	    for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
-	        it->max(LevelSets.back());         //adjust all level set functions below the plane
+      for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
+          it->max(LevelSets.back());         //adjust all level set functions below the plane
             it->prune();                    //remove grid points which do not have at least one opposite signed neighbor
-			it->segment();
+      it->segment();
         }
 
       if (!Model.fill_up()) LevelSets.pop_back();
@@ -512,14 +512,14 @@ namespace proc {
         geometry::surface<D> mask_surface;
 
         if (Model.surface()) {
-        	mask_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
-					Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
+          mask_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
+          Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
         } else {
             mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
-            		Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
+                Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
-//	    mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
+//      mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 
       typedef std::list<geometry::surface<D> > SurfacesType;
       SurfacesType Surfaces;
@@ -527,9 +527,9 @@ namespace proc {
       {
             std::bitset<2*D> remove_flags;
 
-			for (int i=0;i<D;++i) {
+      for (int i=0;i<D;++i) {
                 if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-					Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+          Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
                     remove_flags.set(i);
                 } else {
                     if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
@@ -541,11 +541,11 @@ namespace proc {
                 }
             }
 
-    		if (Model.surface()) {
-    			Surfaces.push_back(mask_surface);
-    		} else {
+        if (Model.surface()) {
+          Surfaces.push_back(mask_surface);
+        } else {
                 geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
-    		}
+        }
 
 //            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
@@ -561,23 +561,23 @@ namespace proc {
 
       init(mask_ls,Surfaces.back(),Parameter.report_import_errors);
 
-	    if (LevelSets.size()<2) {
-			LevelSets.push_front(mask_ls);
-			LevelSets.back().prune();
-			LevelSets.back().segment();
-	    } else {
-		    LevelSets.push_back(mask_ls);
-		    LevelSetType & l1=LevelSets.back();
-		    const LevelSetType & l2 =*(++LevelSets.rbegin());
+      if (LevelSets.size()<2) {
+      LevelSets.push_front(mask_ls);
+      LevelSets.back().prune();
+      LevelSets.back().segment();
+      } else {
+        LevelSets.push_back(mask_ls);
+        LevelSetType & l1=LevelSets.back();
+        const LevelSetType & l2 =*(++LevelSets.rbegin());
 
         //l1=min(max(l1,mask_ls),l2);
 
         l1.max(mask_ls);
         l1.min(l2);
 
-		    l1.prune();
-			l1.segment();
-	    }
+        l1.prune();
+      l1.segment();
+      }
         //TODO output and time
 
     }
@@ -595,60 +595,60 @@ namespace proc {
 
         typedef typename LevelSetsType::value_type LevelSetType;
         const int D=LevelSetType::dimensions;
-		LevelSetType* boolop_ls;
+    LevelSetType* boolop_ls;
 
-		if(!Model.file_name().empty()){
-			geometry::geometry<D> boolop_geometry;
-			geometry::surface<D> boolop_surface;// = new geometry::surface<D>;
+    if(!Model.file_name().empty()){
+      geometry::geometry<D> boolop_geometry;
+      geometry::surface<D> boolop_surface;// = new geometry::surface<D>;
 
-			if (Model.surface()) {
-				boolop_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
-				Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
-			} else {
-				boolop_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
-				Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
-			}
+      if (Model.surface()) {
+        boolop_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
+        Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
+      } else {
+        boolop_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
+        Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
+      }
 
 
-			typedef std::list<geometry::surface<D> > SurfacesType;
-			SurfacesType Surfaces;
+      typedef std::list<geometry::surface<D> > SurfacesType;
+      SurfacesType Surfaces;
 
-			{
-				std::bitset<2*D> remove_flags;
+      {
+        std::bitset<2*D> remove_flags;
 
-				for (int i=0;i<D;++i) {
-	                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-						Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-	                    remove_flags.set(i);
-	                } else {
-	                    if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
-	                }
-	                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-	                    remove_flags.set(i+D);
-	                } else {
-	                    if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
-	                }
-	            }
+        for (int i=0;i<D;++i) {
+                  if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+            Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                      remove_flags.set(i);
+                  } else {
+                      if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+                  }
+                  if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                      remove_flags.set(i+D);
+                  } else {
+                      if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+                  }
+              }
 
-				if (Model.surface()) {
-					Surfaces.push_back(boolop_surface);
-				} else {
-					//std::cout << "transform to surface\n";
-					geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
-				}
+        if (Model.surface()) {
+          Surfaces.push_back(boolop_surface);
+        } else {
+          //std::cout << "transform to surface\n";
+          geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+        }
 
-				//            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
-			}
+        //            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+      }
 
-			LevelSetType dummy_ls(LevelSets.back().grid());
-			init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
-			boolop_ls = &dummy_ls;
-		}
-		else if(Model.levelset()>0){			//If internal levelset should be used
-			typename LevelSetsType::iterator it = LevelSets.begin();
-			for(int i=0; i<Model.levelset(); ++i) ++it;
-			boolop_ls = &(*it);
-		} else{
+      LevelSetType dummy_ls(LevelSets.back().grid());
+      init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
+      boolop_ls = &dummy_ls;
+    }
+    else if(Model.levelset()>0){      //If internal levelset should be used
+      typename LevelSetsType::iterator it = LevelSets.begin();
+      for(int i=0; i<Model.levelset(); ++i) ++it;
+      boolop_ls = &(*it);
+    } else{
             return;
         }
 
@@ -666,11 +666,11 @@ namespace proc {
             while (ls_it!=LevelSets.end()) {
                 ls_it->min(*boolop_ls);
                 ls_it->prune();
-				ls_it->segment();
+        ls_it->segment();
                 ++ls_it;
             }
 
-			if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
+      if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();    //Invert again so that the original levelset is not changed
         } else {                        //Model.level()<0
 
             if (Model.invert()) boolop_ls->invert();
@@ -689,37 +689,37 @@ namespace proc {
                 ls_it->max(*boolop_ls);
                 if (j>0) ls_it->min(*ls_it_old);
                 ls_it->prune();
-				ls_it->segment();
+        ls_it->segment();
                 ++ls_it;
             }
-			if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();		//Invert again so that the original levelset is not changed
+      if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();    //Invert again so that the original levelset is not changed
         }
-		//Write one output if there is any output time or there is final output
-		if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
+    //Write one output if there is any output time or there is final output
+    if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
 
-		{
-							std::ostringstream oss;
-							oss << "Writing output " << output_info.output_counter;
-							//oss << " (time = " << RelativeTime << ")...";
-							msg::print_start(oss.str());
-		}
+    {
+              std::ostringstream oss;
+              oss << "Writing output " << output_info.output_counter;
+              //oss << " (time = " << RelativeTime << ")...";
+              msg::print_start(oss.str());
+    }
 
-		typename LevelSetsType::iterator it=LevelSets.begin();
-		for (unsigned int i=0;i<LevelSets.size();i++) {
+    typename LevelSetsType::iterator it=LevelSets.begin();
+    for (unsigned int i=0;i<LevelSets.size();i++) {
 
-			if (Parameter.print_dx) {
-				std::ostringstream oss;
-				oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
+      if (Parameter.print_dx) {
+        std::ostringstream oss;
+        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
 #ifdef VERBOSE
         msg::print_message("print dx");
 #endif
 
         write_explicit_surface_opendx(*it,oss.str());
 
-			}
-			if (Parameter.print_vtk) {
-				std::ostringstream oss;
-				oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
+      }
+      if (Parameter.print_vtk) {
+        std::ostringstream oss;
+        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
 #ifdef VERBOSE
         msg::print_message("print vtk");
 #endif
@@ -732,7 +732,7 @@ namespace proc {
 
     output_info.output_counter++;
 
-		msg::print_done();
+    msg::print_done();
     }
 
   //Topography simulation - execute a topography changing process according to required model and parameters
@@ -754,13 +754,13 @@ namespace proc {
 
       //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
 
-	    //----------------------------------------------------------------------------------------------------------------------------------------
-//	    while (LevelSets.size()>1) {
-//	    	LevelSets.pop_back();
-//	    }
-//	    typedef typename LevelSetsType::value_type LevelSetType;
-//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
-	    //----------------------------------------------------------------------------------------------------------------------------------------
+      //----------------------------------------------------------------------------------------------------------------------------------------
+//      while (LevelSets.size()>1) {
+//        LevelSets.pop_back();
+//      }
+//      typedef typename LevelSetsType::value_type LevelSetType;
+//      LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
+      //----------------------------------------------------------------------------------------------------------------------------------------
 
     int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
     int rec_cycles=ProcessParameter.IterationCycles;    //number of subsequent iteration cycles
@@ -776,13 +776,13 @@ namespace proc {
     std::vector<bool> Connectivities;
     std::vector<bool> Visibilities;
 
-		//time statistics
-		const std::string TimeStatFileName=Parameter.output_path+"StatisticsTimes.cvs";
-		std::ofstream f;
+    //time statistics
+    const std::string TimeStatFileName=Parameter.output_path+"StatisticsTimes.cvs";
+    std::ofstream f;
 
-		//unsigned int LineNumber;
-		if (Parameter.print_statistics) {
-			if(!std::ifstream(TimeStatFileName.c_str())) {
+    //unsigned int LineNumber;
+    if (Parameter.print_statistics) {
+      if(!std::ifstream(TimeStatFileName.c_str())) {
 
 #ifdef VERBOSE
         msg::print_message("Print Header in StatisticsTimes.cvs");
@@ -884,30 +884,30 @@ namespace proc {
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
-					counter++;
-		        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
+          counter++;
+            } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
 
-		        if (time_step!=std::numeric_limits<double>::max()) {
-		        	msg::print_message("maximum number of iterations reached during smoothing operation");
-		        }
+            if (time_step!=std::numeric_limits<double>::max()) {
+              msg::print_message("maximum number of iterations reached during smoothing operation");
+            }
 
 
-		        TimeSmoothing+=my::time::GetTime();
-		    }
+            TimeSmoothing+=my::time::GetTime();
+        }
 
-			/*
-			//Output statistics for level sets
-			if (Parameter.print_statistics) {
-			    TimeTotalExclOutput+=my::time::GetTime();
-				int i=0;
-				for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
-					std::ostringstream tmp;
-					tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
-					lvlset::misc::PrintStatistics(*it, tmp.str());
-					i++;
-				}
-				TimeTotalExclOutput-=my::time::GetTime();
-			}
+      /*
+      //Output statistics for level sets
+      if (Parameter.print_statistics) {
+          TimeTotalExclOutput+=my::time::GetTime();
+        int i=0;
+        for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
+          std::ostringstream tmp;
+          tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
+          lvlset::misc::PrintStatistics(*it, tmp.str());
+          i++;
+        }
+        TimeTotalExclOutput-=my::time::GetTime();
+      }
             */
 
             if (Model.ReemissionIsMaterialDependent) {
@@ -1235,88 +1235,88 @@ namespace proc {
             //#######################################
             // print statistics
             //#######################################
-			if (Parameter.print_statistics) {
+      if (Parameter.print_statistics) {
 #ifdef VERBOSE
         msg::print_message("print statistics");
 #endif
 
-				f.open(TimeStatFileName.c_str(),std::ios_base::app);
-				f<<TimeExpansion			<<";";
-				f<<TimeNormals				<<";";
-				f<<TimeMaterials			<<";";
-				f<<TimeConnectivities       <<";";
-				f<<graph_size               <<";";
-				f<<num_components           <<";";
-				f<<TimeSmoothing            <<";";
-				f<<TimeVisibilities         <<";";
-				f<<TimeCells				<<";";
-				f<<TimePartition			<<";";
-				f<<TimeRates				<<";";
-				f<<ray_tracing_memory		<<";";
-				f<<TimeTimeIntegration		<<";";
-				f<<MakeOutput				<<";";
-				f<<TimeOutput				<<";";
-				f<<TimeTotalExclOutput		<<";";
-				f<<TimeTotalInclOutput		<<";";
-				f<<time_step				<<";";
-				f<<RelativeTime             <<";";
-				f<<(ProcessTime-RelativeTime)	<< std::endl;
-				f.close();
-			}
+        f.open(TimeStatFileName.c_str(),std::ios_base::app);
+        f<<TimeExpansion      <<";";
+        f<<TimeNormals        <<";";
+        f<<TimeMaterials      <<";";
+        f<<TimeConnectivities       <<";";
+        f<<graph_size               <<";";
+        f<<num_components           <<";";
+        f<<TimeSmoothing            <<";";
+        f<<TimeVisibilities         <<";";
+        f<<TimeCells        <<";";
+        f<<TimePartition      <<";";
+        f<<TimeRates        <<";";
+        f<<ray_tracing_memory    <<";";
+        f<<TimeTimeIntegration    <<";";
+        f<<MakeOutput        <<";";
+        f<<TimeOutput        <<";";
+        f<<TimeTotalExclOutput    <<";";
+        f<<TimeTotalInclOutput    <<";";
+        f<<time_step        <<";";
+        f<<RelativeTime             <<";";
+        f<<(ProcessTime-RelativeTime)  << std::endl;
+        f.close();
+      }
 
-			if (is_finished) break;
-		}
-	}
+      if (is_finished) break;
+    }
+  }
 
-	///Includes loop over full process time to run the simulation.
-	template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
-				LevelSetsType& LevelSets,
-				const ModelType& Model,
-				const ParameterType& Parameter,
-				const ProcessParameterType& ProcessParameter,
-				OutputInfoType & output_info
-		) {
-		const int D=LevelSetsType::value_type::dimensions;
-
-
-	    const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
-		const std::vector<double> & OutputVolume=ProcessParameter.output_volume; //vector of times for volume output
+  ///Includes loop over full process time to run the simulation.
+  template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
+        LevelSetsType& LevelSets,
+        const ModelType& Model,
+        const ParameterType& Parameter,
+        const ProcessParameterType& ProcessParameter,
+        OutputInfoType & output_info
+    ) {
+    const int D=LevelSetsType::value_type::dimensions;
 
 
-	    std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
-		std::vector<double>::const_iterator OutputVolumeIter = OutputVolume.begin();
-
-	    //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
-
-	    //----------------------------------------------------------------------------------------------------------------------------------------
-//	    while (LevelSets.size()>1) {
-//	    	LevelSets.pop_back();
-//	    }
-//	    typedef typename LevelSetsType::value_type LevelSetType;
-//	    LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
-	    //----------------------------------------------------------------------------------------------------------------------------------------
-
-		int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
-		int rec_cycles=ProcessParameter.IterationCycles;		//number of subsequent iteration cycles
+      const std::vector<double> & OutputTimes=ProcessParameter.output_times; //vector of times when output will be recorded
+    const std::vector<double> & OutputVolume=ProcessParameter.output_volume; //vector of times for volume output
 
 
-		geom::cells<ParameterType::Dimension> Cells;
+      std::vector<double>::const_iterator OutputTimesIter = OutputTimes.begin();
+    std::vector<double>::const_iterator OutputVolumeIter = OutputVolume.begin();
 
-		std::vector<double> Coverages(std::max(LevelSets.back().num_active_pts()* Model.CoverageStorageSize,1u),0.);
-		std::vector<double> Rates(1,0);
-		std::vector<double> NormalVectors;
-		std::vector<double> DistancesToReceiver;
-		std::vector<unsigned int> PointMaterials;
-		std::vector<bool> Connectivities;
-		std::vector<bool> Visibilities;
+      //std::lower_bound(OutputTimes.begin(), OutputTimes.end(), AbsoluteTime);
 
-		//time statistics
-		const std::string TimeStatFileName=Parameter.output_path + "StatisticsTimes.cvs";
-		std::ofstream f;
+      //----------------------------------------------------------------------------------------------------------------------------------------
+//      while (LevelSets.size()>1) {
+//        LevelSets.pop_back();
+//      }
+//      typedef typename LevelSetsType::value_type LevelSetType;
+//      LevelSets.push_front(LevelSetType(LevelSets.back().grid(), 0, Parameter.open_boundary, !Parameter.open_boundary_negative));
+      //----------------------------------------------------------------------------------------------------------------------------------------
 
-		//unsigned int LineNumber;
-		if (Parameter.print_statistics) {
-			if(!std::ifstream(TimeStatFileName.c_str())) {
+    int init_cycles=ProcessParameter.StartIterationCycles; //number of initial iteration cycles
+    int rec_cycles=ProcessParameter.IterationCycles;    //number of subsequent iteration cycles
+
+
+    geom::cells<ParameterType::Dimension> Cells;
+
+    std::vector<double> Coverages(std::max(LevelSets.back().num_active_pts()* Model.CoverageStorageSize,1u),0.);
+    std::vector<double> Rates(1,0);
+    std::vector<double> NormalVectors;
+    std::vector<double> DistancesToReceiver;
+    std::vector<unsigned int> PointMaterials;
+    std::vector<bool> Connectivities;
+    std::vector<bool> Visibilities;
+
+    //time statistics
+    const std::string TimeStatFileName=Parameter.output_path + "StatisticsTimes.cvs";
+    std::ofstream f;
+
+    //unsigned int LineNumber;
+    if (Parameter.print_statistics) {
+      if(!std::ifstream(TimeStatFileName.c_str())) {
 
 #ifdef VERBOSE
         msg::print_message("Print Header in StatisticsTimes.cvs");
@@ -1427,30 +1427,30 @@ namespace proc {
                                 std::numeric_limits<double>::max(),
                                 Coverages,
                                 Model.CoverageStorageSize);
-										counter++;
-		        } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
+                    counter++;
+            } while (time_step!=std::numeric_limits<double>::max() && counter < ProcessParameter.smoothing_max_iterations);
 
-		        if (time_step!=std::numeric_limits<double>::max()) {
-		        	msg::print_message("maximum number of iterations reached during smoothing operation");
-		        }
+            if (time_step!=std::numeric_limits<double>::max()) {
+              msg::print_message("maximum number of iterations reached during smoothing operation");
+            }
 
 
-		        TimeSmoothing+=my::time::GetTime();
-		    }
+            TimeSmoothing+=my::time::GetTime();
+        }
 
-			/*
-			//Output statistics for level sets
-			if (Parameter.print_statistics) {
-			    TimeTotalExclOutput+=my::time::GetTime();
-				int i=0;
-				for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
-					std::ostringstream tmp;
-					tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
-					lvlset::misc::PrintStatistics(*it, tmp.str());
-					i++;
-				}
-				TimeTotalExclOutput-=my::time::GetTime();
-			}
+      /*
+      //Output statistics for level sets
+      if (Parameter.print_statistics) {
+          TimeTotalExclOutput+=my::time::GetTime();
+        int i=0;
+        for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
+          std::ostringstream tmp;
+          tmp << Parameter.output_path << "StatisticsLevelSet" << i << ".cvs";
+          lvlset::misc::PrintStatistics(*it, tmp.str());
+          i++;
+        }
+        TimeTotalExclOutput-=my::time::GetTime();
+      }
             */
 
             if (Model.ReemissionIsMaterialDependent) {
@@ -1627,9 +1627,9 @@ namespace proc {
 
                 typename LevelSetsType::iterator it=LevelSets.begin();
                 for (unsigned int i=0;i<LevelSets.size();i++) {
-									//for each levelset remove non opposite signed neighbors before outputting it to a file
-									it->prune();
-									it->segment();
+                  //for each levelset remove non opposite signed neighbors before outputting it to a file
+                  it->prune();
+                  it->segment();
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
                         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".dx";
@@ -1673,59 +1673,59 @@ namespace proc {
                 msg::print_done();
             }
 
-			if(VolumeOutput){
-				if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
-				else{
-					{
-						std::ostringstream oss;
-						oss << "Writing volume " << output_info.output_counter;
-						oss << " (time = " << RelativeTime << ")...";
-						msg::print_start(oss.str());
-					}
-					//make box around whole simulation domain
-					typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
+      if(VolumeOutput){
+        if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
+        else{
+          {
+            std::ostringstream oss;
+            oss << "Writing volume " << output_info.output_counter;
+            oss << " (time = " << RelativeTime << ")...";
+            msg::print_start(oss.str());
+          }
+          //make box around whole simulation domain
+          typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
 
-					lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
-					for(int i=0; i<D; ++i){
-						for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-							if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
-								start[i] = std::min(start[i], it->get_min_runbreak(i));
-								end[i] = std::max(end[i], it->get_max_runbreak(i));
-							}else{
-								start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
-								end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
-							}
-						}
-					}
+          lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
+          for(int i=0; i<D; ++i){
+            for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+              if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
+                start[i] = std::min(start[i], it->get_min_runbreak(i));
+                end[i] = std::max(end[i], it->get_max_runbreak(i));
+              }else{
+                start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
+                end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
+              }
+            }
+          }
 
-					lvlset::make_box(boundaryBox, start, end);
+          lvlset::make_box(boundaryBox, start, end);
 
-					int counter=0;
-					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-						typename LevelSetsType::value_type LS(*it);
-						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
-						LS.invert();
-						for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
-							LS.min(*dummy_it);
-						}
-						LS.invert();
-						LS.max(boundaryBox);		// Logic AND(intersect) boundary with levelset
-						LS.prune();					//remove unnecessary points
+          int counter=0;
+          for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+            typename LevelSetsType::value_type LS(*it);
+            //std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+            LS.invert();
+            for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
+              LS.min(*dummy_it);
+            }
+            LS.invert();
+            LS.max(boundaryBox);    // Logic AND(intersect) boundary with levelset
+            LS.prune();          //remove unnecessary points
 
-						//print surface
-						std::ostringstream oss;
-						oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
-						lvlset::write_explicit_surface_vtk(LS, oss.str());
+            //print surface
+            std::ostringstream oss;
+            oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
+            lvlset::write_explicit_surface_vtk(LS, oss.str());
 
-						++counter;
+            ++counter;
 
-					}
+          }
 
-					output_info.output_counter++;
-					msg::print_done();
+          output_info.output_counter++;
+          msg::print_done();
 
-				}
-			}
+        }
+      }
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
@@ -1827,7 +1827,7 @@ namespace proc {
             //#######################################
             // print statistics
             //#######################################
-			if (Parameter.print_statistics) {
+      if (Parameter.print_statistics) {
 #ifdef VERBOSE
         msg::print_message("print statistics");
 #endif

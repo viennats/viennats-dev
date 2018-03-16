@@ -148,8 +148,8 @@ struct ReportError {
                 double AFMStartPosition[3];
                 double AFMEndPosition[3];
                 int AddLayer;            //the number of level set layers added to the geometry before the process is started
-                std::vector<int> ActiveLayers;	//Layers that are to be etched/deposited on
-                std::vector<int> MaskLayers;			//Layers that will be masks and stop etching
+                std::vector<int> ActiveLayers;  //Layers that are to be etched/deposited on
+                std::vector<int> MaskLayers;      //Layers that will be masks and stop etching
                 double ProcessTime;             //the process time in seconds
                 unsigned int ALDStep;
                 std::string ModelName;          //the name of the used process model
@@ -733,48 +733,48 @@ struct ReportError {
         else bits_per_distance = bpd > 64 ? 64 : bpd;
 
         //Create directory, if it does not exist
-	    if(!boost::filesystem::exists(output_path)) {
-					msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
+      if(!boost::filesystem::exists(output_path)) {
+          msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
                     boost::filesystem::path dir(output_path);
                     if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
-	    }
+      }
 
         //test boundary condtions for periodicity, and check conformity
-		for (unsigned int h=0;h<boundary_conditions.size();h++) {
-		    if (boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY);
-		    if (boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY);
-		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
-		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
-		}
+    for (unsigned int h=0;h<boundary_conditions.size();h++) {
+        if (boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY);
+        if (boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY);
+        if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
+        if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
+    }
 
         //add OutputTimes
-		for(std::list<ProcessParameterType>::iterator pIter=process_parameters.begin();pIter!=process_parameters.end();++pIter) {
+    for(std::list<ProcessParameterType>::iterator pIter=process_parameters.begin();pIter!=process_parameters.end();++pIter) {
             // add output times for initial and final output
             if (pIter->initial_output) pIter->output_times.push_back(0);
             if (pIter->final_output) pIter->output_times.push_back(pIter->ProcessTime);
 
             // Create output times from period length and periodicity
-		    if (pIter->output_times_period_length>0 && pIter->output_times_periodicity>=0) {
+        if (pIter->output_times_period_length>0 && pIter->output_times_periodicity>=0) {
                 if(pIter->output_times.empty()) pIter->output_times.push_back(0.);  //if no output times, use 0 as start
 
-		        unsigned int tmp=pIter->output_times.size();
-		        pIter->output_times.resize(pIter->output_times_periodicity*tmp);
+            unsigned int tmp=pIter->output_times.size();
+            pIter->output_times.resize(pIter->output_times_periodicity*tmp);
 
-		        for (int h=1;h<pIter->output_times_periodicity;++h) {
-		            for (unsigned int k=0;k<tmp;k++) {
-		                pIter->output_times[tmp*h+k]=pIter->output_times[k]+h*pIter->output_times_period_length;
-		            }
-		        }
-		    }
+            for (int h=1;h<pIter->output_times_periodicity;++h) {
+                for (unsigned int k=0;k<tmp;k++) {
+                    pIter->output_times[tmp*h+k]=pIter->output_times[k]+h*pIter->output_times_period_length;
+                }
+            }
+        }
 
             //make sure they are in correct order and is unique
             std::sort(pIter->output_times.begin(),pIter->output_times.end());
             std::vector<double>::iterator it=std::unique(pIter->output_times.begin(),pIter->output_times.end());
             pIter->output_times.resize(it-pIter->output_times.begin());
 
-			// Sort Volume Output
-			std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
-			it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
-			pIter->output_volume.resize(it-pIter->output_volume.begin());
-		}
+      // Sort Volume Output
+      std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
+      it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
+      pIter->output_volume.resize(it-pIter->output_volume.begin());
+    }
     }

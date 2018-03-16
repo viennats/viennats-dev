@@ -179,13 +179,13 @@ namespace lvlset {
 
             } else {
                 for (int i=0;i<2*D;i++) {
-					vec<index_type,D> tv(index_type(0));
-					for (int j=0;j<order;j++) {
-						if (i<D) tv[i]++; else tv[i-D]--;
-						it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-					}
-					initialized=true;
-				}
+          vec<index_type,D> tv(index_type(0));
+          for (int j=0;j<order;j++) {
+            if (i<D) tv[i]++; else tv[i-D]--;
+            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+          }
+          initialized=true;
+        }
             }
 
             value_type grad_pos=0.;
@@ -289,17 +289,17 @@ namespace lvlset {
             const int D=LevelSetType::dimensions;
 
             if (initialized) {
-			   for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
+         for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
             } else {
-            	for (int i=0;i<2*D;i++) {
-					vec<index_type,D> tv(index_type(0));
-					for (int j=0;j<order;j++) {
-						if (i<D) tv[i]++; else tv[i-D]--;
-						it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-					}
-					initialized=true;
-			   }
-		   }
+              for (int i=0;i<2*D;i++) {
+          vec<index_type,D> tv(index_type(0));
+          for (int j=0;j<order;j++) {
+            if (i<D) tv[i]++; else tv[i-D]--;
+            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+          }
+          initialized=true;
+         }
+       }
 
             value_type grad_pos[D]={0};
             value_type grad_neg[D]={0};
@@ -423,17 +423,17 @@ namespace lvlset {
 
 
             if (initialized) {
-			   for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
+         for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
             } else {
-            	for (int i=0;i<2*D;i++) {
-					vec<index_type,D> tv(index_type(0));
-					for (int j=0;j<order;j++) {
-						if (i<D) tv[i]++; else tv[i-D]--;
-						it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-					}
-					initialized=true;
-			   }
-		   }
+              for (int i=0;i<2*D;i++) {
+          vec<index_type,D> tv(index_type(0));
+          for (int j=0;j<order;j++) {
+            if (i<D) tv[i]++; else tv[i-D]--;
+            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+          }
+          initialized=true;
+         }
+       }
 
 
             value_type grad_pos[D];
@@ -501,9 +501,9 @@ namespace lvlset {
             velocities.scalar_velocity(v_sca, it.active_pt_id(), material);
 
             if (v_sca>0) {
-            	vel_grad+=std::sqrt(grad_pos_total)*v_sca;
+              vel_grad+=std::sqrt(grad_pos_total)*v_sca;
             } else {
-            	vel_grad+=std::sqrt(grad_neg_total)*v_sca;
+              vel_grad+=std::sqrt(grad_neg_total)*v_sca;
             }
 
             value_type v_vec[D]={0};
@@ -511,14 +511,14 @@ namespace lvlset {
             velocities.vector_velocity(v_vec,it.active_pt_id(), it.start_indices(0), material);
 
             for (int w=0;w<D;w++) {
-				if (v_vec[w]>0.) {
-					vel_grad+=v_vec[w]*grad_pos[w];
-				} else {
-					vel_grad+=v_vec[w]*grad_neg[w];
-				}
-			}
+        if (v_vec[w]>0.) {
+          vel_grad+=v_vec[w]*grad_pos[w];
+        } else {
+          vel_grad+=v_vec[w]*grad_neg[w];
+        }
+      }
 
-			return vel_grad;
+      return vel_grad;
 
         }
     };
@@ -564,17 +564,17 @@ namespace lvlset {
 
 
             if (initialized) {
-			   for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
+         for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
             } else {
-            	for (int i=0;i<2*D;i++) {
-					vec<index_type,D> tv(index_type(0));
-					for (int j=0;j<order;j++) {
-						if (i<D) tv[i]++; else tv[i-D]--;
-						it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-					}
-					initialized=true;
-			   }
-		   }
+              for (int i=0;i<2*D;i++) {
+          vec<index_type,D> tv(index_type(0));
+          for (int j=0;j<order;j++) {
+            if (i<D) tv[i]++; else tv[i-D]--;
+            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+          }
+          initialized=true;
+         }
+       }
 
             value_type grad=0.;
             value_type dissipation=0.;
@@ -678,19 +678,19 @@ namespace lvlset {
             assert(D==3);
 
             if (initialized) {
-            	for (unsigned int i=0;i<it_neighbors.size();i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
+              for (unsigned int i=0;i<it_neighbors.size();i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
             } else {
-            	for (int i=-1;i<=1;++i) {
-					for (int j=-1;j<=1;++j) {
-						for (int k=-1;k<=1;++k) {
-							if (((i!=0) || (j!=0) || (k!=0)) && ((i==0) || (j==0) || (k==0))) {
-								vec<index_type,D> v(i,j,k);
-								it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, v,it.start_indices()));
-							}
-						}
-					}
-				}
-            	initialized=true;
+              for (int i=-1;i<=1;++i) {
+          for (int j=-1;j<=1;++j) {
+            for (int k=-1;k<=1;++k) {
+              if (((i!=0) || (j!=0) || (k!=0)) && ((i==0) || (j==0) || (k==0))) {
+                vec<index_type,D> v(i,j,k);
+                it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, v,it.start_indices()));
+              }
+            }
+          }
+        }
+              initialized=true;
             }
 
             const int XmYmZ0=0;

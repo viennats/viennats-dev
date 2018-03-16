@@ -18,16 +18,14 @@
 
 namespace geom {
 
-	template <int D> class cell {
-	public:
-		unsigned int Points[1 << D];
-	};
+  template <int D> class cell {
+  public:
+    unsigned int Points[1 << D];
+  };
 
-	template <int D> class cells:public std::vector<cell<D> >  {};
+  template <int D> class cells:public std::vector<cell<D> >  {};
 
 }
 
 
 #endif //DEF_CELLS_H
-
-

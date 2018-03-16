@@ -16,7 +16,6 @@
 
 #include <vector>
 #include <fstream>
-#include <float.h>
 #include <cstdint>
 #include "kernel.hpp"
 #include "levelset2surface.hpp"

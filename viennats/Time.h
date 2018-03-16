@@ -17,14 +17,14 @@
 #include <omp.h>
 
 namespace my {
-	///Namespace for time or timing related methods.
-	namespace time {
+  ///Namespace for time or timing related methods.
+  namespace time {
 
-		double GetTime() {
-			return omp_get_wtime();
-		}
+    double GetTime() {
+      return omp_get_wtime();
+    }
 
-	}
+  }
 }
 
 

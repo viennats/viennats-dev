@@ -87,7 +87,7 @@ namespace lvlset {
         //#pragma omp parallel for schedule(static,1)
         //for (int p=0;p<=static_cast<int>(seg.size());++p) {
 
-        #pragma omp parallel num_threads(seg.size()+1)	//use num_threads(seg.size()+1) threads
+        #pragma omp parallel num_threads(seg.size()+1)  //use num_threads(seg.size()+1) threads
         {
             int p=0;
             #ifdef _OPENMP
@@ -106,8 +106,8 @@ namespace lvlset {
             typename LevelSetType::point_type end_v=(p!=static_cast<int>(seg.size()))?seg[p]:LevelSet.grid().increment_indices(LevelSet.grid().max_point_index());
 
             //iterators which iterate simultaneously over level sets
-			std::vector< typename LevelSetType::const_iterator_runs> ITs;
-			for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it),start_v));
+      std::vector< typename LevelSetType::const_iterator_runs> ITs;
+      for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it),start_v));
 
 
             //iteration
@@ -179,7 +179,7 @@ namespace lvlset {
 
             }
 
-            #pragma omp critical	//execute as single thread
+            #pragma omp critical  //execute as single thread
             {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
             }
@@ -349,8 +349,8 @@ namespace lvlset {
                 typename LevelSetsType::size_type i=LevelSets.size()-1;
                 while(i!=0) {
 
-                	//need to deal with two types of velocities. One modifies the surface
-                	//and one moves the entire LS surface in a given direction
+                  //need to deal with two types of velocities. One modifies the surface
+                  //and one moves the entire LS surface in a given direction
 
                     //calculate increment rate for actual Material i
                     value_type v=scheme(srfIT, LevelSets.size()-1-i, 0.);
@@ -362,26 +362,26 @@ namespace lvlset {
 
                     //if rate is positive
                     if (v>0.) {
-                    	if (separate_materials) {
-                    		if (Phi_i>-Phi_im1) {
-                    			value_type tmp=Phi_im1+Phi_i;
-                    			if (tmp>=q) {
-                    				tmp_tmax+=q/v;
-                    				TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
-                    				break;
-                    			} else {
-                    				tmp_tmax+=tmp/v;
-                    				TempRatesStops.push_back(std::make_pair(v,-Phi_im1));
-                    				q-=tmp;
-                    			}
-                    		}
-                    	} else {
+                      if (separate_materials) {
+                        if (Phi_i>-Phi_im1) {
+                          value_type tmp=Phi_im1+Phi_i;
+                          if (tmp>=q) {
+                            tmp_tmax+=q/v;
+                            TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
+                            break;
+                          } else {
+                            tmp_tmax+=tmp/v;
+                            TempRatesStops.push_back(std::make_pair(v,-Phi_im1));
+                            q-=tmp;
+                          }
+                        }
+                      } else {
                             if (Phi_i<Phi_im1) {
                                 tmp_tmax=std::numeric_limits<value_type>::max();
                                 TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
                                 break;
                             }
-                    	}
+                      }
                     } else if (v==0.) {
                         if (Phi_i<Phi_im1) {
                             tmp_tmax=std::numeric_limits<value_type>::max();
@@ -408,12 +408,12 @@ namespace lvlset {
                 }
 
                 if (i==0) {
-                	//std::cout << "iterator_int: " << iterator_int << std::endl;
-                	iterator_int++;
+                  //std::cout << "iterator_int: " << iterator_int << std::endl;
+                  iterator_int++;
                     value_type v=scheme(srfIT,LevelSets.size()-1,iterator_int);
                     //if (v>-0.9){
-                    //	std::cout << "v(" << i << "): " << v << std::endl;
-                    //	std::cout << "q: " << q << std::endl;
+                    //  std::cout << "v(" << i << "): " << v << std::endl;
+                    //  std::cout << "q: " << q << std::endl;
                     //}
                     //std::cout << "v(-)ti: " << v << std::endl;
 
@@ -536,8 +536,8 @@ namespace lvlset {
 
             //iteration
             for (typename LevelSetType::const_iterator_runs srfIT(LevelSet, start_v);srfIT.start_indices()<end_v;srfIT.next()) {
-//            	srfIT.print();
-//            	std::cout << "srfIT.start_indices("<<srfIT.start_indices(0)<<","<<srfIT.start_indices(1)<<","<<srfIT.start_indices(2)<<")\n";
+//              srfIT.print();
+//              std::cout << "srfIT.start_indices("<<srfIT.start_indices(0)<<","<<srfIT.start_indices(1)<<","<<srfIT.start_indices(2)<<")\n";
                 if (!srfIT.is_active()) {
                     assert(math::abs(srfIT.value())>0.5);
                     new_lvlset.push_back_undefined(p,srfIT.start_indices(),(srfIT.sign()==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);
@@ -561,12 +561,12 @@ namespace lvlset {
 
                while(i!=0) {
 
-                	//need to deal with two types of velocities. One modifies the surface
-                	//and one moves the entire LS surface in a given direction
+                  //need to deal with two types of velocities. One modifies the surface
+                  //and one moves the entire LS surface in a given direction
 
                     //calculate increment rate for actual Material i
                    value_type v=scheme(srfIT, LevelSets.size()-1-i);
-//              	   if (v!=0) std::cout << "v: " << v << std::endl;
+//                   if (v!=0) std::cout << "v: " << v << std::endl;
 
 
                     ITs[i-1].go_to_indices_sequential(srfIT.start_indices());
@@ -625,7 +625,7 @@ namespace lvlset {
             }
 
             //determine max time step
-            #pragma omp critical	//execute as single thread
+            #pragma omp critical  //execute as single thread
             {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
             }
@@ -762,7 +762,7 @@ namespace lvlset {
                                 PointDataSizeType PointDataSize=1
                             ) {
 
-//		msg::print_message("Velocity: ", Velocities.getVelocity());
+//    msg::print_message("Velocity: ", Velocities.getVelocity());
         //this function integrates a the level set functions "LevelSets" over time
         //these level set functions define different regions of materials
         //only the top most level set function is time integarated
@@ -844,7 +844,7 @@ namespace lvlset {
 
         //tmp=-my::time::GetTime();
         for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
-            ptr::deref(*it).max(ptr::deref(LevelSets.back()));	//adjust all level set functions below the top most level set function
+            ptr::deref(*it).max(ptr::deref(LevelSets.back()));  //adjust all level set functions below the top most level set function
             ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor
             ptr::deref(*it).segment();
         }
@@ -870,7 +870,7 @@ namespace lvlset {
                                 PointDataType& PointData,
                                 PointDataSizeType PointDataSize=1
                             ) {
-    	//std::cout << "time_integrate!\n";
+      //std::cout << "time_integrate!\n";
         //this specialization of "time_integrate" is for the time integration of just one level set function
         //it initilaizes a new container and adds a reference to the given level set functions
         //then the general "time-integrate"-function is called
@@ -880,7 +880,7 @@ namespace lvlset {
 
         return time_integrate( tmp,
                                 //VelocityAdapter<VelocitiesClass, LevelSetType>(Velocities)
-								                Velocities,
+                                Velocities,
                                 integration_scheme,
                                 CFL,
                                 MaxTimeStep,
