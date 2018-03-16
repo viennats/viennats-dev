@@ -1664,7 +1664,6 @@ namespace proc {
 #endif
 
                         exportLevelsetToFile(*it, oss.str(), Parameter.bits_per_distance);
-
                     }
                     it++;
                 }

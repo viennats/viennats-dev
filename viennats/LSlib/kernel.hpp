@@ -967,7 +967,7 @@ namespace lvlset {
           return *this;
         }
 
-        //reads the levelset from a levelset file
+        //reads the levelset from a levelset file, grid has to be read first
         levelset& importLevelset(const std::string& path){
           importLevelsetFromFile(*this, path);
           return *this;

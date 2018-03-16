@@ -22,29 +22,29 @@
 
 //Processes
 #define PROCESS_CONSTANT_RATES
-/*#define PROCESS_SIMPLE_DEPOSITION
-#define PROCESS_TiN_ALD
-#define PROCESS_TiN_PEALD
-#define PROCESS_TiO2_ALD
-#define PROCESS_SF6_O2_PLASMA_ETCHING
+//#define PROCESS_SIMPLE_DEPOSITION
+//#define PROCESS_TiN_ALD
+//#define PROCESS_TiN_PEALD
+//#define PROCESS_TiO2_ALD
+//#define PROCESS_SF6_O2_PLASMA_ETCHING
 #define PROCESS_Cl2_CH4_PLASMA_ETCHING
-#define PROCESS_BCl3_PLASMA_ETCHING
-#define PROCESS_SiO2_PLASMA_ETCHING
+//#define PROCESS_BCl3_PLASMA_ETCHING
+//#define PROCESS_SiO2_PLASMA_ETCHING
 #define PROCESS_SF6_CH2F2_PLASMA_ETCHING
-#define PROCESS_Cl2_N2_ETCHING
-#define PROCESS_CFx_DEPOSITION
-#define PROCESS_HfO2_DEPOSITION
-#define PROCESS_HBr_O2_PLASMA_ETCHING
-#define PROCESS_N2_PLASMA_ETCHING
-#define PROCESS_NONLINEAR_DEPOSITION
-#define PROCESS_TWOSPECIES_DEPOSITION
-#define PROCESS_WET_ETCHING
-#define PROCESS_FIB
+//#define PROCESS_Cl2_N2_ETCHING
+//#define PROCESS_CFx_DEPOSITION
+//#define PROCESS_HfO2_DEPOSITION
+//#define PROCESS_HBr_O2_PLASMA_ETCHING
+//#define PROCESS_N2_PLASMA_ETCHING
+//#define PROCESS_NONLINEAR_DEPOSITION
+//#define PROCESS_TWOSPECIES_DEPOSITION
+//#define PROCESS_WET_ETCHING
+//define PROCESS_FIB
 
 //LS Processes
 #define PROCESS_PLANARIZATION
 #define PROCESS_MASK
-#define PROCESS_BOOLEANOPS*/
+#define PROCESS_BOOLEANOPS
 
 //Flux calculation
 #define PROCESS_CALCULATEFLUX
@@ -421,6 +421,15 @@ void main_(ParameterType2& p2) {					//TODO changed from const to not const
   	}
 
   	msg::print_done();
+		//print initial levelsets to lvst file
+		int LevelsetCounter = 0;
+		for (typename LevelSetsType::iterator it = LevelSets.begin(); it != LevelSets.end(); ++it) {
+			std::ostringstream oss;
+			oss << p.output_path << "Interface" << "Initial" << "_"
+					<< LevelsetCounter << "_" << p.bits_per_distance << "b" << ".lvst";
+			it->exportLevelset(oss.str(), p.bits_per_distance);
+			LevelsetCounter++;
+  	}
   }
 
 	if(p.add_layer>0){
@@ -723,35 +732,38 @@ int main(int argc, char *argv[]) {
 		std::string option(argv[1]);
 		std::ostringstream oss;
 		if(option.substr(0, option.size()-3) == "-lvst2vtk"){
-			msg::print_start("Converting levelset file to vtk file...");
-			std::string file(argv[2]);
-			const int D = option[option.size()-2] -48;
-			typedef GridTraitsType<2> GridTraits2;
-			typedef GridTraitsType<3> GridTraits3;
-			if(D == 2){
-				GridTraits2 gridP2 = lvlset::getGridFromLVSTFile<GridTraits2>(file);
-			  lvlset::grid_type<GridTraits2> grid(gridP2);
-				lvlset::levelset<GridTraits2> ls(grid);
-				ls.importLevelset(file);
-				oss.str("");
-		  	oss << "./" << file.substr(0, file.find(".lvst")) << ".vtk";
-				write_explicit_surface_vtk(ls, oss.str());
+			//assume all remaining argvs are lvst files
+			for(int i=2; i<argc; i++){
+				std::string file(argv[i]);
+				msg::print_start("Converting " + file + " to a vtk file...");
+				const int D = option[option.size()-2] -48;
+				typedef GridTraitsType<2> GridTraits2;
+				typedef GridTraitsType<3> GridTraits3;
+				if(D == 2){
+					GridTraits2 gridP2 = lvlset::getGridFromLVSTFile<GridTraits2>(file);
+				  lvlset::grid_type<GridTraits2> grid(gridP2);
+					lvlset::levelset<GridTraits2> ls(grid);
+					ls.importLevelset(file);
+					oss.str("");
+			  	oss << file.substr(0, file.find(".lvst")) << ".vtk";
+					write_explicit_surface_vtk(ls, oss.str());
+				}
+				else if(D == 3){
+					GridTraits3 gridP3 = lvlset::getGridFromLVSTFile<GridTraits3>(file);
+				  lvlset::grid_type<GridTraits3> grid(gridP3);
+					lvlset::levelset<GridTraits3> ls(grid);
+					ls.importLevelset(file);
+					oss.str("");
+					oss << file.substr(0, file.find(".lvst")) << ".vtk";
+					write_explicit_surface_vtk(ls, oss.str());
+				}
+				msg::print_done();
 			}
-			else if(D == 3){
-				GridTraits3 gridP3 = lvlset::getGridFromLVSTFile<GridTraits3>(file);
-			  lvlset::grid_type<GridTraits3> grid(gridP3);
-				lvlset::levelset<GridTraits3> ls(grid);
-				ls.importLevelset(file);
-				oss.str("");
-				oss << "./" << file.substr(0, file.find(".lvst")) << ".vtk";
-				write_explicit_surface_vtk(ls, oss.str());
-			}
-			msg::print_done();
 		}
 		else if(option.substr(0) == "--help"){
 			std::cout << "USAGE: viennats OPTION FILE" << std::endl;
 			std::cout << "Convert:" << std::endl;
-			std::cout << "   -lvst2vtk[n]   Convert LVST FILE of dimension n to VTK FILE." << std::endl;
+			std::cout << "   -lvst2vtk[N]   Convert LVST FILE of dimension N to VTK FILE." << std::endl;
 			std::cout << "Other:" << std::endl;
 			std::cout << "  --help          Shows extended help." << std::endl;
 			std::cout << "   -h             Shows help." << std::endl;

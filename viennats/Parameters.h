@@ -723,13 +723,14 @@ struct ReportError {
         }
 
         //fix bits_per_distance so there are no overflow bits when writing to lvst file
+        //meaning that bits_per_distance are mapped to 1, 2, 4, 8, 16, 24, 32, 48, 56, 64
         int bpd = 1;
         while( bpd < bits_per_distance || (bpd < CHAR_BIT ? CHAR_BIT % bpd : bpd % CHAR_BIT) ){
           if(bpd < CHAR_BIT) bpd++;
           else bpd += CHAR_BIT; //once bpd (bits per distance) reaches the amount of bits per char, the increase will be CHAR_BIT instead of 1
         }
         if(bits_per_distance == 0) bits_per_distance = CHAR_BIT;
-        else bits_per_distance = bpd;
+        else bits_per_distance = bpd > 64 ? 64 : bpd;
 
         //Create directory, if it does not exist
 	    if(!boost::filesystem::exists(output_path)) {
