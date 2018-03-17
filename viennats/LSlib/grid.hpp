@@ -87,7 +87,7 @@ namespace lvlset {
 
         vec<index_type,D> Min_,Max_,Ext_;                           //Minimum, maximum, extension of whole grid for all grid directions
 
-        vec<boundary_type,D> BoundaryConditions_;                       //here the boundary conditions for all grid directions are stored
+        vec<boundary_type,D> BoundaryConditions_;                   //here the boundary conditions for all grid directions are stored
 
         vec<index_type,D> MinGridPointCoord_, MaxGridPointCoord_;   //effective maximum and minimum grid point coordinates
                                                                     //due to periodic boundary conditions the grid points at opposite boundaries are the same
@@ -341,7 +341,7 @@ namespace lvlset {
             }
         }
 
-  //[Josef] This function certainly has a role to play
+        //[Josef] This function certainly has a role to play
         coord_type global_index_2_global_coordinate(int dir, coord_type c) const {
             //this function transforms the coordinate c in respect to the rectilinear grid into the
             //real coordinates

@@ -147,9 +147,9 @@ struct ReportError {
                 double ProcessDistance;
                 double AFMStartPosition[3];
                 double AFMEndPosition[3];
-                int AddLayer;            //the number of level set layers added to the geometry before the process is started
+                int AddLayer;                   //the number of level set layers added to the geometry before the process is started
                 std::vector<int> ActiveLayers;  //Layers that are to be etched/deposited on
-                std::vector<int> MaskLayers;      //Layers that will be masks and stop etching
+                std::vector<int> MaskLayers;    //Layers that will be masks and stop etching
                 double ProcessTime;             //the process time in seconds
                 unsigned int ALDStep;
                 std::string ModelName;          //the name of the used process model
@@ -157,8 +157,8 @@ struct ReportError {
                 int IterationCycles;            //the number of iterations (process calculation) before advancing to the next time step,
                 int StartIterationCycles;       //the number of iterations at the process simulation start, might be necessary to calculate initial values for coverages
                 double MaxTimeStep;             //maximal allowed time step
-                double smoothing_max_curvature;               //parameter for smoothing surface level set every time step
-                double smoothing_min_curvature;               //parameter for smoothing surface level set every time step
+                double smoothing_max_curvature; //parameter for smoothing surface level set every time step
+                double smoothing_min_curvature; //parameter for smoothing surface level set every time step
                 int smoothing_material_level;
                 int smoothing_max_iterations;
                 bool print_coverages;

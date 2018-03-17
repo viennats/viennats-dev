@@ -1629,7 +1629,7 @@ namespace proc {
                 for (unsigned int i=0;i<LevelSets.size();i++) {
                   //for each levelset remove non opposite signed neighbors before outputting it to a file
                   it->prune();
-                  it->segment();
+                  //it->segment();//se4gmentation will be set up again after exporting to lvst file
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
                         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".dx";
