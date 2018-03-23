@@ -1681,6 +1681,7 @@ namespace proc {
 					//make box around whole simulation domain
 					typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
 
+					//Determine corners of box
 					lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
 					for(int i=0; i<D; ++i){
 						for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
@@ -1694,6 +1695,7 @@ namespace proc {
 						}
 					}
 
+					//make a box around simulation domain to create border
 					lvlset::make_box(boundaryBox, start, end);
 
 					int counter=0;
@@ -1714,7 +1716,6 @@ namespace proc {
 						lvlset::write_explicit_surface_vtk(LS, oss.str());
 
 						++counter;
-
 					}
 
 					output_info.output_counter++;
