@@ -706,7 +706,8 @@ namespace proc {
 
     typename LevelSetsType::iterator it=LevelSets.begin();
     for (unsigned int i=0;i<LevelSets.size();i++) {
-
+      it->prune();
+      //it->segment() is called after export
       if (Parameter.print_dx) {
         std::ostringstream oss;
         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
@@ -720,11 +721,21 @@ namespace proc {
       if (Parameter.print_vtk) {
         std::ostringstream oss;
         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
-#ifdef VERBOSE
+  #ifdef VERBOSE
         msg::print_message("print vtk");
-#endif
+  #endif
 
         write_explicit_surface_vtk(*it,oss.str());
+
+      }
+      if (Parameter.print_lvst) {
+        std::ostringstream oss;
+        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".lvst";
+  #ifdef VERBOSE
+        msg::print_message("print lvst");
+  #endif
+
+        it->export_levelset(oss.str(), Parameter.bits_per_distance);
 
       }
       it++;
@@ -1091,7 +1102,8 @@ namespace proc {
 
                 typename LevelSetsType::iterator it=LevelSets.begin();
                 for (unsigned int i=0;i<LevelSets.size();i++) {
-
+                  it->prune();
+                  //it->segment() is called after export
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
                         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
@@ -1117,6 +1129,15 @@ namespace proc {
                         } else {
                             write_explicit_surface_vtk(*it,oss.str(), Data);
                         }
+                    }
+                    if (Parameter.print_lvst) {
+                        std::ostringstream oss;
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".lvst";
+#ifdef VERBOSE
+                        msg::print_message("print lvst");
+#endif
+
+                        it->export_levelset(oss.str(), Parameter.bits_per_distance);
                     }
                     it++;
                 }
@@ -1632,7 +1653,7 @@ namespace proc {
                   //it->segment();//se4gmentation will be set up again after exporting to lvst file
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
-                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".dx";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
 #ifdef VERBOSE
                         msg::print_message("print dx");
 #endif
@@ -1645,7 +1666,7 @@ namespace proc {
                     }
                     if (Parameter.print_vtk) {
                         std::ostringstream oss;
-                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".vtk";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtk";
 #ifdef VERBOSE
                         msg::print_message("print vtk");
 #endif
@@ -1658,12 +1679,12 @@ namespace proc {
                     }
                     if (Parameter.print_lvst) {
                         std::ostringstream oss;
-                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_" << Parameter.bits_per_distance << "b" << ".lvst";
+                        oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".lvst";
 #ifdef VERBOSE
                         msg::print_message("print lvst");
 #endif
 
-                        exportLevelsetToFile(*it, oss.str(), Parameter.bits_per_distance);
+                        it->export_levelset(oss.str(), Parameter.bits_per_distance);
                     }
                     it++;
                 }

@@ -138,6 +138,16 @@ namespace lvlset {
         //empty constructor
         grid_type():GridTraits(GridTraitsType()){}
 
+        void print() const{
+          std::cout << "Min_: " << Min_ << std::endl;
+          std::cout << "Max_: " << Max_ << std::endl;
+          std::cout << "Ext_: " << Ext_ << std::endl;
+          std::cout << "MinGridPoint: " << MinGridPointCoord_ << std::endl;
+          std::cout << "MaxGridPoint: " << MaxGridPointCoord_ << std::endl;
+          std::cout << "BNC: " << BoundaryConditions_ << std::endl;
+          GridTraits.print();
+        }
+
         bool parity(int dim) const {
             //parity is false/true if the "grid_position" function in GridTraitsType is
             //monotonic increasing/decreasing respectively for the given grid direction

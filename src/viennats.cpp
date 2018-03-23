@@ -156,9 +156,9 @@ private:
 public:
   ///Can be 2 or 3-dimensional
   const static int dimensions = D;
-  const index_type* getMinima() const {return Min_;}
-  const index_type* getMaxima() const {return Max_;}
-  const lvlset::boundary_type* getBoundaryConditions() const {return BoundaryConditions_;}
+  const index_type* minima() const {return Min_;}
+  const index_type* maxima() const {return Max_;}
+  const lvlset::boundary_type* boundary_conditions() const {return BoundaryConditions_;}
 
 
   ///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions
@@ -182,6 +182,18 @@ public:
   }
   //empty constructor
   GridTraitsType(){}
+
+  void print() const{
+    std::ostringstream oss;
+    for(int i=D;i--;){
+      oss << "Dimension " << i << ":" << std::endl
+          << "    Grid min: " << Min_[i] << std::endl
+          << "    Grid max: " << Max_[i] << std::endl
+          << "    Boundary condition: " << (int)BoundaryConditions_[i];
+    }
+    oss << "Grid delta: " << GridDelta;
+    msg::print_message(oss.str());
+  }
 
   ///Returns the minimum index at in the "dir" axial direction
   index_type min_index(int dir) const {
@@ -267,22 +279,20 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 
   //if the first input is a lvst file, then it is assumed all are a lvst file
   if(p.geometry_files[0].find(".lvst") != std::string::npos){
-    GridProperties = lvlset::getGridFromLVSTFile<GridTraitsType<D>>(p.geometry_files[0]);
+    GridProperties = lvlset::get_grid_from_lvst_file<GridTraitsType<D>>(p.geometry_files[0]);
     grid = lvlset::grid_type<GridTraitsType<D>>(GridProperties);
     for(unsigned int i=0; i<p.geometry_files.size(); i++){
       msg::print_start("Read levelset input file " + p.geometry_files[i] + "...");
       LevelSets.push_back(LevelSetType(grid));
-      LevelSets.back().importLevelset(p.geometry_files[i]);
+      LevelSets.back().import_levelset(p.geometry_files[i]);
       msg::print_done();
     }
     int LevelsetCounter = 0;
-    for (typename LevelSetsType::iterator it = LevelSets.begin(); it != LevelSets.end(); ++it) {//unsigned int i=0;i<Surfaces.size();++i) {
+    for (typename LevelSetsType::iterator it = LevelSets.begin(); it != LevelSets.end(); ++it) {
       std::ostringstream oss, oss2;
-      oss << p.output_path << "Interface" << "Initial" << "_"
-          << LevelsetCounter << "_" << p.bits_per_distance << "b" << ".lvst";
-      oss2 << p.output_path << "Interface" << "Initial" << "_"
-          << LevelsetCounter << "_" << p.bits_per_distance << "b" << ".vtk";
-      it->exportLevelset(oss.str(), p.bits_per_distance);
+      oss << p.output_path << "Interface" << "Initial" << LevelsetCounter << ".lvst";
+      oss2 << p.output_path << "Interface" << "Initial" << LevelsetCounter << ".vtk";
+      it->export_levelset(oss.str(), p.bits_per_distance);
       write_explicit_surface_vtk(*it, oss2.str());
       ++LevelsetCounter;
     }
@@ -403,10 +413,8 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     int SurfaceCounter = 0;
     for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {//unsigned int i=0;i<Surfaces.size();++i) {
       std::ostringstream oss, oss2;
-      oss << p.output_path << "Interface" << "Initial" << "_"
-          << SurfaceCounter << "_" << p.bits_per_distance << "b" << ".dx";
-      oss2 << p.output_path << "Interface" << "Initial" << "_"
-          << SurfaceCounter << "_" << p.bits_per_distance << "b" << ".vtk";
+      oss << p.output_path << "Interface" << "Initial" << SurfaceCounter <<  ".dx";
+      oss2 << p.output_path << "Interface" << "Initial" << SurfaceCounter << ".vtk";
       it->Write(oss.str());
       it->WriteVTK(oss2.str());
       ++SurfaceCounter;
@@ -425,9 +433,8 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     int LevelsetCounter = 0;
     for (typename LevelSetsType::iterator it = LevelSets.begin(); it != LevelSets.end(); ++it) {
       std::ostringstream oss;
-      oss << p.output_path << "Interface" << "Initial" << "_"
-          << LevelsetCounter << "_" << p.bits_per_distance << "b" << ".lvst";
-      it->exportLevelset(oss.str(), p.bits_per_distance);
+      oss << p.output_path << "Interface" << "Initial" << LevelsetCounter << ".lvst";
+      it->export_levelset(oss.str(), p.bits_per_distance);
       LevelsetCounter++;
     }
   }
@@ -727,32 +734,33 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 */
 
 int main(int argc, char *argv[]) {
+  double timer = my::time::GetTime();
 
   if(argv[1][0] == '-'){//if option was passed
     std::string option(argv[1]);
     std::ostringstream oss;
     if(option.substr(0, option.size()-3) == "-lvst2vtk"){
-      //assume all remaining argvs are lvst files
+      //assume all remaining argvs are lvst files, convert them to vtk
+      typedef GridTraitsType<2> GridTraits2;
+      typedef GridTraitsType<3> GridTraits3;
+      const int D = option[option.size()-2] -48;
       for(int i=2; i<argc; i++){
         std::string file(argv[i]);
         msg::print_start("Converting " + file + " to a vtk file...");
-        const int D = option[option.size()-2] -48;
-        typedef GridTraitsType<2> GridTraits2;
-        typedef GridTraitsType<3> GridTraits3;
         if(D == 2){
-          GridTraits2 gridP2 = lvlset::getGridFromLVSTFile<GridTraits2>(file);
-          lvlset::grid_type<GridTraits2> grid(gridP2);
+          GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
+          lvlset::grid_type<GridTraits2> grid(gridP);
           lvlset::levelset<GridTraits2> ls(grid);
-          ls.importLevelset(file);
+          ls.import_levelset(file);
           oss.str("");
           oss << file.substr(0, file.find(".lvst")) << ".vtk";
           write_explicit_surface_vtk(ls, oss.str());
         }
         else if(D == 3){
-          GridTraits3 gridP3 = lvlset::getGridFromLVSTFile<GridTraits3>(file);
-          lvlset::grid_type<GridTraits3> grid(gridP3);
+          GridTraits3 gridP = lvlset::get_grid_from_lvst_file<GridTraits3>(file);
+          lvlset::grid_type<GridTraits3> grid(gridP);
           lvlset::levelset<GridTraits3> ls(grid);
-          ls.importLevelset(file);
+          ls.import_levelset(file);
           oss.str("");
           oss << file.substr(0, file.find(".lvst")) << ".vtk";
           write_explicit_surface_vtk(ls, oss.str());
@@ -761,26 +769,17 @@ int main(int argc, char *argv[]) {
       }
     }
     else if(option.substr(0) == "--help"){
-      std::cout << "USAGE: viennats OPTION FILE" << std::endl;
-      std::cout << "Convert:" << std::endl;
-      std::cout << "   -lvst2vtk[N]   Convert LVST FILE of dimension N to VTK FILE." << std::endl;
-      std::cout << "Other:" << std::endl;
-      std::cout << "  --help          Shows extended help." << std::endl;
-      std::cout << "   -h             Shows help." << std::endl;
-      std::cout << "NOTE:If no OPTION was entered FILE will be used as a parameter file for ViennaTS." << std::endl;
+      msg::print_help_extended();
     }
     else if(option.substr(0) == "-h"){
-      std::cout << "USAGE: viennats [OPTION] [FILE]" << std::endl;
-      std::cout << "Try viennats --help for more information." << std::endl;
+      msg::print_help();
     }
     else {
       oss << argv[1] << " is not an available option.\nSee --help for more information.";
       msg::print_message_2(oss.str());
     }
-
   }
   else{
-    double timer = my::time::GetTime();
 
     msg::print_welcome();
 
@@ -805,12 +804,11 @@ int main(int argc, char *argv[]) {
     if (p.num_dimensions == 3)
       main_<3, client::Parameters> (p);
   #endif
-
-    double exec_time = my::time::GetTime()-timer;
-    std::stringstream ss;
-    ss << exec_time;
-    msg::print_message("Finished - exec-time: "+ss.str()+" s");
   }
+  double exec_time = my::time::GetTime()-timer;
+  std::stringstream ss;
+  ss << exec_time;
+  msg::print_message("Finished - exec-time: "+ss.str()+" s");
 
   return 0;
 

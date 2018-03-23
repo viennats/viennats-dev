@@ -616,8 +616,8 @@ struct ReportError {
         domain_extention=0.;
         receptor_radius=0.8;
         further_tracking_distance=3.;
-        bits_per_distance=4;
-        print_vtk=true;
+        bits_per_distance=8;
+        print_vtk=false;
         print_dx=false;
         print_lvst=true;
         print_velocities=false;
@@ -733,11 +733,18 @@ struct ReportError {
         else bits_per_distance = bpd > 64 ? 64 : bpd;
 
         //Create directory, if it does not exist
-      if(!boost::filesystem::exists(output_path)) {
-          msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
-                    boost::filesystem::path dir(output_path);
-                    if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
-      }
+        std::ostringstream oss;
+        if(output_path.find('/') != std::string::npos)
+          oss << output_path.substr(0, output_path.find('/'));
+        else
+          oss << output_path;
+        oss <<  "_" << bits_per_distance << "bit/";//add _bits_per_distance to output path
+        output_path = oss.str();
+        if(!boost::filesystem::exists(output_path)) {
+            msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
+                      boost::filesystem::path dir(output_path);
+                      if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
+        }
 
         //test boundary condtions for periodicity, and check conformity
     for (unsigned int h=0;h<boundary_conditions.size();h++) {

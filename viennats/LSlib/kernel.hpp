@@ -937,23 +937,22 @@ namespace lvlset {
             }
         }
 
-        void printWithoutSegmentation(std::ostream& out = std::cout){
+        void print_without_segmentation(std::ostream& out = std::cout){
           serialize();
           print(out);
-          prune();
           segment();
         }
 
         //returns a non-const reference to the start indices of a segment
-        std::vector<size_type>& startIndices(unsigned int dim, unsigned int segment = 0){
+        std::vector<size_type>& start_indices(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].start_indices[dim];
         }
         //returns a non-const reference to the runtypes of a segment
-        std::vector<size_type>& runTypes(unsigned int dim, unsigned int segment = 0){
+        std::vector<size_type>& runtypes(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].runtypes[dim];
         }
         //returns a non-const reference to the runbreaks of a segment
-        std::vector<index_type>& runBreaks(unsigned int dim, unsigned int segment = 0){
+        std::vector<index_type>& runbreaks(unsigned int dim, unsigned int segment = 0){
           return sub_levelsets[segment].runbreaks[dim];
         }
         //returns a non-const reference to the distances of a segment
@@ -962,14 +961,14 @@ namespace lvlset {
         }
 
         //writes the levelset to a file
-        levelset& exportLevelset(const std::string& path, int bits_per_distance = 4){
-          exportLevelsetToFile(*this, path, bits_per_distance);
+        levelset& export_levelset(const std::string& path, int bits_per_distance = 8){
+          export_levelset_to_file(*this, path, bits_per_distance);
           return *this;
         }
 
-        //reads the levelset from a levelset file, grid has to be read first
-        levelset& importLevelset(const std::string& path){
-          importLevelsetFromFile(*this, path);
+        //reads the levelset from a levelset file; NOTE: grid has to be read first!!
+        levelset& import_levelset(const std::string& path){
+          import_levelset_from_file(*this, path);
           return *this;
         }
 
