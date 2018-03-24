@@ -739,13 +739,19 @@ int main(int argc, char *argv[]) {
   if(argv[1][0] == '-'){//if option was passed
     std::string option(argv[1]);
     std::ostringstream oss;
-    if(option.substr(0, option.size()-3) == "-lvst2vtk"){
+    if(option.substr(0) == "-lvst2vtk"){
       //assume all remaining argvs are lvst files, convert them to vtk
       typedef GridTraitsType<2> GridTraits2;
       typedef GridTraitsType<3> GridTraits3;
-      const int D = option[option.size()-2] -48;
       for(int i=2; i<argc; i++){
         std::string file(argv[i]);
+        char buff[5] = {};
+        std::ifstream fin(file);
+        fin.read(buff, 5);
+        fin.close();
+        if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
+        const int D = buff[4]-48;
+
         msg::print_start("Converting " + file + " to a vtk file...");
         if(D == 2){
           GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
