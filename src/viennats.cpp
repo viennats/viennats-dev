@@ -22,7 +22,7 @@
 
 //Processes
 #define PROCESS_CONSTANT_RATES
-#define PROCESS_SIMPLE_DEPOSITION
+/*#define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_TiN_ALD
 #define PROCESS_TiN_PEALD
 #define PROCESS_TiO2_ALD
@@ -39,12 +39,12 @@
 #define PROCESS_NONLINEAR_DEPOSITION
 #define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
-define PROCESS_FIB
+#define PROCESS_FIB
 
 //LS Processes
 #define PROCESS_PLANARIZATION
 #define PROCESS_MASK
-#define PROCESS_BOOLEANOPS
+#define PROCESS_BOOLEANOPS*/
 
 //Flux calculation
 #define PROCESS_CALCULATEFLUX
@@ -757,7 +757,7 @@ int main(int argc, char *argv[]) {
         oss.str("");
         oss << file.substr(0, file.find(".lvst")) << (output == 0 ? ".vtk" : ".dx");
 
-        msg::print_start("Converting " + file + std::string(" to a ") + std::string((output == 0 ? "vtk" : "dx")) + std::string("file....")  );
+        msg::print_start("Converting " + file + std::string(" to a ") + std::string((output == 0 ? "vtk" : "dx")) + std::string(" file....")  );
         if(D == 2){
           GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
           lvlset::grid_type<GridTraits2> grid(gridP);
