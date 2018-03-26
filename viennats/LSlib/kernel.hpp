@@ -555,6 +555,7 @@ namespace lvlset {
             }
 
             void print(std::ostream& out = std::cout) const {
+                std::ostringstream oss;
 
                 out << std::endl;
                 out << "levelset data structure" << std::endl << std::endl;
@@ -565,7 +566,7 @@ namespace lvlset {
                     for (typename std::vector<size_type>::const_iterator it=start_indices[dim].begin();it!=start_indices[dim].end();++it) {
                         if (c%10==0) out << std::endl;
                         ++c;
-                        out << *it << "\t";
+                        out << std::setw(8) << *it;
                     }
                     out << std::endl;
 
@@ -575,15 +576,17 @@ namespace lvlset {
                         if (c%10==0) out << std::endl;
                         ++c;
                         if ((*it)==POS_PT) {
-                            out << "+oo" << "\t";
+                            out << std::setw(8) << "+oo";
                         } else if ((*it)==NEG_PT) {
-                            out << "-oo" << "\t";
+                            out << std::setw(8) << "-oo";
                         } else if ((*it)==UNDEF_PT) {
-                            out << "UND" << "\t";
+                            out << std::setw(8) << "UND";
                         } else if (!is_defined(*it)) {
-                            out << "S" << ((*it) - SEGMENT_PT) << "\t";
+                            oss.str("");
+                            oss << "S" << ((*it) - SEGMENT_PT);
+                            out << std::setw(8) << oss.str();
                         } else {
-                            out << (*it) << "\t";
+                            out << std::setw(8) << (*it);
                         }
                     }
                     out << std::endl;
@@ -593,7 +596,7 @@ namespace lvlset {
                     for (typename std::vector<index_type>::const_iterator it=runbreaks[dim].begin();it!=runbreaks[dim].end();++it) {
                         if (c%10==0) out << std::endl;
                         ++c;
-                        out << *it << "\t";
+                        out << std::setw(8) << *it;
                     }
                     out << std::endl;
                 }
@@ -603,8 +606,7 @@ namespace lvlset {
                 for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
                     if (c%10==0) out << std::endl;
                     ++c;
-                    out.precision(3);
-                    out << *it << "\t";
+                    out << std::setw(8) << std::fixed << std::setprecision(3) << *it;
                 }
                 out << std::endl;
                 out << std::endl;

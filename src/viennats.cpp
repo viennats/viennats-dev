@@ -14,7 +14,7 @@
 
 //COMPILE OPTIONS#####################################
 #define TEST_MODE
-#define VERBOSE
+//#define VERBOSE
 
 //Dimensions
 #define DIMENSION_3
@@ -739,10 +739,13 @@ int main(int argc, char *argv[]) {
   if(argv[1][0] == '-'){//if option was passed
     std::string option(argv[1]);
     std::ostringstream oss;
-    if(option.substr(0) == "-lvst2vtk"){
+    typedef GridTraitsType<2> GridTraits2;
+    typedef GridTraitsType<3> GridTraits3;
+    if(option.substr(0, 7) == "--lvst2" || option.substr(0, 3) == "-l2"){
       //assume all remaining argvs are lvst files, convert them to vtk
-      typedef GridTraitsType<2> GridTraits2;
-      typedef GridTraitsType<3> GridTraits3;
+      int output = -1; //0 - vtk; 1 - dx
+      if(option == "--lvst2vtk" || option == "-l2vtk") output = 0;
+      else if(option == "--lvst2dx" || option == "-l2dx") output = 1;
       for(int i=2; i<argc; i++){
         std::string file(argv[i]);
         char buff[5] = {};
@@ -751,33 +754,90 @@ int main(int argc, char *argv[]) {
         fin.close();
         if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
         const int D = buff[4]-48;
+        oss.str("");
+        oss << file.substr(0, file.find(".lvst")) << (output == 0 ? ".vtk" : ".dx");
 
-        msg::print_start("Converting " + file + " to a vtk file...");
+        msg::print_start("Converting " + file + std::string(" to a ") + std::string((output == 0 ? "vtk" : "dx")) + std::string("file....")  );
         if(D == 2){
           GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
           lvlset::grid_type<GridTraits2> grid(gridP);
           lvlset::levelset<GridTraits2> ls(grid);
           ls.import_levelset(file);
-          oss.str("");
-          oss << file.substr(0, file.find(".lvst")) << ".vtk";
-          write_explicit_surface_vtk(ls, oss.str());
+          if(output == 0) write_explicit_surface_vtk(ls, oss.str());
+          else if(output == 1) write_explicit_surface_opendx(ls, oss.str());
         }
         else if(D == 3){
           GridTraits3 gridP = lvlset::get_grid_from_lvst_file<GridTraits3>(file);
           lvlset::grid_type<GridTraits3> grid(gridP);
           lvlset::levelset<GridTraits3> ls(grid);
           ls.import_levelset(file);
-          oss.str("");
-          oss << file.substr(0, file.find(".lvst")) << ".vtk";
-          write_explicit_surface_vtk(ls, oss.str());
+          if(output == 0) write_explicit_surface_vtk(ls, oss.str());
+          else if(output == 1) write_explicit_surface_opendx(ls, oss.str());
         }
         msg::print_done();
       }
     }
-    else if(option.substr(0) == "--help"){
+    else if(option == "--print" || option == "-p"){
+      std::string file(argv[2]);
+      char buff[5] = {};
+      std::ifstream fin(file);
+      fin.read(buff, 5);
+      fin.close();
+      if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
+      const int D = buff[4]-48;
+      if(argc > 3) msg::print_message("-print only takes one file. Other files will be ignored.");
+
+      if(D == 2){
+        GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
+        lvlset::grid_type<GridTraits2> grid(gridP);
+        lvlset::levelset<GridTraits2> ls(grid);
+        ls.import_levelset(file);
+        ls.print_without_segmentation();
+      }
+      else if(D == 3){
+        GridTraits3 gridP = lvlset::get_grid_from_lvst_file<GridTraits3>(file);
+        lvlset::grid_type<GridTraits3> grid(gridP);
+        lvlset::levelset<GridTraits3> ls(grid);
+        ls.import_levelset(file);
+        ls.print_without_segmentation();
+      }
+    }
+    else if(option == "--print2file" || option == "-p2f"){
+      for(int i=2; i<argc; i++){
+        std::string file(argv[i]);
+        char buff[5] = {};
+        std::ifstream fin(file);
+        fin.read(buff, 5);
+        fin.close();
+        if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
+        const int D = buff[4]-48;
+        oss.str("");
+        oss << file.substr(0, file.find(".lvst")) << ".txt";
+        std::ofstream fout(oss.str());
+
+        msg::print_start("Writing " + file + " to a txt file...");
+        if(D == 2){
+          GridTraits2 gridP = lvlset::get_grid_from_lvst_file<GridTraits2>(file);
+          lvlset::grid_type<GridTraits2> grid(gridP);
+          lvlset::levelset<GridTraits2> ls(grid);
+          ls.import_levelset(file);
+          ls.print_without_segmentation(fout);
+        }
+        else if(D == 3){
+          GridTraits3 gridP = lvlset::get_grid_from_lvst_file<GridTraits3>(file);
+          lvlset::grid_type<GridTraits3> grid(gridP);
+          lvlset::levelset<GridTraits3> ls(grid);
+          ls.import_levelset(file);
+          ls.print_without_segmentation(fout);
+        }
+        fout.close();
+        msg::print_done();
+      }
+    }
+    else if(option == "--help"){
       msg::print_help_extended();
     }
-    else if(option.substr(0) == "-h"){
+    else if(option == "-h"){
       msg::print_help();
     }
     else {

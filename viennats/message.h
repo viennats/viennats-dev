@@ -44,10 +44,13 @@ namespace msg {
     void print_help_extended() {
       std::cout << "USAGE: viennats OPTION FILE" << std::endl;
       std::cout << "Convert:" << std::endl;
-      std::cout << "   -lvst2vtk[N]   Convert LVST FILE of dimension N to VTK FILE." << std::endl;
+      std::cout << "    --lvst2vtk    -l2vtk    Convert LVST FILE to VTK FILE." << std::endl;
+      std::cout << "    --lvst2dx     -l2dx     Convert LVST FILE to DX FILE." << std::endl;
+      std::cout << "Print:" << std::endl;
+      std::cout << "    --print       -p        Print LVST to console." << std::endl;
+      std::cout << "    --print2file  -p2f      Print LVST to a TXT FILE." << std::endl;
       std::cout << "Other:" << std::endl;
-      std::cout << "  --help          Shows extended help." << std::endl;
-      std::cout << "   -h             Shows help." << std::endl;
+      std::cout << "    --help        -h        Shows (extended) help." << std::endl;
       std::cout << "NOTE:If no OPTION was entered FILE will be used as a parameter file for ViennaTS." << std::endl;
     }
 
@@ -56,12 +59,12 @@ namespace msg {
       std::cout << "Try viennats --help for more information." << std::endl;
     }
 
-    void print_message_2(const std::string& s) {
-        std::cout << s << std::endl;
-    }
-
     void print_message(const std::string& s) {
         std::cout << s << std::endl << std::endl;
+    }
+    
+    void print_message_2(const std::string& s) {
+        std::cout << s << std::endl;
     }
 
     void print_message(const std::string& s, double v) {
