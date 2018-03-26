@@ -1694,59 +1694,60 @@ namespace proc {
                 msg::print_done();
             }
 
-      if(VolumeOutput){
-        if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
-        else{
-          {
-            std::ostringstream oss;
-            oss << "Writing volume " << output_info.output_counter;
-            oss << " (time = " << RelativeTime << ")...";
-            msg::print_start(oss.str());
-          }
-          //make box around whole simulation domain
-          typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
+			if(VolumeOutput){
+				if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
+				else{
+					{
+						std::ostringstream oss;
+						oss << "Writing volume " << output_info.output_counter;
+						oss << " (time = " << RelativeTime << ")...";
+						msg::print_start(oss.str());
+					}
+					//make box around whole simulation domain
+					typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
 
-          lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
-          for(int i=0; i<D; ++i){
-            for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-              if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
-                start[i] = std::min(start[i], it->get_min_runbreak(i));
-                end[i] = std::max(end[i], it->get_max_runbreak(i));
-              }else{
-                start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
-                end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
-              }
-            }
-          }
+					//Determine corners of box
+					lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
+					for(int i=0; i<D; ++i){
+						for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+							if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
+								start[i] = std::min(start[i], it->get_min_runbreak(i));
+								end[i] = std::max(end[i], it->get_max_runbreak(i));
+							}else{
+								start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
+								end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
+							}
+						}
+					}
 
-          lvlset::make_box(boundaryBox, start, end);
+					//make a box around simulation domain to create border
+					lvlset::make_box(boundaryBox, start, end);
 
-          int counter=0;
-          for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-            typename LevelSetsType::value_type LS(*it);
-            //std::cout << counter << ": " << LS.num_active_pts() << std::endl;
-            LS.invert();
-            for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
-              LS.min(*dummy_it);
-            }
-            LS.invert();
-            LS.max(boundaryBox);    // Logic AND(intersect) boundary with levelset
-            LS.prune();          //remove unnecessary points
+					int counter=0;
+					for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+						typename LevelSetsType::value_type LS(*it);
+						//std::cout << counter << ": " << LS.num_active_pts() << std::endl;
+						LS.invert();
+						for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
+							LS.min(*dummy_it);
+						}
+						LS.invert();
+						LS.max(boundaryBox);		// Logic AND(intersect) boundary with levelset
+						LS.prune();					//remove unnecessary points
 
-            //print surface
-            std::ostringstream oss;
-            oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
-            lvlset::write_explicit_surface_vtk(LS, oss.str());
+						//print surface
+						std::ostringstream oss;
+						oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
+						lvlset::write_explicit_surface_vtk(LS, oss.str());
 
-            ++counter;
+						++counter;
+					}
 
-          }
+					output_info.output_counter++;
+					msg::print_done();
 
-          output_info.output_counter++;
-          msg::print_done();
-
-        }
-      }
+				}
+			}
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();

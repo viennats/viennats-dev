@@ -297,10 +297,17 @@ namespace lvlset {
 
         // Add borderpoints to levelset before extracting the surface
         std::vector< std::pair< vec<index_type, D>, value_type> > points;
-        //points.reserve();      //TODO: resize to something useful to stop many reallocs
+
+        //allocate enough space for all points
+        index_type num_points=0;
+        for(int i=0; i<D; ++i) num_points+=4*std::abs(start[i]-end[i])*std::abs(start[(i+1)%D]-end[(i+1)%D]);
+        points.reserve(num_points);      //resize to stop many reallocs
 
         // add points on simulation boundary
         vec<index_type,D> unity[3]= {vec<index_type,D>(1,0,0), vec<index_type,D>(0,1,0), vec<index_type,D>(0,0,1)};
+
+        // slight offset for numerical stability
+        double eps=1e-6;
 
         for(int i=0; i<D; ++i){
             vec<index_type,D> index;
@@ -315,19 +322,21 @@ namespace lvlset {
                     index[z] = k;
 
                     index[i] = start[i];
-                    points.push_back(std::make_pair(index+unity[i], -1.));
-                    points.push_back(std::make_pair(index, 0.));
+                    points.push_back(std::make_pair(index+unity[i], -1.+eps));
+                    points.push_back(std::make_pair(index, 0.+eps));
 
                     index[i] = end[i];
-                    points.push_back(std::make_pair(index-unity[i], -1.));
-                    points.push_back(std::make_pair(index, 0.));
+                    points.push_back(std::make_pair(index-unity[i], -1.+eps));
+                    points.push_back(std::make_pair(index, 0.+eps));
                 }
             }
         }
 
+        //sort and remove degenerate points(-1 points on inner corner)
         std::sort(points.begin(), points.end());
-        // typename std::vector< std::pair< vec<index_type, D>, value_type> >::iterator it = std::unique(points.begin(), points.end());
-        // points.resize(std::distance(points.begin(), it));
+        typename std::vector< std::pair< vec<index_type, D>, value_type> >::iterator it = std::unique(points.begin(), points.end());
+
+        points.resize(std::distance(points.begin(), it));
 
         //put into levelset
         LS.insert_points(points);
