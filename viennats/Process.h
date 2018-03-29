@@ -516,7 +516,7 @@ namespace proc {
           Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
         } else {
             mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs,
-                Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
+            Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
 //      mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
@@ -524,31 +524,29 @@ namespace proc {
       typedef std::list<geometry::surface<D> > SurfacesType;
       SurfacesType Surfaces;
 
-      {
-            std::bitset<2*D> remove_flags;
+      if (Model.surface()) {
+        Surfaces.push_back(mask_surface);
+      } else {
+        std::bitset<2*D> remove_flags;
 
-      for (int i=0;i<D;++i) {
-                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-          Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                    remove_flags.set(i);
-                } else {
-                    if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
-                }
-                if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                    remove_flags.set(i+D);
-                } else {
-                    if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
-                }
-            }
-
-        if (Model.surface()) {
-          Surfaces.push_back(mask_surface);
-        } else {
-                geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+        for (int i=0;i<D;++i) {
+          if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+              Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+              Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                remove_flags.set(i);
+          } else if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) {
+                remove_flags.set(i);
+          }
+          if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+              Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+              Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                remove_flags.set(i+D);
+          } else if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) {
+                remove_flags.set(i+D);
+          }
         }
-
-//            geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
-        }
+        geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+      }
 
       /*geometry::TransformGeometryToSurfaces(     mask_geometry,
                                                    Surfaces,
@@ -613,31 +611,30 @@ namespace proc {
       typedef std::list<geometry::surface<D> > SurfacesType;
       SurfacesType Surfaces;
 
-      {
+      if (Model.surface()) {
+        Surfaces.push_back(boolop_surface);
+      } else {
         std::bitset<2*D> remove_flags;
 
         for (int i=0;i<D;++i) {
                   if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-            Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                      remove_flags.set(i);
-                  } else {
-                      if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i);
+                      Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+                      Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                        remove_flags.set(i);
+                  } else if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) {
+                        remove_flags.set(i);
                   }
-                  if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY || Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                      remove_flags.set(i+D);
-                  } else {
-                      if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) remove_flags.set(i+D);
+                  if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+                      Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+                      Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                        remove_flags.set(i+D);
+                  } else if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) {
+                        remove_flags.set(i+D);
                   }
-              }
-
-        if (Model.surface()) {
-          Surfaces.push_back(boolop_surface);
-        } else {
-          //std::cout << "transform to surface\n";
-          geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
         }
 
-        //            geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+        //std::cout << "transform to surface\n";
+        geometry::TransformGeometryToSurfaces(boolop_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
       }
 
       LevelSetType dummy_ls(LevelSets.back().grid());

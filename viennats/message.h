@@ -42,27 +42,39 @@ namespace msg {
     }
 
     void print_help_extended() {
-      std::cout << "USAGE: viennats OPTION FILE" << std::endl;
-      std::cout << "Convert:" << std::endl;
-      std::cout << "    --lvst2vtk    -l2vtk    Convert LVST FILE to VTK FILE." << std::endl;
-      std::cout << "    --lvst2dx     -l2dx     Convert LVST FILE to DX FILE." << std::endl;
-      std::cout << "Print:" << std::endl;
-      std::cout << "    --print       -p        Print LVST to console." << std::endl;
-      std::cout << "    --print2file  -p2f      Print LVST to a TXT FILE." << std::endl;
+      std::cout << "USAGE: viennats [-ls2vtk | -ls2dx | -p | -p2o] files..." << std::endl;
+      std::cout << "Options:" << std::endl;
+      std::cout << "    -ls2vtk    Convert LVST file(s) to VTK file(s)." << std::endl;
+      std::cout << "    -ls2dx     Convert LVST file(s) to DX file(s)." << std::endl;
+      std::cout << "    -p         Print LVST file(s) to the console." << std::endl;
+      std::cout << "    -p2o       Print LVST file(s) to TXT file(s)." << std::endl;
+      std::cout << "NOTE: File paths and names are taken from the input file(s)." << std::endl;
       std::cout << "Other:" << std::endl;
-      std::cout << "    --help        -h        Shows (extended) help." << std::endl;
-      std::cout << "NOTE:If no OPTION was entered FILE will be used as a parameter file for ViennaTS." << std::endl;
+      std::cout << "   --help      Shows (extended) help." << std::endl;
+      std::cout << "   --version   Shows version." << std::endl;
+
     }
 
     void print_help() {
-      std::cout << "USAGE: viennats [OPTION] [FILE]" << std::endl;
+      std::cout << "USAGE: viennats [option [files...]| parameterfile]" << std::endl;
       std::cout << "Try viennats --help for more information." << std::endl;
+    }
+
+    void print_version() {
+      std::cout << "viennats " << VIENNATS_VERSION << std::endl;
+      std::cout << "Copyright (C) 2008-2015  Institute for Microelectronics, TU Wien" << std::endl << std::endl;
+      std::cout << "Contact: viennats@iue.tuwien.ac.at" << std::endl;
+      std::cout << "GitHub: https://github.com/viennats/viennats-dev" << std::endl;
+      std::cout << "License: MIT (X11), see file LICENSE in the base directory" << std::endl;
+      std::cout << "The software is provided \"AS IS\", without warranty of any kind," << std::endl
+                << "express or implied, including but not limited to the Warranies of" << std::endl
+                << "merchantability, fitness for a particular purpose and noninfringement." << std::endl;
     }
 
     void print_message(const std::string& s) {
         std::cout << s << std::endl << std::endl;
     }
-    
+
     void print_message_2(const std::string& s) {
         std::cout << s << std::endl;
     }

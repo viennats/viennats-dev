@@ -972,7 +972,154 @@ namespace geometry {
       //   }
       // }
     }
-  }
 
+    //Reads in a surface and transforms it to a levelset
+    template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
+    void import_levelset_from_surface(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
+                                      ParameterType& p, std::list<LevelSetType>& LevelSets, const int& counter)
+    {
+      int grid_min[D]={ };
+      int grid_max[D]={ };
+      surface<D> s;
+
+      //!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
+      std::cout << "The geometry consists of " << p.geometry_files.size() <<" input surfaces. \n";
+      msg::print_start("Read surface input file "+p.geometry_files[counter]+"...");
+      s.ReadVTK(p.geometry_files[counter], p.input_scale, p.input_transformation,
+                p.input_transformation_signs, p.change_input_parity, p.input_shift);
+
+      for (int h = 0; h < D; ++h) {
+        grid_min[h] = std::min(grid_min[h],int(std::ceil(s.Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
+        grid_max[h] = std::max(grid_max[h],int(std::floor(s.Max[h] / p.grid_delta + p.snap_to_boundary_eps)));
+      }
+      msg::print_done();
+#ifdef VERBOSE
+      std::cout << "min = " << (s.Min) << "   " << "max = " << (s.Max) << std::endl;
+      std::cout << "min = " << (s.Min / p.grid_delta) << "   " << "max = " << (s.Max / p.grid_delta) << std::endl;
+#endif
+      //!Determine boundary conditions for level set domain
+      lvlset::boundary_type bnc[D];
+      for (int hh = 0; hh < D; ++hh) {
+        if (p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY &&
+            p.boundary_conditions[hh].max == bnc::PERIODIC_BOUNDARY) {
+              bnc[hh] = lvlset::PERIODIC_BOUNDARY;
+        } else if(p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY &&
+                  p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::NEG_INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::POS_INFINITE_BOUNDARY;
+        } else {
+              bnc[hh] = lvlset::SYMMETRIC_BOUNDARY;
+        }
+      }
+
+      //Set the level set GridProperties
+      GridProperties = GridTraitsType(grid_min, grid_max, bnc, p.grid_delta);
+      //Generate the grid with the GridProperties
+      grid = lvlset::grid_type<GridTraitsType>(GridProperties);
+
+      msg::print_start("Distance transformation...");
+
+      //!Initialize the level set with "lvlset::init(...)"
+      LevelSets.push_back(LevelSetType(grid));
+      lvlset::init(LevelSets.back(), s, p.report_import_errors);
+
+      msg::print_done();
+    }
+
+    template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
+    void import_levelsets_from_volume(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
+                                      ParameterType& p, std::list<LevelSetType>& LevelSets)
+    {
+      int grid_min[D]={ };
+      int grid_max[D]={ };
+      //!Read Geometry and populate geometry class
+      geometry<D> g;
+      // g.Read reads a geometry file and modifies it according to the user-set parameters
+      msg::print_start("Read geometry input file...");
+      g.Read(p.geometry_files[0], p.input_scale, p.input_transformation,
+             p.input_transformation_signs, p.change_input_parity, p.material_mapping,
+             p.input_shift, p.ignore_materials);
+      {
+        // output to a .vtk file the modified initial geometry
+        std::ostringstream oss;
+        oss << p.output_path << "Initial_Volume_Mesh.vtk";
+        g.Write(oss.str());
+      }
+      for (int h = 0; h < D; ++h) {
+        grid_min[h] = std::ceil(g.Min[h] / p.grid_delta - p.snap_to_boundary_eps);
+        grid_max[h] = std::floor(g.Max[h] / p.grid_delta + p.snap_to_boundary_eps);
+      }
+    #ifdef VERBOSE
+      std::cout << "min = " << (g.Min) << "   " << "max = " << (g.Max) << std::endl;
+      std::cout << "min = " << (g.Min / p.grid_delta) << "   " << "max = " << (g.Max / p.grid_delta) << std::endl;
+    #endif
+      msg::print_done();
+
+      //!Determine boundary conditions for level set domain
+      lvlset::boundary_type bnc[D];
+      for (int hh = 0; hh < D; ++hh) {
+        if (p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY &&
+            p.boundary_conditions[hh].max == bnc::PERIODIC_BOUNDARY) {
+              bnc[hh] = lvlset::PERIODIC_BOUNDARY;
+        } else if(p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY &&
+                  p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::NEG_INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::POS_INFINITE_BOUNDARY;
+        } else {
+              bnc[hh] = lvlset::SYMMETRIC_BOUNDARY;
+        }
+      }
+
+      //Set the level set GridProperties
+      GridProperties = GridTraitsType(grid_min, grid_max, bnc, p.grid_delta);
+      //Generate the grid with the GridProperties
+      grid = lvlset::grid_type<GridTraitsType>(GridProperties);
+
+      //!Transform the input volume geometry to surfaces and interfaces "TransformGeometryToSurfaces(...)"
+      msg::print_start("Extract surface and interfaces...");
+      typedef std::list<surface<D> > SurfacesType;
+      SurfacesType Surfaces;
+
+      std::bitset<2 * D> remove_flags;
+
+      for (int i = 0; i < D; ++i) {
+        if (p.boundary_conditions[i].min == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i);
+        } else if (i == p.open_boundary && !p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i);
+        }
+        if (p.boundary_conditions[i].max == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i + D);
+        } else if (i == p.open_boundary && p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i + D);
+        }
+      }
+
+      //std::cout << "transform to surface\n";
+      TransformGeometryToSurfaces(g, Surfaces, remove_flags, p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
+      msg::print_done();
+
+      msg::print_start("Distance transformation...");
+
+      //!Initialize each level set with "lvlset::init(...)"
+      for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
+        LevelSets.push_back(LevelSetType(grid));
+        lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+      }
+
+      msg::print_done();
+    }
+
+  }//Namespace geometry END
 
   #endif /*GEOMETRY_H_*/

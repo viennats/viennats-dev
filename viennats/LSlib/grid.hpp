@@ -127,6 +127,7 @@ namespace lvlset {
             }
         }
 
+        //copy constructor
         grid_type(const grid_type& gt): GridTraits(gt.GridTraits),
                                         Min_(gt.Min_),
                                         Max_(gt.Max_),
