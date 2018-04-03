@@ -997,7 +997,7 @@ namespace proc {
                     TimeRates-=my::time::GetTime();
                     do {
                         calc::CalculateRates(Model,Parameter,Partition,LevelSets.back(),NormalVectors,DistancesToReceiver,Coverages,Rates,PointMaterials,Cells,RelativeTime);
-                                                std::cout << "RelativeTime = " << RelativeTime << "\n";
+                                                //std::cout << "RelativeTime = " << RelativeTime << "\n";
                         calc::UpdateCoverages(Rates, Coverages, Model, MaxStep);//, RelativeTime);
 //                                            //std::cout << "MaxStep = " << MaxStep << "\n";
 

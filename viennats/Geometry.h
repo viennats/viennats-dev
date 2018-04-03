@@ -51,7 +51,7 @@ namespace geometry {
       std::vector<int>   & ignore_materials
     )
     {
-      std::cout << "Reading STR file!" << std::endl;
+      //std::cout << "Reading STR file!" << std::endl;
 
 
       std::ifstream reader(FileName.c_str(), std::ios::binary);
@@ -396,7 +396,7 @@ namespace geometry {
       int num_nodes;
       int num_elems;
 
-      std::cout << "DX\n";
+      //std::cout << "DX\n";
       num_nodes=atoi(&c[63]);
 
       Nodes.resize(num_nodes);
@@ -1038,7 +1038,8 @@ namespace geometry {
       //!Read Geometry and populate geometry class
       geometry<D> g;
       // g.Read reads a geometry file and modifies it according to the user-set parameters
-      msg::print_start("Read geometry input file...");
+      std::cout << "Read geometry input file " << p.geometry_files[0];
+      msg::print_start("...");
       g.Read(p.geometry_files[0], p.input_scale, p.input_transformation,
              p.input_transformation_signs, p.change_input_parity, p.material_mapping,
              p.input_shift, p.ignore_materials);

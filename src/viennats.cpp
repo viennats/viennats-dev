@@ -596,126 +596,131 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 */
 
 int main(int argc, char *argv[]) {
-  if(argv[1][0] == '-'){//if option was passed
-    std::string option(argv[1]);
-    std::ostringstream oss;
-    if(option == "-ls2vtk" || option == "-ls2dx"){
-      //assume all remaining argvs are lvst files, convert them to vtk or dx
-      for(int i=2; i<argc; i++){
-        std::string file(argv[i]);
-        char buff[8] = {};
-        std::ifstream fin(file);
-        fin.read(buff, 8);//read file header
-        fin.close();
-        if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
-        const int D = buff[6]-48;
-        oss.str("");
-        oss << file.substr(0, file.find(".lvst")) << (option == "-ls2vtk" ? ".vtk" : ".dx");
-
-        msg::print_start("Converting " + file + std::string(" to a ") + std::string((option == "-ls2vtk" ? "vtk" : "dx")) + std::string(" file....")  );
-        if(D == 2){
-          GridTraitsType<2> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<2>>(file);
-          lvlset::grid_type<GridTraitsType<2>> grid(gridP);
-          lvlset::levelset<GridTraitsType<2>> ls(grid);
-          ls.import_levelset(file);
-          if(option == "-ls2vtk") write_explicit_surface_vtk(ls, oss.str());
-          else if(option == "-ls2dx") write_explicit_surface_opendx(ls, oss.str());
-        }
-        else if(D == 3){
-          GridTraitsType<3> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<3>>(file);
-          lvlset::grid_type<GridTraitsType<3>> grid(gridP);
-          lvlset::levelset<GridTraitsType<3>> ls(grid);
-          ls.import_levelset(file);
-          if(option == "-ls2vtk") write_explicit_surface_vtk(ls, oss.str());
-          else if(option == "-ls2dx") write_explicit_surface_opendx(ls, oss.str());
-        }
-        msg::print_done();
-      }
-    }
-    else if(option == "-p" || option == "-p2o"){
-      for(int i=2; i<argc; i++){
-        std::string file(argv[i]);
-        char buff[8] = {};
-        std::ifstream fin(file);
-        fin.read(buff, 8);//read file header
-        fin.close();
-        if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
-        const int D = buff[6]-48;
-        std::ofstream fout;
-        if(option == "-p2o"){
+  if(argc > 1){
+    if(argv[1][0] == '-'){//if option was passed
+      std::string option(argv[1]);
+      std::ostringstream oss;
+      if(option == "-ls2vtk" || option == "-ls2dx"){
+        //assume all remaining argvs are lvst files, convert them to vtk or dx
+        for(int i=2; i<argc; i++){
+          std::string file(argv[i]);
+          char buff[8] = {};
+          std::ifstream fin(file);
+          fin.read(buff, 8);//read file header
+          fin.close();
+          if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
+          const int D = buff[6]-48;
           oss.str("");
-          oss << file.substr(0, file.find(".lvst")) << ".txt";
-          fout = std::ofstream(oss.str());
-          msg::print_start("Converting " + file + " to a txt file...");
-        }
+          oss << file.substr(0, file.find(".lvst")) << (option == "-ls2vtk" ? ".vtk" : ".dx");
 
-        if(D == 2){
-          GridTraitsType<2> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<2>>(file);
-          lvlset::grid_type<GridTraitsType<2>> grid(gridP);
-          lvlset::levelset<GridTraitsType<2>> ls(grid);
-          ls.import_levelset(file);
-          if(option == "-p2o") ls.print_without_segmentation(fout);
-          else if(option == "-p") ls.print_without_segmentation();
-        }
-        else if(D == 3){
-          GridTraitsType<3> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<3>>(file);
-          lvlset::grid_type<GridTraitsType<3>> grid(gridP);
-          lvlset::levelset<GridTraitsType<3>> ls(grid);
-          ls.import_levelset(file);
-          if(option == "-p2o") ls.print_without_segmentation(fout);
-          else if(option == "-p") ls.print_without_segmentation();
-        }
-        if(option == "-p2o"){
-          fout.close();
+          msg::print_start("Converting " + file + std::string(" to a ") + std::string((option == "-ls2vtk" ? "vtk" : "dx")) + std::string(" file....")  );
+          if(D == 2){
+            GridTraitsType<2> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<2>>(file);
+            lvlset::grid_type<GridTraitsType<2>> grid(gridP);
+            lvlset::levelset<GridTraitsType<2>> ls(grid);
+            ls.import_levelset(file);
+            if(option == "-ls2vtk") write_explicit_surface_vtk(ls, oss.str());
+            else if(option == "-ls2dx") write_explicit_surface_opendx(ls, oss.str());
+          }
+          else if(D == 3){
+            GridTraitsType<3> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<3>>(file);
+            lvlset::grid_type<GridTraitsType<3>> grid(gridP);
+            lvlset::levelset<GridTraitsType<3>> ls(grid);
+            ls.import_levelset(file);
+            if(option == "-ls2vtk") write_explicit_surface_vtk(ls, oss.str());
+            else if(option == "-ls2dx") write_explicit_surface_opendx(ls, oss.str());
+          }
           msg::print_done();
         }
       }
+      else if(option == "-p" || option == "-p2o"){
+        for(int i=2; i<argc; i++){
+          std::string file(argv[i]);
+          char buff[8] = {};
+          std::ifstream fin(file);
+          fin.read(buff, 8);//read file header
+          fin.close();
+          if(std::string("LvSt").compare(std::string(buff).substr(0,4))) msg::print_error(file + " is not a lvst file.");
+          const int D = buff[6]-48;
+          std::ofstream fout;
+          if(option == "-p2o"){
+            oss.str("");
+            oss << file.substr(0, file.find(".lvst")) << ".txt";
+            fout = std::ofstream(oss.str());
+            msg::print_start("Converting " + file + " to a txt file...");
+          }
+
+          if(D == 2){
+            GridTraitsType<2> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<2>>(file);
+            lvlset::grid_type<GridTraitsType<2>> grid(gridP);
+            lvlset::levelset<GridTraitsType<2>> ls(grid);
+            ls.import_levelset(file);
+            if(option == "-p2o") ls.print_without_segmentation(fout);
+            else if(option == "-p") ls.print_without_segmentation();
+          }
+          else if(D == 3){
+            GridTraitsType<3> gridP = lvlset::get_grid_traits_from_lvst_file<GridTraitsType<3>>(file);
+            lvlset::grid_type<GridTraitsType<3>> grid(gridP);
+            lvlset::levelset<GridTraitsType<3>> ls(grid);
+            ls.import_levelset(file);
+            if(option == "-p2o") ls.print_without_segmentation(fout);
+            else if(option == "-p") ls.print_without_segmentation();
+          }
+          if(option == "-p2o"){
+            fout.close();
+            msg::print_done();
+          }
+        }
+      }
+      else if(option == "-h"){
+        msg::print_help();
+      }
+      else if(option == "--help"){
+        msg::print_help_extended();
+      }
+      else if(option == "--version"){
+        msg::print_version();
+      }
+      else {
+        oss << argv[1] << " is not an available option.\nSee --help for more information.";
+        msg::print_message_2(oss.str());
+      }
     }
-    else if(option == "-h"){
-      msg::print_help();
-    }
-    else if(option == "--help"){
-      msg::print_help_extended();
-    }
-    else if(option == "--version"){
-      msg::print_version();
-    }
-    else {
-      oss << argv[1] << " is not an available option.\nSee --help for more information.";
-      msg::print_message_2(oss.str());
+    else{
+      double timer = my::time::GetTime();
+
+      msg::print_welcome();
+
+      //check intrinsic double-type
+      assert(std::numeric_limits<double>::is_iec559);
+
+      //!Read Parameters-File and populate Parameters class
+      client::Parameters p(argv[1]);
+
+      //!Set maximum number of threads
+      #ifdef _OPENMP
+        if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
+      #endif
+
+      //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
+      #ifdef DIMENSION_2
+        if (p.num_dimensions == 2)
+          main_<2, client::Parameters> (p);
+      #endif
+
+      #ifdef DIMENSION_3
+        if (p.num_dimensions == 3)
+          main_<3, client::Parameters> (p);
+      #endif
+
+      double exec_time = my::time::GetTime()-timer;
+      std::stringstream ss;
+      ss << exec_time;
+      msg::print_message_2("Finished - exec-time: "+ss.str()+" s");
     }
   }
   else{
-    double timer = my::time::GetTime();
-
-    msg::print_welcome();
-
-    //check intrinsic double-type
-    assert(std::numeric_limits<double>::is_iec559);
-
-    //!Read Parameters-File and populate Parameters class
-    client::Parameters p(argv[1]);
-
-    //!Set maximum number of threads
-    #ifdef _OPENMP
-      if (p.omp_threads>0) omp_set_num_threads(p.omp_threads);
-    #endif
-
-    //!Initialize number of dimensions and execute main_(const ParameterType2) accordingly
-    #ifdef DIMENSION_2
-      if (p.num_dimensions == 2)
-        main_<2, client::Parameters> (p);
-    #endif
-
-    #ifdef DIMENSION_3
-      if (p.num_dimensions == 3)
-        main_<3, client::Parameters> (p);
-    #endif
-
-    double exec_time = my::time::GetTime()-timer;
-    std::stringstream ss;
-    ss << exec_time;
-    msg::print_message_2("Finished - exec-time: "+ss.str()+" s");
+    std::cout << "No option or parameter file passed.\nSee -h or --help for more information." << std::endl;
   }
 
   return 0;
