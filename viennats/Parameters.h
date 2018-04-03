@@ -271,7 +271,7 @@ struct ReportError {
             bool validate(){
                 std::string error;
                 if(geometry_files.empty()) error+=make_error("geometry_file");
-                if(output_path.empty()) error+=make_error("output_path");
+                //if(output_path.empty()) error+=make_error("output_path");
                 if(cfl_condition==-1.) error+=make_error("cfl_condition");
                 if(grid_delta==-1.) error+=make_error("grid_delta");
                 if(default_disc_orientation.empty()) error+=make_error("default_disc_orientation");
@@ -732,18 +732,46 @@ struct ReportError {
         if(bits_per_distance == 0) bits_per_distance = CHAR_BIT;
         else bits_per_distance = bpd > 64 ? 64 : bpd;
 
-        //Create directory, if it does not exist
-        std::ostringstream oss;
-        if(output_path.find('/') != std::string::npos)
-          oss << output_path.substr(0, output_path.find('/'));
-        else
-          oss << output_path;
-        oss <<  "_" << bits_per_distance << "bit/";//add _bits_per_distance to output path
-        output_path = oss.str();
-        if(!boost::filesystem::exists(output_path)) {
-            msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
-                      boost::filesystem::path dir(output_path);
-                      if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
+        //Create directory, if it does not exist; make it relative to the parameter file's path
+        std::string relative_path, relative_name;
+        if(output_path.front() != '/'){
+          std::size_t last_slash = fileName.find_last_of('/');
+          if(last_slash != std::string::npos){//if parameter file is in a different directory
+            relative_path = fileName.substr(0,last_slash+1);//path of parameter file
+            relative_name = fileName.substr(last_slash+1);//filename
+          }
+          else relative_name = fileName;
+
+          if(output_path.size() == 0){//default output path; example: par_trench.txt -> output_trench/
+            output_path = relative_name.substr(0, relative_name.find_last_of('.'));//exclude file ending
+
+            if(output_path.substr(0,3) == "par")//check if par is in the filename
+              output_path = output_path.substr(3);//exclude par in file name
+            output_path = relative_path + "output" + output_path;
+          }
+          else
+            output_path = relative_path + output_path;
+        }
+
+        //make path of input files relative too
+        for(unsigned int i=0; i<geometry_files.size(); i++){
+          if(geometry_files[i].front() != '/') geometry_files[i] = relative_path + geometry_files[i];
+        }
+
+        //add _bits_per_distance/ to output path
+        {
+          std::ostringstream oss;
+          if(output_path.back() == '/')
+            oss << output_path.substr(0, output_path.size()-1);
+          else
+            oss << output_path;
+          oss <<  "_" << bits_per_distance << "bit/";
+          output_path = oss.str();
+          if(!boost::filesystem::exists(output_path)) {
+              msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
+                        boost::filesystem::path dir(output_path);
+                        if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
+          }
         }
 
         //test boundary condtions for periodicity, and check conformity

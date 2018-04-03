@@ -1413,7 +1413,7 @@ namespace lvlset {
 
              const_iterator_runs it(*this, tmp);
 
-             if (it.pt_id()!=rem_pt) {std::cout << "PT_ID != REM_PT";
+             if (it.pt_id()!=rem_pt) {
                  std::cout << num_pts() << std::endl;
                  std::cout << rem_pt << std::endl;
                  std::cout << it.pt_id() << std::endl;

@@ -13,7 +13,6 @@
 
 
 //COMPILE OPTIONS#####################################
-#define VIENNATS_VERSION 0.11
 #define TEST_MODE
 //#define VERBOSE
 

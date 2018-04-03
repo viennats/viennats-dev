@@ -22,7 +22,7 @@
 #include "../message.h"
 
 //Options for levelset output
-#define LVST_FILE_VERSION_NUMBER 2
+#define LVST_FILE_VERSION_NUMBER 1
 
 //Limits for 3,5,6,7 byte output; only change if one byte does not have 8 bits
 #define UINT24_MAX 16777215 // highest value of 3 unsigned bytes  2^24-1
@@ -489,7 +489,7 @@ namespace lvlset {
       //reads the grid information from a levelset file
 
       std::ifstream fin(path);
-      if(!fin.is_open()) msg::print_error("ERROR: Couldn't open the file: " + path);
+      if(!fin.is_open()) msg::print_error("Could not open the file: " + path);
       char buff[9] = {};
       fin.read(buff, 9);
       //Comparing Identification Bytes
@@ -533,7 +533,7 @@ namespace lvlset {
       oss << "Grid delta: " << grid_delta;
       msg::print_message(oss.str());
 #endif
-      if(fin.fail()) msg::print_error("Couldn't read grid properties from file: " + path);
+      if(!fin.good()) msg::print_error("Could not read grid properties from file: " + path);
       fin.close();
       return GridTraitsType(grid_min, grid_max, b_conditions, grid_delta);
     }
@@ -590,7 +590,7 @@ namespace lvlset {
       std::ofstream fout(path);
       std::ostringstream oss;
       if(path.find(".lvst") == std::string::npos) msg::print_warning("File name does not have the correct file ending.");
-      if(!fout.is_open()) msg::print_error("Couldn't open the file: " + path);
+      if(!fout.is_open()) msg::print_error("Could not open the file: " + path);
 
       //type & constant redefinitions
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
@@ -838,7 +838,7 @@ namespace lvlset {
       msg::print_message_2(oss.str());
 #endif
 
-      if(!fout.good()) msg::print_message_2("Error while writing to file " + path + ".");
+      if(!fout.good()) msg::print_error("Writing to file " + path + " failed.");
       fout.close();
 
       ls.finalize(2);//sets the segmentation points
@@ -853,7 +853,7 @@ namespace lvlset {
       std::ostringstream oss;
       if(path.find(".lvst") == std::string::npos)
         msg::print_warning("File name does not have the correct file ending.");
-      if(!fin.is_open()) msg::print_error("Couldn't open the file: " + path);
+      if(!fin.is_open()) msg::print_error("Could not open the file: " + path);
 
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
       typedef typename levelset<GridTraitsType, LevelSetTraitsType>::index_type index_type;
@@ -936,7 +936,7 @@ namespace lvlset {
         uint32_t runtypes_per_byte = CHAR_BIT/2;
         unsigned long long uInt;
         std::ifstream tmp_fin(path);//temporary stream to read defined runtypes from
-        if(!tmp_fin.is_open()) msg::print_error("Couldn't open the tmp file: " + path);
+        if(!tmp_fin.is_open()) msg::print_error("Could not open the tmp file: " + path);
         tmp_fin.seekg(fin.tellg() + (long)bytes_to_read);//set position to the defined indices for runtypes
         sum = 0;
         for(unsigned int y = 0; y < bytes_to_read; y++){
@@ -1046,7 +1046,7 @@ namespace lvlset {
       oss << values_read << " of " << num_distances << " distances read.";
       msg::print_message_2(oss.str());
 #endif
-      if(!fin.good()) msg::print_message_2("Error while reading from " + path + ".");
+      if(!fin.good()) msg::print_error("Reading from " + path + " failed.");
       fin.close();
 
       ls.finalize(2);
