@@ -253,7 +253,7 @@ namespace lvlset {
     }
 
     template <class T> inline vec<T,3> cross(const vec<T,3>& v1,const vec<T,3>& v2) {
-        return vec<T,3>(	v1[1]*v2[2]-v1[2]*v2[1],
+        return vec<T,3>(    v1[1]*v2[2]-v1[2]*v2[1],
                             v1[2]*v2[0]-v1[0]*v2[2],
                             v1[0]*v2[1]-v1[1]*v2[0]);
     }

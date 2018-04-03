@@ -23,7 +23,7 @@
 #include "kernel.hpp"
 #include "math.hpp"
 
-#include <iostream>	//TODO test
+#include <iostream>  //TODO test
 
 #include "misc.hpp"
 
@@ -56,13 +56,13 @@ namespace lvlset {
             /*A[k]=(c[(k+1)%3][dirA]-c[(k+2)%3][dirA])*((c[(k+2)%3][dirB]-Point[dirB])+(c[(k+1)%3][dirB]-Point[dirB]))+
                  (c[(k+2)%3][dirB]-c[(k+1)%3][dirB])*((c[(k+1)%3][dirA]-Point[dirA])+(c[(k+2)%3][dirA]-Point[dirA]));*/
 
-        	bool swapped=(c[(k+1)%3]<c[(k+2)%3]);					//necessary to guarantee anti commutativity
-        	const vec<T,3>& v1=(swapped)?c[(k+2)%3]:c[(k+1)%3];
-        	const vec<T,3>& v2=(swapped)?c[(k+1)%3]:c[(k+2)%3];
+          bool swapped=(c[(k+1)%3]<c[(k+2)%3]);          //necessary to guarantee anti commutativity
+          const vec<T,3>& v1=(swapped)?c[(k+2)%3]:c[(k+1)%3];
+          const vec<T,3>& v2=(swapped)?c[(k+1)%3]:c[(k+2)%3];
 
-        	A[k]=(v1[dirA]-Point[dirA])*(v2[dirB]-Point[dirB])-(v2[dirA]-Point[dirA])*(v1[dirB]-Point[dirB]);
+          A[k]=(v1[dirA]-Point[dirA])*(v2[dirB]-Point[dirB])-(v2[dirA]-Point[dirA])*(v1[dirB]-Point[dirB]);
 
-        	if (swapped) A[k]=-A[k];
+          if (swapped) A[k]=-A[k];
 
             if (A[k]<T(0)) inside_pos=false;
             if (A[k]>T(0)) inside_neg=false;
@@ -73,11 +73,11 @@ namespace lvlset {
             T sum=A[0]+A[1]+A[2];
             int k=0;
             for (int i=1;i<3;++i) {
-            	if (inside_pos) {
-            		if (A[i]>A[k]) k=i;
-            	} else {
-            		if (A[i]<A[k]) k=i;
-            	}
+              if (inside_pos) {
+                if (A[i]>A[k]) k=i;
+              } else {
+                if (A[i]<A[k]) k=i;
+              }
             }
             intersection=c[k][dir]+(c[(k+1)%3][dir]-c[k][dir])*(A[(k+1)%3]/sum)+(c[(k+2)%3][dir]-c[k][dir])*(A[(k+2)%3]/sum);
             //intersection=c[0][dir]+(A[1]/sum)*(c[1][dir]-c[0][dir])+(A[2]/sum)*(c[2][dir]-c[0][dir]);
@@ -117,16 +117,16 @@ namespace lvlset {
         }
 
         if ((!inside_pos && inside_neg) || (inside_pos && !inside_neg)) {
-        	T sum=A[0]+A[1];
-			int k=0;
-			for (int i=1;i<2;++i) {
-				if (inside_pos) {
-					if (A[i]>A[k]) k=i;
-				} else {
-					if (A[i]<A[k]) k=i;
-				}
-			}
-			intersection=c[k][dir]+(c[(k+1)%2][dir]-c[k][dir])*(A[(k+1)%2]/sum);
+          T sum=A[0]+A[1];
+      int k=0;
+      for (int i=1;i<2;++i) {
+        if (inside_pos) {
+          if (A[i]>A[k]) k=i;
+        } else {
+          if (A[i]<A[k]) k=i;
+        }
+      }
+      intersection=c[k][dir]+(c[(k+1)%2][dir]-c[k][dir])*(A[(k+1)%2]/sum);
             //intersection=(A[0]/sum)*c[0][dir]+(A[1]/sum)*c[1][dir];
             return (inside_pos)?1:-1;
         } else {
@@ -136,20 +136,20 @@ namespace lvlset {
 
     ///Initialise level set function
     template<class TriangulationType, class LevelSetType>
-    void init(			LevelSetType& l,						//the level set function which should be initialized
-                        const TriangulationType& srf,		//the triangulated surface
-                        bool report_import_errors,				//to ignore errors in the imported geometry mesh
-                        typename LevelSetType::value_type eps_sign=1e-6,		//"eps_sign" is used to determine
-                        														//the sign of the distance to the surface
-                        typename LevelSetType::value_type eps_boundary=1e-5,	//"eps_boundary" defines the range at grid boundaries
-                        														//within which all nodes snap exactly to the boundary coordinates
-                        typename LevelSetType::value_type eps_distance=1e-4,	//"eps_distance" ensures that all grid points are initialized which are
-                        														//are on a grid segment which is intersected by the surface element
+    void init(      LevelSetType& l,            //the level set function which should be initialized
+                        const TriangulationType& srf,    //the triangulated surface
+                        bool report_import_errors,        //to ignore errors in the imported geometry mesh
+                        typename LevelSetType::value_type eps_sign=1e-6,    //"eps_sign" is used to determine
+                                                    //the sign of the distance to the surface
+                        typename LevelSetType::value_type eps_boundary=1e-5,  //"eps_boundary" defines the range at grid boundaries
+                                                    //within which all nodes snap exactly to the boundary coordinates
+                        typename LevelSetType::value_type eps_distance=1e-4,  //"eps_distance" ensures that all grid points are initialized which are
+                                                    //are on a grid segment which is intersected by the surface element
                         typename LevelSetType::value_type eps_distance2=1e-7
 
         ) {
 
-		    typedef typename TriangulationType::element_index_type element_index_type;
+        typedef typename TriangulationType::element_index_type element_index_type;
 //        typedef typename TriangulationType::node_index_type node_index_type;
         typedef typename LevelSetType::index_type index_type;
         typedef typename LevelSetType::value_type value_type;
@@ -170,7 +170,7 @@ namespace lvlset {
             if (l.grid().is_neg_boundary_infinite(i)) {
                 boundary_eps_min[i]=static_cast<value_type>(0);
             } else {
-                boundary_eps_min[i]	=	l.grid().global_index_2_global_coordinate(i, l.grid().min_grid_index(i)+1)	-
+                boundary_eps_min[i]  =  l.grid().global_index_2_global_coordinate(i, l.grid().min_grid_index(i)+1)  -
                                         l.grid().global_index_2_global_coordinate(i, l.grid().min_grid_index(i));
 
                 boundary_eps_min[i]*=eps_boundary;
@@ -179,7 +179,7 @@ namespace lvlset {
             if (l.grid().is_pos_boundary_infinite(i)) {
                 boundary_eps_max[i]=static_cast<value_type>(0);
             } else {
-                boundary_eps_max[i]	=	l.grid().global_index_2_global_coordinate(i, l.grid().max_grid_index(i))	-
+                boundary_eps_max[i]  =  l.grid().global_index_2_global_coordinate(i, l.grid().max_grid_index(i))  -
                                         l.grid().global_index_2_global_coordinate(i, l.grid().max_grid_index(i)-1);
 
                 boundary_eps_max[i]*=eps_boundary;
@@ -206,8 +206,8 @@ namespace lvlset {
             //for each surface element do
 
             for (element_index_type e=0;e<srf.number_of_elements();e++) {
-                vec<value_type,D> c[D];						//nodes of element
-                vec<value_type,D> center(value_type(0));	//center point of triangle
+                vec<value_type,D> c[D];            //nodes of element
+                vec<value_type,D> center(value_type(0));  //center point of triangle
 
                 std::bitset<2*D> flags;
                 flags.set();
@@ -219,19 +219,19 @@ namespace lvlset {
                         if (math::abs(c[q][dim]-l.grid().min_local_coordinate(dim))<boundary_eps_min[dim]) c[q][dim]= l.grid().min_local_coordinate(dim);
                         if (math::abs(c[q][dim]-l.grid().max_local_coordinate(dim))<boundary_eps_max[dim]) c[q][dim]= l.grid().max_local_coordinate(dim);
 
-                        if (c[q][dim]>l.grid().min_local_coordinate(dim)) flags.reset(dim);			//TODO
-                        if (c[q][dim]<l.grid().max_local_coordinate(dim)) flags.reset(dim+D);		//TODO
+                        if (c[q][dim]>l.grid().min_local_coordinate(dim)) flags.reset(dim);      //TODO
+                        if (c[q][dim]<l.grid().max_local_coordinate(dim)) flags.reset(dim+D);    //TODO
 
-                        center[dim]+=c[q][dim];	//center point calculation
+                        center[dim]+=c[q][dim];  //center point calculation
                     }
                 }
 
                 if (flags.any()) continue;  //triangle is outside of domain
 
 
-                center/=static_cast<value_type>(D);	//center point calculation
+                center/=static_cast<value_type>(D);  //center point calculation
 
-                //vec<value_type,D> normal=NormalVector(c);	//normalvector calculation
+                //vec<value_type,D> normal=NormalVector(c);  //normalvector calculation
 
                 //determine min and max of nodes
                 vec<value_type,D> min_c=c[0];
@@ -282,7 +282,7 @@ namespace lvlset {
                         for (int k=1;k<D;k++) p[(k+z)%D]=l.grid().grid_position_of_global_index((k+z)%D, it_b[(k+z)%D]);
 
                         value_type intersection;
-                        int intersection_status=calculate_gridline_triangle_intersection(	p,
+                        int intersection_status=calculate_gridline_triangle_intersection(  p,
                                                                                             c,
                                                                                             z,
                                                                                             intersection
@@ -291,8 +291,8 @@ namespace lvlset {
                         if (intersection_status!=0) {
                             //if there is an intersection
 
-                        	if (intersection<min_c[z]) assert(0);		//TODO
-                        	if (intersection>max_c[z]) assert(0);		//TODO
+                          if (intersection<min_c[z]) assert(0);    //TODO
+                          if (intersection>max_c[z]) assert(0);    //TODO
                             intersection=std::max(intersection, min_c[z]);
                             intersection=std::min(intersection, max_c[z]);
 
@@ -366,12 +366,12 @@ namespace lvlset {
         l.insert_points(points2);    //initialize level set function
 
         if (report_import_errors) {
-			std::string err= misc::test(l);     //check level set function
-			if (err.size()) {                   //if inconsistent print out error message
-				std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
-				std::cout << err << std::endl;
-				assert(0);
-			}
+      std::string err= misc::test(l);     //check level set function
+      if (err.size()) {                   //if inconsistent print out error message
+        std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
+        std::cout << err << std::endl;
+        assert(0);
+      }
         }
 
         l.prune();       //remove active grid point which have no opposite signed neighbor grid point

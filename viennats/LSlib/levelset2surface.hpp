@@ -89,31 +89,31 @@ namespace lvlset {
         //                                                               //should be stored
         //};
 
-    	typedef typename LevelSetType::index_type index_type;
-		typedef typename SurfaceInserterType::node_ref_type node_ref_type;
+      typedef typename LevelSetType::index_type index_type;
+    typedef typename SurfaceInserterType::node_ref_type node_ref_type;
 
 
-    	//const int 			next[12]      ={-1, 3, 0,-1, 2, 7, 4, 1,-1, 8,11, 9};
-    	//const int 			previous[12]  ={ 2, 7, 4, 1, 6,-1,-1, 5, 9,11,-1,10};
-    	/*const index_type    shift[12][3]={
-    			{ 0, 0, 0},	// 0
-    			{ 1, 0, 0},	// 1
-    			{ 0, 1, 0},	// 2
-    			{ 0, 0, 0},	// 3
-    			{ 0,-1, 1},	// 4
-    			{ 1, 0, 0}, // 5
-    			{ 0, 1, 0}, // 6
-    			{-1, 0, 1}, // 7
-    			{ 0, 0, 0}, // 8
-    			{ 1, 0, 0}, // 9
-    			{ 1, 0, 0}, //10
-    			{-1, 1, 0}  //11
-    	};*/
+      //const int       next[12]      ={-1, 3, 0,-1, 2, 7, 4, 1,-1, 8,11, 9};
+      //const int       previous[12]  ={ 2, 7, 4, 1, 6,-1,-1, 5, 9,11,-1,10};
+      /*const index_type    shift[12][3]={
+          { 0, 0, 0},  // 0
+          { 1, 0, 0},  // 1
+          { 0, 1, 0},  // 2
+          { 0, 0, 0},  // 3
+          { 0,-1, 1},  // 4
+          { 1, 0, 0}, // 5
+          { 0, 1, 0}, // 6
+          {-1, 0, 1}, // 7
+          { 0, 0, 0}, // 8
+          { 1, 0, 0}, // 9
+          { 1, 0, 0}, //10
+          {-1, 1, 0}  //11
+      };*/
 
 
-    	const unsigned int corner0[12]   ={0,1,2,0,4,5,6,4,0,1,3,2};
-    	const unsigned int corner1[12]   ={1,3,3,2,5,7,7,6,4,5,7,6};
-    	const unsigned int direction[12] ={0,1,0,1,0,1,0,1,2,2,2,2};
+      const unsigned int corner0[12]   ={0,1,2,0,4,5,6,4,0,1,3,2};
+      const unsigned int corner1[12]   ={1,3,3,2,5,7,7,6,4,5,7,6};
+      const unsigned int direction[12] ={0,1,0,1,0,1,0,1,2,2,2,2};
 
 
         bool parity=l.grid().parity();
@@ -134,7 +134,7 @@ namespace lvlset {
 
         typename node_container::iterator it;
 
-//			SET BUT NOT USED WARNING:
+//      SET BUT NOT USED WARNING:
 //        index_type old_idx[D];
 //        for (int i=0;i<D;++i) old_idx[i]=l.grid().min_point_index(i);
 
@@ -142,14 +142,14 @@ namespace lvlset {
         for (typename LevelSetType::template const_iterator_cells_filtered<typename LevelSetType::filter_all> it_c(l);
             !it_c.is_finished();it_c.next()) {
 
-        	//assert(l.grid().is_cell_member(it_c.indices()));
+          //assert(l.grid().is_cell_member(it_c.indices()));
 
-        	//std::cout << "cell_index = " << it_c.indices() << std::endl;
+          //std::cout << "cell_index = " << it_c.indices() << std::endl;
 
 
-        	for (int u=0;u<D;u++) {
-				while (!nodes[u].empty() && nodes[u].begin()->first < vec<index_type,D>(it_c.indices())) nodes[u].erase(nodes[u].begin());
-        	}
+          for (int u=0;u<D;u++) {
+        while (!nodes[u].empty() && nodes[u].begin()->first < vec<index_type,D>(it_c.indices())) nodes[u].erase(nodes[u].begin());
+          }
 
             unsigned int signs=0;
             for(int i=0;i<(1<<D);i++) {
@@ -162,17 +162,17 @@ namespace lvlset {
             //std::vector<bool> point_on_edge((D==2)?4:12, false);
 
             //for each element
-            for (	const int* Triangles =marching_cubes::polygonize<D>(signs);
-            		Triangles[0]!=-1;
-            		Triangles+=D) {
+            for (  const int* Triangles =marching_cubes::polygonize<D>(signs);
+                Triangles[0]!=-1;
+                Triangles+=D) {
 
-            	vec<node_ref_type,D> nod_numbers;
-            	vec<node_ref_type,D> nod_numbers2;
+              vec<node_ref_type,D> nod_numbers;
+              vec<node_ref_type,D> nod_numbers2;
 
                 //for each node
                 for (int n=0;n<D;n++) {
 
-                	const int edge=Triangles[n];
+                  const int edge=Triangles[n];
 
                     //find grid points of corresponding edge
                     /*unsigned int p0,p1;
@@ -195,37 +195,37 @@ namespace lvlset {
                     it=nodes[dir].find(d);
                     if (it!=nodes[dir].end()) {
 
-                    	//assert(!point_on_edge[edge]);
+                      //assert(!point_on_edge[edge]);
 
                         nod_numbers[n]=it->second;
 
-						//int e=previous[edge];
-						//vec<index_type,D> v=it_c.indices();
+            //int e=previous[edge];
+            //vec<index_type,D> v=it_c.indices();
 
-						/*while (e!=-1) {
-							v-=vec<index_type,D>(shift[e]);
-							if (l.grid().is_cell_member(v)) {
-								assert(!nodes2[edge].empty());
-								nod_numbers2[n]=nodes2[edge].front();
-								nodes2[edge].pop_front();
-								break;
-							}
-							e=previous[e];
-						}
-						assert(e!=-1);*/
-						//assert(!nodes2[edge].empty());
-						//nod_numbers2[n]=nodes2[edge].front();
-						//nodes2[edge].pop_front();
+            /*while (e!=-1) {
+              v-=vec<index_type,D>(shift[e]);
+              if (l.grid().is_cell_member(v)) {
+                assert(!nodes2[edge].empty());
+                nod_numbers2[n]=nodes2[edge].front();
+                nodes2[edge].pop_front();
+                break;
+              }
+              e=previous[e];
+            }
+            assert(e!=-1);*/
+            //assert(!nodes2[edge].empty());
+            //nod_numbers2[n]=nodes2[edge].front();
+            //nodes2[edge].pop_front();
 
-						//std::cout << nod_numbers[n] << " " << nod_numbers2[n] << std::endl;
+            //std::cout << nod_numbers[n] << " " << nod_numbers2[n] << std::endl;
 
-						//assert(nod_numbers[n]==nod_numbers2[n]);
+            //assert(nod_numbers[n]==nod_numbers2[n]);
 
-						//point_on_edge[edge]=true;
+            //point_on_edge[edge]=true;
 
                     } else {    //if node does not exist yet
 
-                    	//assert(point_on_edge[edge]==false);
+                      //assert(point_on_edge[edge]==false);
 
                         //calculate coordinate of new node
                         vec<value_type, D> cc;
@@ -241,14 +241,14 @@ namespace lvlset {
                                 //calculate the surface-grid intersection point
                                 if (d0==-d1) { //includes case where d0=d1=0
                                     pt_lst.push_back(it_c.corner(p0).active_pt_id());
-                                    cc[z]=	static_cast<value_type>(it_c.indices(z))+0.5;
+                                    cc[z]=  static_cast<value_type>(it_c.indices(z))+0.5;
                                 } else {
                                     if (math::abs(d0)<=math::abs(d1)) {
                                         pt_lst.push_back(it_c.corner(p0).active_pt_id());
-                                        cc[z]=	static_cast<value_type>(it_c.indices(z))+(d0/(d0-d1));
+                                        cc[z]=  static_cast<value_type>(it_c.indices(z))+(d0/(d0-d1));
                                     } else {
                                         pt_lst.push_back(it_c.corner(p1).active_pt_id());
-                                        cc[z]=	static_cast<value_type>(it_c.indices(z)+1)-(d1/(d1-d0));
+                                        cc[z]=  static_cast<value_type>(it_c.indices(z)+1)-(d1/(d1-d0));
                                     }
                                 }
 
@@ -280,7 +280,7 @@ namespace lvlset {
 
             }
 
-		}
+    }
     }
 
     ///

@@ -441,9 +441,9 @@ namespace calc {
             const int my_thread_num=0;
             #endif
 
-		    const int NumStartingPlaces=(ModelType::SpatiallyEqualDistributedFlux)?
+        const int NumStartingPlaces=(ModelType::SpatiallyEqualDistributedFlux)?
                                             static_cast<int>(Partition.AreaSize(Parameter.open_boundary)):   //AXIS
-												my_num_threads;
+                        my_num_threads;
 
 
             //for each thread a vector is defined, where the rates are stored
@@ -1053,33 +1053,33 @@ namespace calc {
         }
       }
 
-			// [josef] now that all thead-exclusive thread rates have been merged, we can output them
-		if (Model.OutputFluxes) {
-			  {
-			  std::ofstream outputfile("rates.csv");
-			  for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
-			  {
-				if(it.active_pt_id() != LevelSetType::INACTIVE)
-				{
-				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j]) << " ";
-				  outputfile << Rates[it.active_pt_id()] << std::endl;
-				}
-			  }
-			  outputfile.close();
-			  }
-			  {
-			  std::ofstream outputfile("rates_griddelta.csv");
-			  for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
-			  {
-				if(it.active_pt_id() != LevelSetType::INACTIVE)
-				{
-				  for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.grid_delta << " ";
-				  outputfile << Rates[it.active_pt_id()] << std::endl;
-				}
-			  }
-			  outputfile.close();
-			  }
-		}
+      // [josef] now that all thead-exclusive thread rates have been merged, we can output them
+    if (Model.OutputFluxes) {
+        {
+        std::ofstream outputfile("rates.csv");
+        for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
+        {
+        if(it.active_pt_id() != LevelSetType::INACTIVE)
+        {
+          for (int j=0;j<D;j++) outputfile << (it.start_indices()[j]) << " ";
+          outputfile << Rates[it.active_pt_id()] << std::endl;
+        }
+        }
+        outputfile.close();
+        }
+        {
+        std::ofstream outputfile("rates_griddelta.csv");
+        for (typename LevelSetType::const_iterator_runs it(SurfaceLevelSet); !it.is_finished(); it.next())
+        {
+        if(it.active_pt_id() != LevelSetType::INACTIVE)
+        {
+          for (int j=0;j<D;j++) outputfile << (it.start_indices()[j])*Parameter.grid_delta << " ";
+          outputfile << Rates[it.active_pt_id()] << std::endl;
+        }
+        }
+        outputfile.close();
+        }
+    }
     }
 
     //local_time=my::time::GetTime()-StartTime;

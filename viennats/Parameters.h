@@ -147,9 +147,9 @@ struct ReportError {
                 double ProcessDistance;
                 double AFMStartPosition[3];
                 double AFMEndPosition[3];
-                int AddLayer;            //the number of level set layers added to the geometry before the process is started
-                std::vector<int> ActiveLayers;	//Layers that are to be etched/deposited on
-                std::vector<int> MaskLayers;			//Layers that will be masks and stop etching
+                int AddLayer;                   //the number of level set layers added to the geometry before the process is started
+                std::vector<int> ActiveLayers;  //Layers that are to be etched/deposited on
+                std::vector<int> MaskLayers;    //Layers that will be masks and stop etching
                 double ProcessTime;             //the process time in seconds
                 unsigned int ALDStep;
                 std::string ModelName;          //the name of the used process model
@@ -157,8 +157,8 @@ struct ReportError {
                 int IterationCycles;            //the number of iterations (process calculation) before advancing to the next time step,
                 int StartIterationCycles;       //the number of iterations at the process simulation start, might be necessary to calculate initial values for coverages
                 double MaxTimeStep;             //maximal allowed time step
-                double smoothing_max_curvature;               //parameter for smoothing surface level set every time step
-                double smoothing_min_curvature;               //parameter for smoothing surface level set every time step
+                double smoothing_max_curvature; //parameter for smoothing surface level set every time step
+                double smoothing_min_curvature; //parameter for smoothing surface level set every time step
                 int smoothing_material_level;
                 int smoothing_max_iterations;
                 bool print_coverages;
@@ -234,8 +234,10 @@ struct ReportError {
             double domain_extention;
             double receptor_radius;
             double further_tracking_distance;
+            int bits_per_distance;
             bool print_vtk;
             bool print_dx;
+            bool print_lvst;
             bool print_velocities;
             bool print_coverages;
             bool print_rates;
@@ -269,7 +271,7 @@ struct ReportError {
             bool validate(){
                 std::string error;
                 if(geometry_files.empty()) error+=make_error("geometry_file");
-                if(output_path.empty()) error+=make_error("output_path");
+                //if(output_path.empty()) error+=make_error("output_path");
                 if(cfl_condition==-1.) error+=make_error("cfl_condition");
                 if(grid_delta==-1.) error+=make_error("grid_delta");
                 if(default_disc_orientation.empty()) error+=make_error("default_disc_orientation");
@@ -307,8 +309,10 @@ struct ReportError {
         (double, domain_extention)
         (double, receptor_radius)
         (double, further_tracking_distance)
+        (int, bits_per_distance)
         (bool, print_vtk)
         (bool, print_dx)
+        (bool, print_lvst)
         (bool, print_velocities)
         (bool, print_coverages)
         (bool, print_rates)
@@ -439,8 +443,10 @@ struct ReportError {
                 domain_extension %= lit("domain_extension") > '=' > lexeme[int_] > ';';
                 receptor_radius %= lit("receptor_radius") > '=' > lexeme[double_] > ';';
                 further_tracking_distance %= lit("further_tracking_distance") > '=' > lexeme[double_] > ';';
+                bits_per_distance %= lit("bits_per_distance") > '=' > lexeme[int_] > ';';
                 print_vtk %= lit("print_vtk") > '=' > boolean > ';';
                 print_dx %= lit("print_dx") > '=' > boolean > ';';
+                print_lvst %= lit("print_lvst") > '=' > boolean > ';';
                 print_velocities %= lit("print_velocities") > '=' > boolean > ';';
                 print_coverages %= lit("print_coverages") > '=' > boolean > ';';
                 print_rates %= lit("print_rates") > '=' > boolean > ';';
@@ -505,7 +511,7 @@ struct ReportError {
                 cfl_condition ^ input_scale ^ grid_delta ^ input_transformation ^
                 input_shift ^ default_disc_orientation ^ ignore_materials ^
                 change_input_parity ^ random_seed ^ num_dimensions ^ omp_threads ^ domain_extension ^
-                receptor_radius ^ further_tracking_distance ^ print_vtk ^ print_dx ^
+                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ print_vtk ^ print_dx ^ print_lvst ^
                 print_velocities ^ print_coverages ^ print_rates ^ print_materials ^
                 print_statistics ^ max_extended_starting_position ^ open_boundary ^
                 remove_bottom ^ snap_to_boundary_eps ^ process_cycles ^ material_mapping ^
@@ -552,6 +558,7 @@ struct ReportError {
                 change_input_parity,
                 print_vtk,
                 print_dx,
+                print_lvst,
                 print_velocities,
                 print_coverages,
                 print_rates,
@@ -581,6 +588,7 @@ struct ReportError {
             qi::rule<Iterator, int(), Skipper> random_seed,
                 num_dimensions,
                 omp_threads,
+                bits_per_distance,
                 max_extended_starting_position,
                 open_boundary,
                 process_cycles,
@@ -608,8 +616,10 @@ struct ReportError {
         domain_extention=0.;
         receptor_radius=0.8;
         further_tracking_distance=3.;
-        print_vtk=true;
+        bits_per_distance=8;
+        print_vtk=false;
         print_dx=false;
+        print_lvst=true;
         print_velocities=false;
         print_coverages=false;
         print_rates=false;
@@ -712,49 +722,94 @@ struct ReportError {
             --open_boundary;
         }
 
-        //Create directory, if it does not exist
-	    if(!boost::filesystem::exists(output_path)) {
-					msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
-                    boost::filesystem::path dir(output_path);
-                    if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
-	    }
+        //fix bits_per_distance so there are no overflow bits when writing to lvst file
+        //meaning that bits_per_distance are mapped to 1, 2, 4, 8, 16, 24, 32, 48, 56, 64
+        int bpd = 1;
+        while( bpd < bits_per_distance || (bpd < CHAR_BIT ? CHAR_BIT % bpd : bpd % CHAR_BIT) ){
+          if(bpd < CHAR_BIT) bpd++;
+          else bpd += CHAR_BIT; //once bpd (bits per distance) reaches the amount of bits per char, the increase will be CHAR_BIT instead of 1
+        }
+        if(bits_per_distance == 0) bits_per_distance = CHAR_BIT;
+        else bits_per_distance = bpd > 64 ? 64 : bpd;
+
+        //Create directory, if it does not exist; make it relative to the parameter file's path
+        std::string relative_path, relative_name;
+        if(output_path.front() != '/'){
+          std::size_t last_slash = fileName.find_last_of('/');
+          if(last_slash != std::string::npos){//if parameter file is in a different directory
+            relative_path = fileName.substr(0,last_slash+1);//path of parameter file
+            relative_name = fileName.substr(last_slash+1);//filename
+          }
+          else relative_name = fileName;
+
+          if(output_path.size() == 0){//default output path; example: par_trench.txt -> output_trench/
+            output_path = relative_name.substr(0, relative_name.find_last_of('.'));//exclude file ending
+
+            if(output_path.substr(0,3) == "par")//check if par is in the filename
+              output_path = output_path.substr(3);//exclude par in file name
+            output_path = relative_path + "output" + output_path;
+          }
+          else
+            output_path = relative_path + output_path;
+        }
+
+        //make path of input files relative too
+        for(unsigned int i=0; i<geometry_files.size(); i++){
+          if(geometry_files[i].front() != '/') geometry_files[i] = relative_path + geometry_files[i];
+        }
+
+        //add _bits_per_distance/ to output path
+        {
+          std::ostringstream oss;
+          if(output_path.back() == '/')
+            oss << output_path.substr(0, output_path.size()-1);
+          else
+            oss << output_path;
+          oss <<  "_" << bits_per_distance << "bit/";
+          output_path = oss.str();
+          if(!boost::filesystem::exists(output_path)) {
+              msg::print_message("Output directory not found! Creating new directory: "+output_path+"\n");
+                        boost::filesystem::path dir(output_path);
+                        if(!boost::filesystem::create_directory(dir)) msg::print_error("Could not create directory!");
+          }
+        }
 
         //test boundary condtions for periodicity, and check conformity
-		for (unsigned int h=0;h<boundary_conditions.size();h++) {
-		    if (boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY);
-		    if (boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY);
-		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
-		    if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
-		}
+        for (unsigned int h=0;h<boundary_conditions.size();h++) {
+            if (boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY);
+            if (boundary_conditions[h].max==bnc::PERIODIC_BOUNDARY) assert(boundary_conditions[h].min==bnc::PERIODIC_BOUNDARY);
+            if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].min==bnc::INFINITE_BOUNDARY);
+            if (h==static_cast<unsigned int>(open_boundary)) assert(boundary_conditions[h].max==bnc::INFINITE_BOUNDARY);
+        }
 
         //add OutputTimes
-		for(std::list<ProcessParameterType>::iterator pIter=process_parameters.begin();pIter!=process_parameters.end();++pIter) {
+        for(std::list<ProcessParameterType>::iterator pIter=process_parameters.begin();pIter!=process_parameters.end();++pIter) {
             // add output times for initial and final output
             if (pIter->initial_output) pIter->output_times.push_back(0);
             if (pIter->final_output) pIter->output_times.push_back(pIter->ProcessTime);
 
             // Create output times from period length and periodicity
-		    if (pIter->output_times_period_length>0 && pIter->output_times_periodicity>=0) {
+            if (pIter->output_times_period_length>0 && pIter->output_times_periodicity>=0) {
                 if(pIter->output_times.empty()) pIter->output_times.push_back(0.);  //if no output times, use 0 as start
 
-		        unsigned int tmp=pIter->output_times.size();
-		        pIter->output_times.resize(pIter->output_times_periodicity*tmp);
+                unsigned int tmp=pIter->output_times.size();
+                pIter->output_times.resize(pIter->output_times_periodicity*tmp);
 
-		        for (int h=1;h<pIter->output_times_periodicity;++h) {
-		            for (unsigned int k=0;k<tmp;k++) {
-		                pIter->output_times[tmp*h+k]=pIter->output_times[k]+h*pIter->output_times_period_length;
-		            }
-		        }
-		    }
+                for (int h=1;h<pIter->output_times_periodicity;++h) {
+                    for (unsigned int k=0;k<tmp;k++) {
+                        pIter->output_times[tmp*h+k]=pIter->output_times[k]+h*pIter->output_times_period_length;
+                    }
+                }
+            }
 
             //make sure they are in correct order and is unique
             std::sort(pIter->output_times.begin(),pIter->output_times.end());
             std::vector<double>::iterator it=std::unique(pIter->output_times.begin(),pIter->output_times.end());
             pIter->output_times.resize(it-pIter->output_times.begin());
 
-			// Sort Volume Output
-			std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
-			it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
-			pIter->output_volume.resize(it-pIter->output_volume.begin());
-		}
+            // Sort Volume Output
+            std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
+            it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
+            pIter->output_volume.resize(it-pIter->output_volume.begin());
+        }
     }

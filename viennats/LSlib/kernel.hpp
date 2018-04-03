@@ -80,7 +80,6 @@ namespace lvlset {
         //set data structure, and has to have the certain type and static constant definitions
         //as shown in the "DefaultLevelSetTraitsType" above
 
-
         //type and constant redefinitions
 
         static const int D=GridTraitsType::dimensions;
@@ -118,14 +117,12 @@ namespace lvlset {
                 return *this;
             }
 
-
             template<class X>
             allocation_type&  operator/=(const X& x) {
                 for (int i=0;i<D;++i) num_values[i]=static_cast<size_type>(num_values[i]/x)+1;
                 for (int i=0;i<D;++i) num_runs[i]=static_cast<size_type>(num_runs[i]/x)+1;
                 return *this;
             }
-
 
             template<class X>
             allocation_type operator*(const X& x) {
@@ -152,10 +149,11 @@ namespace lvlset {
             allocation_type():num_values(size_type(0)), num_runs(size_type(0)) {}
         };
 
+        //NOTE: This vector is not used anywhere.
         typedef std::vector<allocation_type> allocations_type;
 
 
-	// [Josef] The level set class, containing the Grid class.
+        // [Josef] The level set class, containing the Grid class.
         // the level set class
         class sub_levelset_type {
         public:
@@ -165,7 +163,7 @@ namespace lvlset {
             typedef typename LevelSetTraitsType::size_type size_type;
             typedef typename GridTraitsType::index_type index_type;
 
-         public:
+        public:
 
             //the following vectors are used to store the run-lenght-encoded data structure
             //for more details on that data structure see B. Houston, M.B. Nielsen, C. Batty, O. Nilsson, K. Museth,
@@ -191,14 +189,14 @@ namespace lvlset {
 
             const grid_type2& Grid; //Grid stores the information about the grid, on which the level set function is defined
 
-         public:
+        public:
 
-             allocation_type get_allocation() const {
+            allocation_type get_allocation() const {
                  // allocation_type allocates the requried sizes to num_values and num_runs
                  // num_values[0] is to contain level set values, num_values[i] contains the start indices at the i-th dimension
                  // num_runs[i] is to contain the run types at the i-th dimension
                  allocation_type a;
-                 a.num_values[0]=distances.size();	// To contain level set values
+                 a.num_values[0]=distances.size();  // To contain level set values
                  a.num_runs[0]=runtypes[0].size();
                  for (int i=1;i<D;++i) {
                      a.num_values[i]=start_indices[i-1].size();
@@ -213,8 +211,7 @@ namespace lvlset {
                  return a;
              }
 
-
-             sub_levelset_type(const grid_type2& g, const allocation_type& a) :num_active_points(0),  Grid(g) {
+            sub_levelset_type(const grid_type2& g, const allocation_type& a) :num_active_points(0),  Grid(g) {
                  // Constructor for the sub_levelset_type class
                  // Takes a pointer to a grid_type and an allocation_type to reserve the memory required for the
                  // start indeces, run types and run breaks arays, as well as the LS values
@@ -232,8 +229,7 @@ namespace lvlset {
                  runbreaks[D-1].reserve(a.num_runs[D-1]-1);
              };
 
-
-             const sub_levelset_type & operator=(const sub_levelset_type& s) {
+            const sub_levelset_type & operator=(const sub_levelset_type& s) {
                  for (int i=0;i<D;++i) start_indices[i]=s.start_indices[i];
                  for (int i=0;i<D;++i) runtypes[i]=s.runtypes[i];
                  for (int i=0;i<D;++i) runbreaks[i]=s.runbreaks[i];
@@ -244,7 +240,7 @@ namespace lvlset {
                  return *this;
              }
 
-             index_type GetRunStartCoord(int dim, size_type start_indices_pos, size_type run_type_pos) const {
+            index_type GetRunStartCoord(int dim, size_type start_indices_pos, size_type run_type_pos) const {
                 //returns the start index of the run given by start_indices_pos and run_type_pos
                 //see the definition of the HRLE-data structure for more details
                 if (run_type_pos==start_indices[dim][start_indices_pos]) {
@@ -264,7 +260,6 @@ namespace lvlset {
                     return Grid.max_point_index(dim);
                 }
             }
-
 
             size_type GetStartIndex(int dim, size_type start_indices_pos) const {
                 //returns the starting index of the runtypes array
@@ -313,7 +308,7 @@ namespace lvlset {
 
             }
 
-             unsigned long int allocated_memory() const {
+            unsigned long int allocated_memory() const {
                 //this function gives an estimation of the allocated memory for the level
                 //set function.
                 //NOTE: since this function is based on  the sizeof-operator it cannot take the memory needed for the
@@ -333,20 +328,17 @@ namespace lvlset {
                 return x;
             }
 
-
-
-
             size_type num_pts() const {
                 //this function returns the number of defined grid points
                 return distances.size();
             };
 
-             size_type num_active_pts() const {
+            size_type num_active_pts() const {
                 //this function returns the number of active grid points
                  return num_active_points;
             }
 
-             size_type number_of_runs(int level) const {
+            size_type number_of_runs(int level) const {
                 if (level>=0) {
                     return runtypes[level].size();
                 } else {
@@ -365,8 +357,9 @@ namespace lvlset {
 
                     if (start_point[dim]!=Grid.min_point_index(dim)) {
 
-                        if (start_point[dim]<=Grid.max_point_index(dim)) push_back_undefined(start_point, rt);
-
+                        if (start_point[dim]<=Grid.max_point_index(dim)){
+                          push_back_undefined(start_point, rt);
+                        }
                         start_point[dim]=Grid.min_point_index(dim);
                         ++start_point[dim+1];
                     }
@@ -377,82 +370,79 @@ namespace lvlset {
                 if (start_point[D-1]<=Grid.max_point_index(D-1)) push_back_undefined(start_point, rt);
             }
 
-
             template <class V>
             void push_back_undefined(const V& point, size_type rt) {
 
-                int level;
-                for (level=0;level<D;++level) {
-                    if (point[level]!=Grid.min_point_index(level)) break;
-                }
+              int level;
+              for (level=0;level<D;++level) {
+                if (point[level]!=Grid.min_point_index(level)) break;
+              }
 
-                size_type old_sign=0;
+              size_type old_sign=0;
+              int dim;
 
-                int dim;
-                for(dim=D-1;dim>level;--dim) {
-
-                    if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
-                       if(point[dim]!=Grid.min_point_index(dim)) {
-                           runtypes[dim].push_back(old_sign);
-                           runbreaks[dim].push_back(point[dim]);
-                       }
-                       runtypes[dim].push_back(start_indices[dim-1].size());
-                       start_indices[dim-1].push_back(runtypes[dim-1].size());
-                    } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
-                        old_sign=runtypes[dim].back();
-                        if (old_sign==rt) return;
-                        if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
-                            if (point[dim]==Grid.min_point_index(dim)) {
-                                runtypes[dim].back()=start_indices[dim-1].size();
-                            } else {
-                                runbreaks[dim].push_back(point[dim]);
-                                runtypes[dim].push_back(start_indices[dim-1].size());
-                            }
-                        } else {                                                    //if there are more than one runs
-                            if (point[dim]==runbreaks[dim].back()) {
-                                runtypes[dim].pop_back();
-                                if (!levelset::is_defined(runtypes[dim].back())) {
-                                    runtypes[dim].push_back(start_indices[dim-1].size());
-                                } else {
-                                    runbreaks[dim].pop_back();
-                                }
-                            } else {
-                                runbreaks[dim].push_back(point[dim]);
-                                runtypes[dim].push_back(start_indices[dim-1].size());
-                            }
-                        }
-                        start_indices[dim-1].push_back(runtypes[dim-1].size());
-                    }
-                }
+              for(dim=D-1;dim>level;--dim) {
 
                 if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
-                    if(point[dim]!=Grid.min_point_index(dim)) {
-                        runtypes[dim].push_back(old_sign);
-                        runbreaks[dim].push_back(point[dim]);
-                    }
-                    runtypes[dim].push_back(rt);
+                  if(point[dim]!=Grid.min_point_index(dim)) {
+                    runtypes[dim].push_back(old_sign);
+                    runbreaks[dim].push_back(point[dim]);
+                  }
+                  runtypes[dim].push_back(start_indices[dim-1].size());
+                  start_indices[dim-1].push_back(runtypes[dim-1].size());
                 } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
-                    old_sign=runtypes[dim].back();
-                    if (old_sign==rt) return;
-                    if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
-                        if (point[dim]==Grid.min_point_index(dim)) {
-                            runtypes[dim].back()=rt;
-                        } else {
-                            runbreaks[dim].push_back(point[dim]);
-                            runtypes[dim].push_back(rt);
-                        }
-                    } else {                                                    //if there are more than one runs
-                        if (point[dim]==runbreaks[dim].back()) {
-                            runtypes[dim].back()=rt;
-                        } else {
-                            runbreaks[dim].push_back(point[dim]);
-                            runtypes[dim].push_back(rt);
-                        }
+                  old_sign=runtypes[dim].back();
+                  if (old_sign==rt) return;
+                  if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
+                    if (point[dim]==Grid.min_point_index(dim)) {
+                      runtypes[dim].back()=start_indices[dim-1].size();
+                    } else {
+                      runbreaks[dim].push_back(point[dim]);
+                      runtypes[dim].push_back(start_indices[dim-1].size());
                     }
-                } else {
+                  } else {                                                    //if there are more than one runs
+                      if (point[dim]==runbreaks[dim].back()) {
+                        runtypes[dim].pop_back();
+                        if (!levelset::is_defined(runtypes[dim].back())){
+                          runtypes[dim].push_back(start_indices[dim-1].size());
+                        } else runbreaks[dim].pop_back();
+                    } else {
+                      runbreaks[dim].push_back(point[dim]);
+                      runtypes[dim].push_back(start_indices[dim-1].size());
+                    }
+                  }
+                  start_indices[dim-1].push_back(runtypes[dim-1].size());
+                }
+              }
+
+              if (runtypes[dim].size()==start_indices[dim].back()) {    //if there is no run
+                if(point[dim]!=Grid.min_point_index(dim)) {
+                  runtypes[dim].push_back(old_sign);
+                  runbreaks[dim].push_back(point[dim]);
+                }
+                runtypes[dim].push_back(rt);
+              } else if (!levelset::is_defined(runtypes[dim].back())) {          //if there is an defined run
+                old_sign=runtypes[dim].back();
+                if (old_sign==rt) return;
+                if (runtypes[dim].size()==start_indices[dim].back()+1) {   //if there is a single run
+                  if (point[dim]==Grid.min_point_index(dim)) {
+                    runtypes[dim].back()=rt;
+                  } else {
                     runbreaks[dim].push_back(point[dim]);
                     runtypes[dim].push_back(rt);
+                  }
+                } else {                                                    //if there are more than one runs
+                  if (point[dim]==runbreaks[dim].back()) {
+                    runtypes[dim].back()=rt;
+                  } else {
+                    runbreaks[dim].push_back(point[dim]);
+                    runtypes[dim].push_back(rt);
+                  }
                 }
+              } else {
+                runbreaks[dim].push_back(point[dim]);
+                runtypes[dim].push_back(rt);
+              }
             }
 
             template <class V>
@@ -543,8 +533,6 @@ namespace lvlset {
 
             }
 
-
-
             void invert() {
                 //this function inverts a level set function
                 //by switching the sign of all level set values
@@ -566,72 +554,62 @@ namespace lvlset {
                 }
             }
 
-            //TODO
-            void print() const {
+            void print(std::ostream& out = std::cout) const {
+                std::ostringstream oss;
 
-                std::cout << std::endl;
-                std::cout << "levelset data structure" << std::endl << std::endl;
+                out << std::endl;
+                out << "levelset data structure" << std::endl << std::endl;
 
                 for (int dim=D-1;dim>=0;--dim) {
-
-                    std::cout <<  dim <<  " start_indices";
-
+                    out <<  dim <<  " start_indices: " << start_indices[dim].size();
                     int c=0;
                     for (typename std::vector<size_type>::const_iterator it=start_indices[dim].begin();it!=start_indices[dim].end();++it) {
-                        if (c%10==0) std::cout << std::endl;
+                        if (c%10==0) out << std::endl;
                         ++c;
-                        std::cout << std::setw(6) << *it << " ";
-
+                        out << std::setw(8) << *it;
                     }
-                    std::cout << std::endl;
+                    out << std::endl;
 
-                    std::cout << dim << " run_types";
-
+                    out << dim << " run_types: " << runtypes[dim].size();
                     c=0;
                     for (typename std::vector<size_type>::const_iterator it=runtypes[dim].begin();it!=runtypes[dim].end();++it) {
-                        if (c%10==0) std::cout << std::endl;
+                        if (c%10==0) out << std::endl;
                         ++c;
                         if ((*it)==POS_PT) {
-                            std::cout << std::setw(6) << "+oo" << " ";
+                            out << std::setw(8) << "+oo";
                         } else if ((*it)==NEG_PT) {
-                            std::cout << std::setw(6) << "-oo" << " ";
+                            out << std::setw(8) << "-oo";
                         } else if ((*it)==UNDEF_PT) {
-                            std::cout << std::setw(6) << "UND" << " ";
+                            out << std::setw(8) << "UND";
                         } else if (!is_defined(*it)) {
-                            std::cout << "S" << std::setw(5) << ((*it) - SEGMENT_PT) << " ";
+                            oss.str("");
+                            oss << "S" << ((*it) - SEGMENT_PT);
+                            out << std::setw(8) << oss.str();
                         } else {
-                            std::cout << std::setw(6) << (*it) << " ";
+                            out << std::setw(8) << (*it);
                         }
-
                     }
-                    std::cout << std::endl;
+                    out << std::endl;
 
-                    std::cout << dim << " run_breaks";
-
+                    out << dim << " run_breaks: " << runbreaks[dim].size();
                     c=0;
                     for (typename std::vector<index_type>::const_iterator it=runbreaks[dim].begin();it!=runbreaks[dim].end();++it) {
-                        if (c%10==0) std::cout << std::endl;
+                        if (c%10==0) out << std::endl;
                         ++c;
-                        std::cout << std::setw(6) << *it << " ";
-
+                        out << std::setw(8) << *it;
                     }
-                    std::cout << std::endl;
-
+                    out << std::endl;
                 }
 
-                std::cout << "distances";
-
+                out << "distances: " << distances.size();
                 int c=0;
                 for (typename std::vector<value_type>::const_iterator it=distances.begin();it!=distances.end();++it) {
-                    if (c%10==0) std::cout << std::endl;
+                    if (c%10==0) out << std::endl;
                     ++c;
-                    std::cout.precision(3);
-                    std::cout << std::setw(6) << *it << " ";
-
+                    out << std::setw(8) << std::fixed << std::setprecision(3) << *it;
                 }
-                std::cout << std::endl;
-                std::cout << std::endl;
-
+                out << std::endl;
+                out << std::endl;
             }
 
         };
@@ -639,7 +617,7 @@ namespace lvlset {
         class sub_levelsets_type {
         // contains the vector of sub_levelset_type items that are used for parallelization
 
-            typedef sub_levelset_type* sub_levelset_ptr_type;	// pointer to memory containing sub_levelset_type object
+            typedef sub_levelset_type* sub_levelset_ptr_type;  // pointer to memory containing sub_levelset_type object
 
             typedef typename std::vector< sub_levelset_ptr_type> sub_levelsets_intern_type;
             sub_levelsets_intern_type subs;
@@ -671,8 +649,8 @@ namespace lvlset {
             }
 
             void initialize(size_type i, const grid_type2& g,  allocation_type a=allocation_type()) {
-            // initialize the parallelization by implementing i number of sub_levelset_type objects
-            // through a sub_levelset_ptr_type object, that each correspond to a parallel core
+                // initialize the parallelization by implementing i number of sub_levelset_type objects
+                // through a sub_levelset_ptr_type object, that each correspond to a parallel core
 
 
                 for (typename sub_levelsets_intern_type::iterator it=subs.begin();it!=subs.end();++it) if (*it!=0) delete *it;
@@ -683,19 +661,19 @@ namespace lvlset {
                 a*=allocation_factor;
                 a/=i;
 
-                #pragma omp parallel for schedule(static,1)	// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+                #pragma omp parallel for schedule(static,1)  // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
                 for (int k=0;k<static_cast<int>(subs.size());++k) {
                     subs[k]= sub_levelset_ptr_type(new sub_levelset_type(g,a));
                 }
             }
 
             size_type size() const {
-            // return the size of the vector for parallelization
+                // return the size of the vector for parallelization
                 return subs.size();
             }
 
             sub_levelsets_type(const sub_levelsets_type& s) {
-            // builds a new sub_levelsets_type that copies the one passed to the function as s
+                // builds a new sub_levelsets_type that copies the one passed to the function as s
                 subs.resize(s.size());
 
                 #pragma omp parallel for schedule(static,1)// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
@@ -707,7 +685,7 @@ namespace lvlset {
             sub_levelsets_type() {}
 
             ~sub_levelsets_type() {
-            // sub_levelsets_type destructor used to delete all pointers for clean-up
+                // sub_levelsets_type destructor used to delete all pointers for clean-up
                 for (typename sub_levelsets_intern_type::iterator it=subs.begin();it!=subs.end();++it) if (*it!=0) delete *it;
             }
         };
@@ -779,6 +757,7 @@ namespace lvlset {
         static const size_type UNDEF_PT;    //this constant is used as runtype for uninitialized runs
         static const size_type SEGMENT_PT;    //this constant is used as runtype for uninitialized runs
 
+        //Public dimension, D is private
         static const int dimensions=GridTraitsType::dimensions;
 
         //########################################################################
@@ -953,12 +932,48 @@ namespace lvlset {
             }
         }
 
-        void print() const {
+        void print(std::ostream& out = std::cout) const {
             for (typename sub_levelsets_type::size_type i=0;i!=sub_levelsets.size();++i) {
-                sub_levelsets[i].print();
-                std::cout << std::endl;
+                sub_levelsets[i].print(out);
+                out << std::endl;
             }
         }
+
+        void print_without_segmentation(std::ostream& out = std::cout){
+          serialize();
+          print(out);
+          segment();
+        }
+
+        //returns a non-const reference to the start indices of a segment
+        std::vector<size_type>& start_indices(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].start_indices[dim];
+        }
+        //returns a non-const reference to the runtypes of a segment
+        std::vector<size_type>& runtypes(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].runtypes[dim];
+        }
+        //returns a non-const reference to the runbreaks of a segment
+        std::vector<index_type>& runbreaks(unsigned int dim, unsigned int segment = 0){
+          return sub_levelsets[segment].runbreaks[dim];
+        }
+        //returns a non-const reference to the distances of a segment
+        std::vector<value_type>& distances(unsigned int segment = 0){
+          return sub_levelsets[segment].distances;
+        }
+
+        //writes the levelset to a file
+        levelset& export_levelset(const std::string& path, int bits_per_distance = 8){
+          export_levelset_to_file(*this, path, bits_per_distance);
+          return *this;
+        }
+
+        //reads the levelset from a levelset file; NOTE: grid has to be read first!!
+        levelset& import_levelset(const std::string& path){
+          import_levelset_from_file(*this, path);
+          return *this;
+        }
+
 
         void swap(levelset<GridTraitsType, LevelSetTraitsType>& l) {
             //this function swaps the level set function with another level set function "l"
@@ -1006,7 +1021,7 @@ namespace lvlset {
 
         }
 
-         unsigned long int allocated_memory() const {
+        unsigned long int allocated_memory() const {
             //this function gives an estimation of the allocated memory for the level
             //set function.
             //NOTE: since this function is based on  the sizeof-operator it cannot take the memory needed for the
@@ -1071,7 +1086,7 @@ namespace lvlset {
 
             //size_type distances_pos(0);     //start_indices_pos
 
-        	int sub=std::upper_bound(segmentation.begin(), segmentation.end(), coords)-segmentation.begin();
+          int sub=std::upper_bound(segmentation.begin(), segmentation.end(), coords)-segmentation.begin();
 
             //shfdhsfhdskjhgf assert(sub>=0);
             //shfdhsfhdskjhgf assert(sub<sub_levelsets.size());
@@ -1205,8 +1220,8 @@ namespace lvlset {
         }
 
         bool is_active(size_type pt_id) {           //returns if the grid point given by the "pt_id"
-			return (active_pt_id(pt_id)!=INACTIVE);		//is an active grid point
-		}
+          return (active_pt_id(pt_id)!=INACTIVE);    //is an active grid point
+        }
 
 
         size_type active_pt_id2(size_type pt_id) const {    //this function assumes that pt_id is a valid point-ID of
@@ -1249,9 +1264,9 @@ namespace lvlset {
         void finalize(int);
 
         allocation_type get_allocation() const {
-        // allocation_type allocates the requried sizes to num_values and num_runs for all the sub_levelsets members
-        // num_values[0] is to contain level set values, num_values[i] contains the start indices at the i-th dimension
-        // num_runs[i] is to contain the run types at the i-th dimension
+            // allocation_type allocates the requried sizes to num_values and num_runs for all the sub_levelsets members
+            // num_values[0] is to contain level set values, num_values[i] contains the start indices at the i-th dimension
+            // num_runs[i] is to contain the run types at the i-th dimension
 
              allocation_type a;
              a.num_values=vec<index_type,D>(0);
@@ -1264,8 +1279,7 @@ namespace lvlset {
 
              return (a*sub_levelsets.size());
              //return a;
-         }
-
+        }
 
         template <class PointsType> levelset(const grid_type2&, const PointsType& point_defs);
         //this is a constructor, creating a new level set from a sorted list of index/level set value-pairs
@@ -1286,7 +1300,7 @@ namespace lvlset {
 
         levelset(const grid_type2&);
         //initializes a levelset function without any defined points
-        //if sign = POS_SIGN(default) one undefined run of specified sign
+        //if sign = POS_SIGN(default) one  undefined run of specified sign
         //is created containing all grid points
 
         levelset(const grid_type2&,  value_type, int, bool );
@@ -1413,12 +1427,12 @@ namespace lvlset {
 
             points_type tmp_segmentation;
 
-            int n=1;		//TODO
+            int n=1;    //TODO
             #ifdef _OPENMP
                 n=omp_get_max_threads();
             #endif
 
-            size_type n_pts=num_pts();	// number of defined grid points
+            size_type n_pts=num_pts();  // number of defined grid points
             size_type sum=0;
 
             for (unsigned int g=0;g<static_cast<unsigned int>(n-1);++g) {
@@ -1474,7 +1488,7 @@ namespace lvlset {
                             //changing the signs of the level set values, and
                             //by interchanging positive and negative undefined runs
 
-        void serialize();
+        void serialize();   //this function is used to serialize a segmented levelset
 
         void rebuild();     //this function is used to rebuild the level set function
                             //after time integration, after rebuilding the level set function
@@ -1637,10 +1651,10 @@ namespace lvlset {
         //by the surface
 
         //TODO: is not parallelized yet
+        assert(!point_defs.empty());
 
-    	assert(!point_defs.empty());
-
-        std::vector<vec<index_type, D > > tmp_segmentation;
+        //std::vector<vec<index_type, D > > tmp_segmentation;
+        points_type tmp_segmentation;
 
         initialize(tmp_segmentation);
 
@@ -1703,6 +1717,7 @@ namespace lvlset {
 
         finalize(2);
     }
+
 
     template <class GridTraitsType, class LevelSetTraitsType> template <class PointsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(
                         const grid_type2& g,
@@ -2065,8 +2080,8 @@ namespace lvlset {
                 }
             }
 
-			#pragma omp barrier //wait until all other threads in section reach the same point.
-			#pragma omp single //section of code that must be run by a single available thread.
+      #pragma omp barrier //wait until all other threads in section reach the same point.
+      #pragma omp single //section of code that must be run by a single available thread.
             {
                 finalize(2);
                 data.set_size(num_active_pts());
@@ -2136,22 +2151,22 @@ namespace lvlset {
                 while (pos<end_v) {
 
                     typename LevelSetType::value_type d=min_or_max(itA.value(),itB.value());
-//                	typename LevelSetType::value_type d;
+//                  typename LevelSetType::value_type d;
 
 //                    if (std::abs(itA.value()-itB.value())<0.001) d=POS_VALUE;
 
-//                	if ((itA.value()-itB.value())<-0.001) {
-//                		d=POS_VALUE;
-//                	} else if (std::abs(itA.value())<std::abs(itB.value())) {
-//                		d=itA.value();
-//                	} else {
-//                		d=itB.value();
-//                	}
+//                  if ((itA.value()-itB.value())<-0.001) {
+//                    d=POS_VALUE;
+//                  } else if (std::abs(itA.value())<std::abs(itB.value())) {
+//                    d=itA.value();
+//                  } else {
+//                    d=itB.value();
+//                  }
 
-//                	min_or_max(itA.value(),itB.value());
+//                  min_or_max(itA.value(),itB.value());
 
 //                    if ((itA.value()<0)&&(itB.value()<0)) {
-//                    	std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
+//                      std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
 //                    }
 
                     if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
@@ -2229,7 +2244,7 @@ namespace lvlset {
         }
 
         finalize(std::min(width, old_lvlset.number_of_layers()));
-
+        segment();
         /*std::string err= misc::test(*this);     //check level set function      //TODO
         if (err.size()) {                   //if inconsistent print out error message
             std::cout << "reduce failed!" << std::endl;
@@ -2263,7 +2278,6 @@ namespace lvlset {
             finalize(old_lvlset.number_of_layers());
         }
     }
-
 
 
     template <class GridTraitsType, class LevelSetTraitsType> void levelset<GridTraitsType, LevelSetTraitsType>::expand(int end_width, int start_width) {
@@ -2344,7 +2358,8 @@ namespace lvlset {
             //std::cout << "     time2 = " << tmp << std::endl;
 
         }
-
+        //setting up the segmentation correctly
+        segment();
     }
 
 
@@ -2629,9 +2644,9 @@ namespace lvlset {
             //this function requires that the level set function consists at least of 3 layers of grid points,
             //which means that all neighbor grid points of active grid points are defined
 
-            const value_type pos	=	l.Grid.grid_position_of_local_index(dir,indices(dir));
-            const value_type d_p	=	l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
-            const value_type d_n	=	l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+            const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+            const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+            const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
 
             const value_type phi_0=center().value();
             const value_type phi_p=neighbor(dir,0).value();
@@ -3620,13 +3635,13 @@ namespace lvlset {
                         ++start_indices_pos[s_level];
                     } else {
 
-                    	if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
-							move_inverse.set(s_level);
-						} else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
-							move_inverse.reset(s_level);
-						}
+                      if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
+              move_inverse.set(s_level);
+            } else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
+              move_inverse.reset(s_level);
+            }
 
-                    	if (move_inverse.test(s_level)) {
+                      if (move_inverse.test(s_level)) {
                             //shfdhsfhdskjhgf assert(start_indices_pos[s_level]>0);
                             --start_indices_pos[s_level];
                             --rel_coords[s_level];
@@ -3666,17 +3681,17 @@ namespace lvlset {
                         --rel_coords[s_level];
                         --start_indices_pos[s_level];
                     } else {
-                    	if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
-                    		move_inverse.reset(s_level);
-                    	} else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
-                    		move_inverse.set(s_level);
-                    	}
+                      if (rel_coords[s_level]==l.grid().max_point_index(s_level)) {
+                        move_inverse.reset(s_level);
+                      } else if (rel_coords[s_level]==l.grid().min_point_index(s_level)) {
+                        move_inverse.set(s_level);
+                      }
                         if (move_inverse.test(s_level)) {
-							++start_indices_pos[s_level];
-							++rel_coords[s_level];
+              ++start_indices_pos[s_level];
+              ++rel_coords[s_level];
                         } else {
-							--start_indices_pos[s_level];
-							--rel_coords[s_level];
+              --start_indices_pos[s_level];
+              --rel_coords[s_level];
                         }
                     }
 

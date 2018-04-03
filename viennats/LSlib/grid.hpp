@@ -75,7 +75,7 @@ namespace lvlset {
     public:
         typedef typename GridTraitsType::index_type index_type;
         typedef typename GridTraitsType::coord_type coord_type;
-        typedef GridTraitsType grid_traits_type;
+        //typedef GridTraitsType grid_traits_type;
 
         static const int dimensions=GridTraitsType::dimensions;
 
@@ -87,7 +87,7 @@ namespace lvlset {
 
         vec<index_type,D> Min_,Max_,Ext_;                           //Minimum, maximum, extension of whole grid for all grid directions
 
-        vec<boundary_type,D> BoundaryConditions_;                       //here the boundary conditions for all grid directions are stored
+        vec<boundary_type,D> BoundaryConditions_;                   //here the boundary conditions for all grid directions are stored
 
         vec<index_type,D> MinGridPointCoord_, MaxGridPointCoord_;   //effective maximum and minimum grid point coordinates
                                                                     //due to periodic boundary conditions the grid points at opposite boundaries are the same
@@ -127,6 +127,7 @@ namespace lvlset {
             }
         }
 
+        //copy constructor
         grid_type(const grid_type& gt): GridTraits(gt.GridTraits),
                                         Min_(gt.Min_),
                                         Max_(gt.Max_),
@@ -135,7 +136,18 @@ namespace lvlset {
                                         MinGridPointCoord_(gt.MinGridPointCoord_),
                                         MaxGridPointCoord_(gt.MaxGridPointCoord_),
                                         parities(gt.parities) {}
+        //empty constructor
+        grid_type():GridTraits(GridTraitsType()){}
 
+        void print() const{
+          std::cout << "Min_: " << Min_ << std::endl;
+          std::cout << "Max_: " << Max_ << std::endl;
+          std::cout << "Ext_: " << Ext_ << std::endl;
+          std::cout << "MinGridPoint: " << MinGridPointCoord_ << std::endl;
+          std::cout << "MaxGridPoint: " << MaxGridPointCoord_ << std::endl;
+          std::cout << "BNC: " << BoundaryConditions_ << std::endl;
+          GridTraits.print();
+        }
 
         bool parity(int dim) const {
             //parity is false/true if the "grid_position" function in GridTraitsType is
@@ -192,10 +204,10 @@ namespace lvlset {
 
         template <class V>
         bool is_cell_member(const V& vec) const {
-        	for (int i=0;i<D;++i) {
-        		if ((vec[i]<min_grid_index(i)) || (vec[i]>=max_grid_index(i))) return false;
-        	}
-        	return true;
+          for (int i=0;i<D;++i) {
+            if ((vec[i]<min_grid_index(i)) || (vec[i]>=max_grid_index(i))) return false;
+          }
+          return true;
         }
 
         inline index_type max_point_index(int dim) const {
@@ -340,7 +352,7 @@ namespace lvlset {
             }
         }
 
-	//[Josef] This function certainly has a role to play
+        //[Josef] This function certainly has a role to play
         coord_type global_index_2_global_coordinate(int dir, coord_type c) const {
             //this function transforms the coordinate c in respect to the rectilinear grid into the
             //real coordinates
@@ -436,7 +448,7 @@ namespace lvlset {
             }
         }*/
 
-        const grid_traits_type& grid_traits() const {
+        const GridTraitsType& grid_traits() const {
             return GridTraits;
         }
 

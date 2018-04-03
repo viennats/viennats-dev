@@ -211,10 +211,10 @@ namespace lvlset {
         while (!itA.is_finished() || !itB.is_finished()) {
 
             if (itA.value()>itB.value()) {
-            	itA.print();							//TODO
-            	itB.print();
-            	std::cout << "diff value = " << (itA.value()-itB.value()) << std::endl;
-            	return false;
+              itA.print();              //TODO
+              itB.print();
+              std::cout << "diff value = " << (itA.value()-itB.value()) << std::endl;
+              return false;
             }
 
             if (itA.end_indices()<itB.end_indices()) {
