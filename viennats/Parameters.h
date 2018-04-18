@@ -35,17 +35,55 @@ namespace proc{
 namespace qi = boost::spirit::qi;
 //namespace phoenix = boost::phoenix;
 
+namespace client{
+  // function to find line the error occurred
+  template<typename Iter>
+  unsigned find_error_line(Iter first_iter,
+    Iter error_iter) {
+      unsigned line_count = 1;
+      while(first_iter != error_iter){
+        ++first_iter;
+        if(*first_iter == '\n') ++line_count;
+      }
+      return line_count;
+    }
+
+
+  template<typename Iter>
+  void report_input_error(Iter first_iter, Iter last_iter,
+    Iter error_iter, std::string error_msg) {
+      std::string first(first_iter, error_iter);
+      std::string last(error_iter, last_iter);
+      auto first_pos = first.rfind('\n');
+      auto last_pos = last.find('\n');
+      auto error_line = ((first_pos == std::string::npos) ? first
+      : std::string(first, first_pos + 1))
+      + std::string(last, 0, last_pos);
+      auto error_pos = (error_iter - first_iter) + 1;
+      if (first_pos != std::string::npos) {
+          error_pos -= (first_pos + 1);
+      }
+      std::cerr << error_msg << std::endl;
+      std::cerr << "In line " << find_error_line(first_iter, error_iter)  << ", column " << error_pos << std::endl
+      << error_line << std::endl
+      << std::setw(error_pos) << '^' << "--- here"
+      << std::endl;
+  }
+
+}
+
 // lazy function for error reporting
 struct ReportError {
     // the result type must be explicit for Phoenix
     template<typename, typename, typename, typename>
     struct result { typedef void type; };
 
-
+    // function for spirit to report errors properly
     // contract the string to the surrounding new-line characters
     template<typename Iter>
     void operator()(Iter first_iter, Iter last_iter,
         Iter error_iter, const qi::info& what) const {
+
             std::string first(first_iter, error_iter);
             std::string last(error_iter, last_iter);
             auto first_pos = first.rfind('\n');
@@ -57,12 +95,13 @@ struct ReportError {
             if (first_pos != std::string::npos) {
                 error_pos -= (first_pos + 1);
             }
-            std::cerr << "INPUT ERROR: Parsing error near " << what << std::endl << std::endl
+            std::cerr << "INPUT ERROR: Parsing error near " << what << std::endl;
+            std::cerr << "In line " << client::find_error_line(first_iter, error_iter)  << ", column " << error_pos << std::endl
             << error_line << std::endl
             << std::setw(error_pos) << '^' << "--- here"
             << std::endl;
-        }
-    };
+    }
+};
 
     const boost::phoenix::function<ReportError> report_error = ReportError();
 
@@ -235,6 +274,7 @@ struct ReportError {
             double receptor_radius;
             double further_tracking_distance;
             int bits_per_distance;
+            bool output_volume_extract_single_materials;
             bool print_vtk;
             bool print_dx;
             bool print_lvst;
@@ -310,6 +350,7 @@ struct ReportError {
         (double, receptor_radius)
         (double, further_tracking_distance)
         (int, bits_per_distance)
+        (bool, output_volume_extract_single_materials)
         (bool, print_vtk)
         (bool, print_dx)
         (bool, print_lvst)
@@ -437,13 +478,14 @@ struct ReportError {
                 default_disc_orientation %= (lit("default_disc_orientation") | lit("default_disk_orientation")) > '=' > doublevec > ';';
                 ignore_materials %= lit("ignore_materials") > '=' > intvec > ';';
                 change_input_parity %= lit("change_input_parity") > '=' > boolean > ';';
-                random_seed %= lit("random_ssed") > '=' > lexeme[int_] > ';';
+                random_seed %= lit("random_seed") > '=' > lexeme[int_] > ';';
                 num_dimensions %= lit("num_dimensions") > '=' > lexeme[int_] > ';';
                 omp_threads %= lit("omp_threads") > '=' > lexeme[int_] > ';';
                 domain_extension %= lit("domain_extension") > '=' > lexeme[int_] > ';';
                 receptor_radius %= lit("receptor_radius") > '=' > lexeme[double_] > ';';
                 further_tracking_distance %= lit("further_tracking_distance") > '=' > lexeme[double_] > ';';
                 bits_per_distance %= lit("bits_per_distance") > '=' > lexeme[int_] > ';';
+                output_volume_extract_single_materials %= lit("output_volume_extract_single_materials") > '=' > boolean > ';';
                 print_vtk %= lit("print_vtk") > '=' > boolean > ';';
                 print_dx %= lit("print_dx") > '=' > boolean > ';';
                 print_lvst %= lit("print_lvst") > '=' > boolean > ';';
@@ -511,7 +553,7 @@ struct ReportError {
                 cfl_condition ^ input_scale ^ grid_delta ^ input_transformation ^
                 input_shift ^ default_disc_orientation ^ ignore_materials ^
                 change_input_parity ^ random_seed ^ num_dimensions ^ omp_threads ^ domain_extension ^
-                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ print_vtk ^ print_dx ^ print_lvst ^
+                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ output_volume_extract_single_materials ^ print_vtk ^ print_dx ^ print_lvst ^
                 print_velocities ^ print_coverages ^ print_rates ^ print_materials ^
                 print_statistics ^ max_extended_starting_position ^ open_boundary ^
                 remove_bottom ^ snap_to_boundary_eps ^ process_cycles ^ material_mapping ^
@@ -556,6 +598,7 @@ struct ReportError {
             qi::rule<Iterator, bool(), Skipper> surface_geometry,
                 report_import_errors,
                 change_input_parity,
+                output_volume_extract_single_materials,
                 print_vtk,
                 print_dx,
                 print_lvst,
@@ -617,6 +660,7 @@ struct ReportError {
         receptor_radius=0.8;
         further_tracking_distance=3.;
         bits_per_distance=8;
+        output_volume_extract_single_materials=true;
         print_vtk=false;
         print_dx=false;
         print_lvst=true;
@@ -659,32 +703,14 @@ struct ReportError {
 
         //check if grammar is correct
         if(!r){
-            if(start==input.begin()) abort();
-            std::cerr << "INPUT ERROR: Illegal parameter name or other unexpected name specified." << std::endl;
-            std::string first(input.begin(), start);
-            std::string last(start, end);
-            auto first_pos = first.rfind('\n');
-            auto last_pos = last.find('\n');
-            auto error_line = ((first_pos == std::string::npos) ? first
-            : std::string(first, first_pos + 1))
-            + std::string(last, 0, last_pos);
+            report_input_error(input.begin(), end, start, "INPUT ERROR: Illegal parameter name or other unexpected name specified.");
 
-            std::cerr << "Error occurred in line:" << std::endl << error_line << std::endl << std::endl;
             abort();
         }
 
         //check if file was parsed until the end
         if(start!=end){
-            std::cerr << "INPUT ERROR: Illegal parameter name or duplicate parameter definition." << std::endl;
-            std::string first(input.begin(), start);
-            std::string last(start, end);
-            auto first_pos = first.rfind('\n');
-            auto last_pos = last.find('\n');
-            auto error_line = ((first_pos == std::string::npos) ? first
-            : std::string(first, first_pos + 1))
-            + std::string(last, 0, last_pos);
-
-            std::cerr << "Error occurred in line:" << std::endl << error_line << std::endl << std::endl;
+            report_input_error(input.begin(), end, start, "INPUT ERROR: Illegal parameter name or duplicate parameter definition.");
             abort();
         }
 
