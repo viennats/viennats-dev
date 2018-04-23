@@ -760,14 +760,16 @@ struct ReportError {
 
         //Create directory, if it does not exist; make it relative to the parameter file's path
         std::string relative_path, relative_name;
-        if(output_path.front() != '/'){
-          std::size_t last_slash = fileName.find_last_of('/');
-          if(last_slash != std::string::npos){//if parameter file is in a different directory
-            relative_path = fileName.substr(0,last_slash+1);//path of parameter file
-            relative_name = fileName.substr(last_slash+1);//filename
-          }
-          else relative_name = fileName;
 
+        std::size_t last_slash = fileName.find_last_of('/');
+        if(last_slash != std::string::npos){//if parameter file is in a different directory
+          relative_path = fileName.substr(0,last_slash+1);//path of parameter file
+          relative_name = fileName.substr(last_slash+1);//filename
+        }
+        else relative_name = fileName;
+
+
+        if(output_path.front() != '/'){
           if(output_path.size() == 0){//default output path; example: par_trench.txt -> output_trench/
             output_path = relative_name.substr(0, relative_name.find_last_of('.'));//exclude file ending
 

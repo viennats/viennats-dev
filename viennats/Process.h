@@ -1742,7 +1742,7 @@ namespace proc {
             }
             if(Parameter.print_vtk){
               oss << ".vtk";
-              write_explicit_surface_opendx(LS,oss.str());
+              write_explicit_surface_vtk(LS,oss.str());
             }
             if(Parameter.print_lvst){
               oss << ".lvst";
