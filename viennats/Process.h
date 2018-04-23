@@ -1720,19 +1720,36 @@ namespace proc {
           int counter=0;
           for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
             typename LevelSetsType::value_type LS(*it);
-            //std::cout << counter << ": " << LS.num_active_pts() << std::endl;
-            LS.invert();
-            for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
-              LS.min(*dummy_it);
+
+            if(Parameter.output_volume_extract_single_materials){
+              LS.invert(); // invert LS for xor
+              for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
+                LS.min(*dummy_it);
+              }
+              LS.invert();  //invert back for real output
             }
-            LS.invert();
+
+
             LS.max(boundaryBox);    // Logic AND(intersect) boundary with levelset
             LS.prune();          //remove unnecessary points
 
             //print surface
             std::ostringstream oss;
-            oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter << ".vtk";
-            lvlset::write_explicit_surface_vtk(LS, oss.str());
+            oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter;
+            if(Parameter.print_dx){
+              oss << ".dx";
+              write_explicit_surface_opendx(LS,oss.str());
+            }
+            if(Parameter.print_vtk){
+              oss << ".vtk";
+              write_explicit_surface_vtk(LS,oss.str());
+            }
+            if(Parameter.print_lvst){
+              oss << ".lvst";
+              LS.export_levelset(oss.str(), Parameter.bits_per_distance);
+            }
+
+            //lvlset::write_explicit_surface_vtk(LS, oss.str());
 
             ++counter;
           }
