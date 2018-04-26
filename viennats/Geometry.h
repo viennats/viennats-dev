@@ -973,30 +973,36 @@ namespace geometry {
       // }
     }
 
-    //Reads in a surface and transforms it to a levelset
+    //Reads in surfaces and transforms it to a levelset
     template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
-    void import_levelset_from_surface(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
-                                      ParameterType& p, std::list<LevelSetType>& LevelSets, const int& counter)
+    void import_levelsets_from_surface(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
+                                      ParameterType& p, std::list<LevelSetType>& LevelSets)
     {
       int grid_min[D]={ };
       int grid_max[D]={ };
-      surface<D> s;
+      std::list< surface<D> > surfaces;
+
+
+      std::cout << "The geometry consists of " << p.geometry_files.size() <<" input surfaces. \n";
 
       //!surface.ReadVTK(...) reads surface file/s and modifies it/them according to the user-set parameters
-      std::cout << "The geometry consists of " << p.geometry_files.size() <<" input surfaces. \n";
-      msg::print_start("Read surface input file "+p.geometry_files[counter]+"...");
-      s.ReadVTK(p.geometry_files[counter], p.input_scale, p.input_transformation,
-                p.input_transformation_signs, p.change_input_parity, p.input_shift);
+      for(unsigned i=0; i<p.geometry_files.size(); ++i){
+        surfaces.push_back(surface<D>());
+        msg::print_start("Read surface input file " + p.geometry_files[i] + "...");
+        surfaces.back().ReadVTK(p.geometry_files[i], p.input_scale, p.input_transformation,
+                  p.input_transformation_signs, p.change_input_parity, p.input_shift);
 
-      for (int h = 0; h < D; ++h) {
-        grid_min[h] = std::min(grid_min[h],int(std::ceil(s.Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
-        grid_max[h] = std::max(grid_max[h],int(std::floor(s.Max[h] / p.grid_delta + p.snap_to_boundary_eps)));
-      }
-      msg::print_done();
+        for (int h = 0; h < D; ++h) {
+          grid_min[h] = std::min(grid_min[h],int(std::ceil(surfaces.back().Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
+          grid_max[h] = std::max(grid_max[h],int(std::floor(surfaces.back().Max[h] / p.grid_delta + p.snap_to_boundary_eps)));
+        }
+        msg::print_done();
 #ifdef VERBOSE
-      std::cout << "min = " << (s.Min) << "   " << "max = " << (s.Max) << std::endl;
-      std::cout << "min = " << (s.Min / p.grid_delta) << "   " << "max = " << (s.Max / p.grid_delta) << std::endl;
+        std::cout << "min = " << (surfaces.back().Min) << "   " << "max = " << (surfaces.back().Max) << std::endl;
+        std::cout << "min = " << (surfaces.back().Min / p.grid_delta) << "   " << "max = " << (surfaces.back().Max / p.grid_delta) << std::endl;
 #endif
+      }
+
       //!Determine boundary conditions for level set domain
       lvlset::boundary_type bnc[D];
       for (int hh = 0; hh < D; ++hh) {
@@ -1023,11 +1029,21 @@ namespace geometry {
       msg::print_start("Distance transformation...");
 
       //!Initialize the level set with "lvlset::init(...)"
-      LevelSets.push_back(LevelSetType(grid));
-      lvlset::init(LevelSets.back(), s, p.report_import_errors);
+      for(typename std::list< surface<D> >::const_iterator it= surfaces.begin(); it!=surfaces.end(); ++it){
+        LevelSets.push_back(LevelSetType(grid));
+        lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+      }
 
       msg::print_done();
     }
+
+
+
+
+
+
+
+
 
     template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
     void import_levelsets_from_volume(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
@@ -1084,9 +1100,6 @@ namespace geometry {
 
       //!Transform the input volume geometry to surfaces and interfaces "TransformGeometryToSurfaces(...)"
       msg::print_start("Extract surface and interfaces...");
-      typedef std::list<surface<D> > SurfacesType;
-      SurfacesType Surfaces;
-
       std::bitset<2 * D> remove_flags;
 
       for (int i = 0; i < D; ++i) {
@@ -1105,6 +1118,9 @@ namespace geometry {
               remove_flags.set(i + D);
         }
       }
+
+      typedef std::list<surface<D> > SurfacesType;
+      SurfacesType Surfaces;
 
       //std::cout << "transform to surface\n";
       TransformGeometryToSurfaces(g, Surfaces, remove_flags, p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);

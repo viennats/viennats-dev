@@ -44,13 +44,13 @@ namespace msg {
     void print_help_extended() {
       std::cout << "USAGE:" << std::endl;
       std::cout << "SIMULATION: viennats parameterfile" << std::endl;
-      std::cout << "CONVERSION: viennats [-ls2vtk | -ls2dx | -p | -p2o] files..." << std::endl;
+      std::cout << "CONVERSION: viennats [-ls2vtk | -ls2dx | -p | -p2o] FILES" << std::endl;
       std::cout << "Options:" << std::endl;
       std::cout << "    -ls2vtk    Convert LVST file(s) to VTK file(s)." << std::endl;
       std::cout << "    -ls2dx     Convert LVST file(s) to DX file(s)." << std::endl;
       std::cout << "    -p         Print LVST file(s) to the console." << std::endl;
       std::cout << "    -p2o       Print LVST file(s) to TXT file(s)." << std::endl;
-      std::cout << "NOTE: File paths and names are taken from files." << std::endl;
+      std::cout << "NOTE: File paths and names are taken from FILES." << std::endl;
       std::cout << "Other:" << std::endl;
       std::cout << "   --help      Shows (extended) help." << std::endl;
       std::cout << "   --version   Shows version." << std::endl;

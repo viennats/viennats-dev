@@ -284,15 +284,14 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   else {
     //read in surfaces or volume and transform them to levelsets
     if(p.surface_geometry){
-      for(unsigned int i=0; i<p.geometry_files.size(); i++)
-        geometry::import_levelset_from_surface<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets, i);
+      geometry::import_levelsets_from_surface<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
     } else {
       geometry::import_levelsets_from_volume<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
     }
   }
 
-  //output initial LevelSets
-  {
+  //output initial LevelSets if print lvst is specified
+  if(p.print_lvst){
     int LevelsetCounter = 0;
     for(auto ls: LevelSets){
       std::ostringstream oss;
@@ -406,7 +405,6 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
       ++LSIter;
     }
     temp_levelSets.back().segment();
-
     std::swap(LevelSets, temp_levelSets);
 
     std::cout << std::endl;
