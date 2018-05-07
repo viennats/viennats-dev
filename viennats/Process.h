@@ -1704,6 +1704,7 @@ namespace proc {
           lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
           for(int i=0; i<D; ++i){
             for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+              if(it->num_active_pts() == 0) continue; //ignore empty levelsets
               if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
                 start[i] = std::min(start[i], it->get_min_runbreak(i));
                 end[i] = std::max(end[i], it->get_max_runbreak(i));
