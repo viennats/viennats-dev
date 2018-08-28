@@ -106,12 +106,19 @@ namespace msg {
     }
 
     void print_warning(const std::string& s) {
-        std::cout << "    WARNING: " << s << std::endl << std::endl;
+        std::cout << std::endl << "    WARNING: " << s << std::endl;
     }
 
     void print_error(const std::string& s) {
-        std::cout << "    ERROR: " << s << std::endl << std::endl;
+        std::cout << std::endl << "    ERROR: " << s << std::endl;
         abort();
+    }
+
+    void print_wrong_cell_type(const unsigned expected, const unsigned found){
+      std::ostringstream oss;
+      oss << "INVALID CELL TYPE! Expected number of nodes: "
+      << expected << ", Found number of nodes: " << found << "; Ignoring element..." << std::endl;
+      print_warning(oss.str());
     }
 
 
