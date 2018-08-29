@@ -448,18 +448,23 @@ namespace geometry {
       bool change_input_parity,//=false,
       std::vector<double> shift//=std::vector<double>()
     ) {
+      // open geometry file
       std::ifstream f(FileName.c_str());
-
-      if (!f) msg::print_error("Failed reading geometry file!");
-
+      if (!f) msg::print_error("Could not open geometry file!");
       std::string c;
 
-      //read nodes
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
+      // Check if geometry is an unstructured grid as required
+      while(std::getline(f,c)){
+        if(c.find("DATASET") != std::string::npos) break;
+      }
+      if(c.find("UNSTRUCTURED_GRID") == std::string::npos){
+        msg::print_error("DATASET is not an UNSTRUCTURED_GRID!");
+      }
+
+      // Find POINTS in file to know number of nodes to read in
+      while(std::getline(f,c)){
+        if(c.find("POINTS") != std::string::npos) break;
+      }
       int num_nodes=atoi(&c[c.find(" ")+1]);
 
       Nodes.resize(num_nodes);
@@ -477,36 +482,53 @@ namespace geometry {
         }
       }
 
-      std::getline(f,c);
-      std::getline(f,c);
+      while(std::getline(f,c)){
+        if(c.find("CELLS") == 0) break;
+      }
+
       int num_elems=atoi(&c[c.find(" ")+1]);
 
-      Elements.resize(num_elems);
+      Elements.clear();
+      Elements.reserve(num_elems);
 
       double elems_fake;
       for (int i=0;i<num_elems;i++) {
 
-        for (int j=-1;j<(D+1);j++) {
-          if (j!=-1) {
-            f>>Elements[i][j];
-          } else {
-            f>>elems_fake;
+        lvlset::vec<unsigned int, D+1> elem = lvlset::vec<unsigned int, D+1>();
+
+        f >> elems_fake;
+        if(elems_fake != (D+1)){
+          msg::print_wrong_cell_type(D+1, elems_fake);
+          //ignore rest of lines
+          f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        } else{
+          for(int j=0; j<(D+1); ++j){
+            f >> elem[j];
+          }
+          Elements.push_back(elem);
+        }
+      }
+
+      while(std::getline(f,c)){
+        if(c.find("CELL_DATA") != std::string::npos){
+          std::getline(f,c);
+          if((c.find("SCALARS material") != std::string::npos)||(c.find("SCALARS Material") != std::string::npos)){
+            std::getline(f,c);
+            break;
           }
         }
       }
 
-      std::getline(f,c);
-      std::getline(f,c);
-      for (int i=0;i<num_elems;i++) {
-        std::getline(f,c);
-      }
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
+      // now find materials or if not specified use the same for all elements
+      Materials.clear();
 
-      Materials.resize(num_elems);
-      for (int i=0;i<num_elems;i++) {
-        f>>Materials[i];
+      if(f.eof()){
+        Materials.resize(num_elems, 1);
+      }else{
+        Materials.resize(num_elems);
+        for (int i=0;i<num_elems;i++) {
+          f>>Materials[i];
+        }
       }
 
       f.close();
@@ -759,14 +781,21 @@ namespace geometry {
       }
       //-------------------------------------------------------------------------------------------------------------------------
       std::ifstream f(FileName.c_str());
-
+      if (!f) msg::print_error("Could not open geometry file!");
       std::string c;
 
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
-      std::getline(f,c);
+      // Check if geometry is an unstructured grid as required
+      while(std::getline(f,c)){
+        if(c.find("DATASET") != std::string::npos) break;
+      }
+      if(c.find("UNSTRUCTURED_GRID") == std::string::npos){
+        msg::print_error("DATASET is not an UNSTRUCTURED_GRID!");
+      }
+
+      // Find POINTS
+      while(std::getline(f,c)){
+        if(c.find("POINTS") != std::string::npos) break;
+      }
       int num_nodes=atoi(&c[c.find(" ")+1]);
 
       Nodes.resize(num_nodes);
@@ -775,7 +804,6 @@ namespace geometry {
         double coords[3];
 
         for (int j=0;j<3;j++) f>>coords[j];
-
         for (int j=0;j<D;j++) {
           Nodes[i][j]=coords[InputTransformationDirections[j]];
           int shift_size=shift.size();
@@ -785,21 +813,31 @@ namespace geometry {
         }
       }
 
-      std::getline(f,c);
-      std::getline(f,c);
+      while(std::getline(f,c)){
+        if(c.find("CELLS") == 0) break;
+      }
+
       int num_elems=atoi(&c[c.find(" ")+1]);
 
-      Elements.resize(num_elems);
+      Elements.clear();
+      Elements.reserve(num_elems);
 
       double elems_fake;
       for (int i=0;i<num_elems;i++) {
 
-        for (int j=0;j<(D+1);j++) {
-          if (j!=0) {
-            f>>Elements[i][j-1];
-          } else {
-            f>>elems_fake;
+        lvlset::vec<unsigned int, D> elem = lvlset::vec<unsigned int, D>();
+
+        // TODO: change the following to read in different types of cells as well
+        f >> elems_fake;
+        if(elems_fake != D){
+          msg::print_wrong_cell_type(D, elems_fake);
+          //ignore rest of lines
+          f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        } else{
+          for(int j=0; j<D; ++j){
+            f >> elem[j];
           }
+          Elements.push_back(elem);
         }
       }
 
