@@ -30,6 +30,11 @@ License:         MIT (X11), see file LICENSE in the base directory
 ///  Includes all Geometry In- and Output-related functions.
 namespace geometry {
 
+  // keeps how many nodes to expect for each vtk cell_type
+  // 0 means all numbers are allowed
+  // first element is a dummy
+  unsigned vtk_nodes_for_cell_type[15] = {0, 1, 0, 2, 0, 3, 0, 0, 4, 4, 4, 8, 8, 6, 5};
+
   template <int D> class geometry {
   public:
 
@@ -486,51 +491,111 @@ namespace geometry {
         if(c.find("CELLS") == 0) break;
       }
 
+
       int num_elems=atoi(&c[c.find(" ")+1]);
 
-      Elements.clear();
-      Elements.reserve(num_elems);
+      std::ifstream f_ct(FileName.c_str());   // stream to read cell CELL_TYPES
+      std::ifstream f_m(FileName.c_str());  //stream for material numbers if they exist
 
-      double elems_fake;
-      for (int i=0;i<num_elems;i++) {
-
-        lvlset::vec<unsigned int, D+1> elem = lvlset::vec<unsigned int, D+1>();
-
-        f >> elems_fake;
-        if(elems_fake != (D+1)){
-          msg::print_wrong_cell_type(D+1, elems_fake);
-          //ignore rest of lines
-          f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        } else{
-          for(int j=0; j<(D+1); ++j){
-            f >> elem[j];
-          }
-          Elements.push_back(elem);
-        }
+      // advance to cell types and check if there are the right number
+      while(std::getline(f_ct, c)){
+        if(c.find("CELL_TYPES") == 0) break;
+      }
+      int num_cell_types = atoi(&c[c.find(" ")+1]);
+      // need a cell_type for each cell
+      if(num_elems != num_cell_types){
+        msg::print_error("Corrupt input geometry! Number of CELLS and CELL_TYPES is different!");
       }
 
-      while(std::getline(f,c)){
+      bool is_material = true;
+      // advance to material if it is specified
+      while(std::getline(f_m,c)){
         if(c.find("CELL_DATA") != std::string::npos){
-          std::getline(f,c);
+          std::getline(f_m,c);
           if((c.find("SCALARS material") != std::string::npos)||(c.find("SCALARS Material") != std::string::npos)){
-            std::getline(f,c);
+            std::getline(f_m,c);
+            std::cout << "Found materials" << std::endl;
             break;
           }
         }
       }
+      if(f_m.eof()){
+        std::cout << "No materials specified" << std::endl;
+        is_material = false;
+      }
 
-      // now find materials or if not specified use the same for all elements
+      Elements.clear();
+      Elements.reserve(num_elems);
+
       Materials.clear();
 
-      if(f.eof()){
-        Materials.resize(num_elems, 1);
-      }else{
-        Materials.resize(num_elems);
-        for (int i=0;i<num_elems;i++) {
-          f>>Materials[i];
+      unsigned elems_fake;
+      unsigned cell_type;
+      unsigned cell_material;
+      for (int i=0;i<num_elems;i++) {
+        f >> elems_fake;
+        f_ct >> cell_type;
+        if(is_material) f_m >> cell_material;
+        else cell_material = 1; // if there are no materials specified make all the same
+
+        std::cout << "Type: " << cell_type << ", NoN: " << elems_fake << ", Material: " << cell_material << std::endl;
+
+
+        lvlset::vec<unsigned int, D+1> elem = lvlset::vec<unsigned int, D+1>();
+
+        // check if the correct number of nodes for cell_type is given
+        unsigned number_nodes = vtk_nodes_for_cell_type[cell_type];
+        if(number_nodes == elems_fake || number_nodes == 0){
+          // check for different types to subdivide them into supported types
+          switch (cell_type) {
+            case 5: //triangle for 2D
+            case 10: //tetra for 3D
+              for(unsigned j=0; j<number_nodes; ++j){
+                f >> elem[j];
+              }
+              Elements.push_back(elem);
+              Materials.push_back(cell_material);
+              break;
+            case 9:       //this is a quad, so just plit it into two triangles
+              for(unsigned j=0; j<3; ++j){
+                f >> elem[j];
+              }
+              Elements.push_back(elem);   //push the first three nodes as a triangle
+              Materials.push_back(cell_material);
+
+              f >> elem[1]; //replace middle element to create other triangle
+              Elements.push_back(elem);
+              Materials.push_back(cell_material);
+              break;
+
+            default:
+              std::ostringstream oss;
+              oss << "VTK Cell type " << cell_type << " is not supported." << std::endl;
+              msg::print_warning(oss.str());
+          }
+        }else{
+          msg::print_wrong_cell_type(D+1, number_nodes);
+          //ignore rest of lines
+          f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
       }
 
+
+
+      // now find materials or if not specified use the same for all elements
+      // Materials.clear();
+      //
+      // if(f.eof()){
+      //   Materials.resize(num_elems, 1);
+      // }else{
+      //   Materials.resize(num_elems);
+      //   for (int i=0;i<num_elems;i++) {
+      //     f>>Materials[i];
+      //   }
+      // }
+
+      f_ct.close();
+      f_m.close();
       f.close();
 
     }
