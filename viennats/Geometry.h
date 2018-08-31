@@ -514,13 +514,11 @@ namespace geometry {
           std::getline(f_m,c);
           if((c.find("SCALARS material") != std::string::npos)||(c.find("SCALARS Material") != std::string::npos)){
             std::getline(f_m,c);
-            std::cout << "Found materials" << std::endl;
             break;
           }
         }
       }
       if(f_m.eof()){
-        std::cout << "No materials specified" << std::endl;
         is_material = false;
       }
 
@@ -538,9 +536,6 @@ namespace geometry {
         if(is_material) f_m >> cell_material;
         else cell_material = 1; // if there are no materials specified make all the same
 
-        std::cout << "Type: " << cell_type << ", NoN: " << elems_fake << ", Material: " << cell_material << std::endl;
-
-
         lvlset::vec<unsigned int, D+1> elem = lvlset::vec<unsigned int, D+1>();
 
         // check if the correct number of nodes for cell_type is given
@@ -556,6 +551,7 @@ namespace geometry {
               Elements.push_back(elem);
               Materials.push_back(cell_material);
               break;
+
             case 9:       //this is a quad, so just plit it into two triangles
               for(unsigned j=0; j<3; ++j){
                 f >> elem[j];
@@ -570,7 +566,7 @@ namespace geometry {
 
             default:
               std::ostringstream oss;
-              oss << "VTK Cell type " << cell_type << " is not supported." << std::endl;
+              oss << "VTK Cell type " << cell_type << " is not supported. Cell ignored..." << std::endl;
               msg::print_warning(oss.str());
           }
         }else{
@@ -579,20 +575,6 @@ namespace geometry {
           f.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
       }
-
-
-
-      // now find materials or if not specified use the same for all elements
-      // Materials.clear();
-      //
-      // if(f.eof()){
-      //   Materials.resize(num_elems, 1);
-      // }else{
-      //   Materials.resize(num_elems);
-      //   for (int i=0;i<num_elems;i++) {
-      //     f>>Materials[i];
-      //   }
-      // }
 
       f_ct.close();
       f_m.close();
