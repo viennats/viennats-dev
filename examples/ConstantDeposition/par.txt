@@ -1,42 +1,63 @@
-omp_threads=3;
+// inline comment
+/*
+  block comment
+*/
+geometry_file = "geometry2.dx";   // input geometry
 
-geometry_file = "geometry2.dx";
+output_path = "./isotropic/";  // relative to this file or absolute
 
-output_path = "./output/";
+omp_threads=3; // how many CPU threads to use
 
-print_statistics = true;
+cfl_condition = 0.1;  // advection accuracy, must be <0.5
 
-cfl_condition = 0.1;
+grid_delta = 0.5; // grid resolution (absolute)
 
-grid_delta = 0.2;
-
+// average surface normal for ray tracing
 default_disc_orientation = {1,0,0};
 
 num_dimensions = 2;
 
+/*
+  by defualt ViennaTS only outputs .lvst files
+  .lvst output can be disabled by setting print_lvst=false;
+  other filetypes can be used to:
+  e.g.: vtk file output
+*/
+print_vtk=true;
+
+/*
+how to treat boundaries:
+direction of source plane must be INFINITE
+*/
 boundary_conditions = {
-	{INFINITE,INFINITE},    
+	{INFINITE,INFINITE},
 	{REFLECTIVE,REFLECTIVE}
 };
 
-open_boundary="-x";
+open_boundary="-x"; //direction of source plane
 
 processes = {
-    {
-	process_time= 200;   
-		        	
-        model_name="ConstantRates";
-        add_layer=0;
-        parameters= {
-		constant_rates={0.01};
-		direction={1,0,0};
-		directional_rates={0.05};
+  {
+    process_time= 200;
 
-	};
-	    
-	output_times_period_length = 2;
-	output_times_periodicity=100;
-	output_times={0}; 
-	
-    }
+    model_name="ConstantRates";
+
+    /*
+      The following are process specific parameters:
+    */
+    parameters= {
+      constant_rates={0.1}; // rate to surface normal
+      //isotropic_rates={0.1};
+      direction={1,0,0};  // for directional_rates
+      directional_rates={0.3}; // rate in direction
+
+    };
+
+    // Start outputting at time t=0
+    // then 100 times at intervals of dt=2
+    output_times_period_length = 2;
+    output_times_periodicity=100;
+    output_times={0};
+
+  }
 };
