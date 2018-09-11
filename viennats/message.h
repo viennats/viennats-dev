@@ -63,7 +63,12 @@ namespace msg {
     }
 
     void print_version() {
-      std::cout << "viennats " << VIENNATS_VERSION << std::endl;
+      std::cout << "viennats " << VIENNATS_VERSION;
+      #ifdef USE_HDF5
+      std::cout << " TDR" << std::endl;
+      #else
+      std::cout << std::endl;
+      #endif
       std::cout << "Copyright (C) 2008-2015  Institute for Microelectronics, TU Wien" << std::endl << std::endl;
       std::cout << "Contact: viennats@iue.tuwien.ac.at" << std::endl;
       std::cout << "GitHub: https://github.com/viennats/viennats-dev" << std::endl;

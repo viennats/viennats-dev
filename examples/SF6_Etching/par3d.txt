@@ -1,6 +1,7 @@
 geometry_file = "./3d_hole.gid/release/3d_hole.dx";
 
 print_statistics=false;
+print_vtk=true;
 
 output_path = "./output_3d/";
 
@@ -19,9 +20,9 @@ boundary_conditions = {
 	{PERIODIC, PERIODIC}
 };
 
-omp_threads=1;
+omp_threads=8;
 
-default_disk_orientation={1,1,0};
+default_disk_orientation={0,1,0};
 
 processes = {
     {
@@ -34,30 +35,30 @@ processes = {
         print_materials=true;
 
 	output_times = {0};
-	output_times_period_length = 10;
+	output_times_period_length = 1;
 	output_times_periodicity=30;
 	final_output=true;
 
-        process_time= 300;
+        process_time= 30;
         model_name="SF6_O2PlasmaEtching";
         add_layer=0;
         parameters= {
 
             direction={0,-1,0};
 
-	    statistical_accuracy=500;
+	    statistical_accuracy=100;
             min_ion_energy=100;
             delta_ion_energy=40;
 
-            flux_ion=1e16;
-            flux_oxygen=0.;
-            flux_fluorine=8e18;
-            a_oxygen=3.;
+//            flux_ion=1e16;
+//            flux_oxygen=0.;
+//            flux_fluorine=8e18;
+//            a_oxygen=3.;
             
-//          flux_ion=1e16;
-//          flux_oxygen=1.5e17;
-//          flux_fluorine=5.5e18;
-//          a_oxygen=3.;
+          flux_ion=1e16;
+          flux_oxygen=1.5e17;
+          flux_fluorine=5.5e18;
+          a_oxygen=3.;
 
 //          flux_ion=1e16;
 //          flux_oxygen=2.5e17;
