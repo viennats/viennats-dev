@@ -2,7 +2,9 @@ ViennaTS
 --------------------------
 
 Developer repository for ViennaTS, a C++, OpenMP-parallelized Topography simulator.
-ViennaTS is currently in a prototype state.
+Releases are tagged on the master branch and available [in the releases section](https://github.com/viennats/viennats-dev/releases).
+
+For more information and help to getting started, visit [viennats.github.io](https://viennats.github.io/).
 
 System requirements
 --------------------------
@@ -33,16 +35,16 @@ $> cmake ..
 </pre>
 Watch for Warning/Error messages during the configuration stage.
 
-Now build the 'viennats' simulation executable 
+Now build the 'viennats' simulation executable
 <pre>
-$> make 
+$> make
 </pre>
 
 CMake Options
 --------------------------
 
 <pre>
-CMAKE_BUILD_TYPE   = debug, (release) # Turn off/on optimizations (default: release, i.e., optimized mode)
+CMAKE_BUILD_TYPE   = Debug, (Release) # Turn off/on optimizations (default: Release, i.e., optimized mode)
 </pre>
 
 Authors and Contact
