@@ -26,14 +26,14 @@
 #include <algorithm>
 #include <vector>
 #include <numeric>
-#include "../LSlib/vector.hpp"
+#include "LSlib/vector.hpp"
 #include "message.h"
 
 #include "boundaries.h"
 
 #include <cmath>
 #include <cassert>
-#include "../LSlib/math.hpp"
+#include "LSlib/math.hpp"
 
 ///Namespace for calculation helpers.
 namespace calc {
