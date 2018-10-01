@@ -530,7 +530,7 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 
 #ifdef PROCESS_CALCULATEFLUX
     if (pIter->ModelName == "CalculateFlux") {
-      model::CalculateFlux m(pIter->ModelParameters, D);
+      model::CalculateFlux<typename ParameterType2::ProcessParameterType> m(pIter, D);
       proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
     }
 #endif

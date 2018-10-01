@@ -27,6 +27,7 @@
 namespace model {
 ///Model to calculate flux along an interface depending on the reflection used
 
+  template<class PPT>
   class CalculateFlux {
 
     double TotalFlux;
@@ -36,6 +37,7 @@ namespace model {
     double StartAngleDistribution;
     double ReemittedAngleDistribution;
     int dim;
+    int num_active;
 
     double StartDirection[3];
 
@@ -69,9 +71,10 @@ namespace model {
     };
 
 
-    CalculateFlux(const std::string & Parameters, int D):StartAngleDistribution(1.),ReemittedAngleDistribution(1.),dim(D) {
+    CalculateFlux(typename std::list<PPT>::const_iterator p, int D):StartAngleDistribution(1.),ReemittedAngleDistribution(1.),dim(D) {
 
-        double Accuracy;
+            double Accuracy;
+            num_active = p->ActiveLayers.size();
             using namespace boost::spirit::classic;
 
             // Default reflection model
@@ -81,8 +84,8 @@ namespace model {
             reflection_diffusive_upper_bound = 4;
 
             bool b = parse(
-                    Parameters.begin(),
-                    Parameters.end(),
+              p->ModelParameters.begin(),
+              p->ModelParameters.end(),
                     *(
                             (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("reflection_model")  >> '='  >> (
@@ -111,18 +114,6 @@ namespace model {
             reflection_materials_temp.clear();
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
-/*
-
-             end_probability=0.01;
-             IonFlux=3.125e15;          // atoms/(cm²s)
-             CFxFlux=2e18;              // atoms/(cm²s)
-             yDPolyI=10e-24;            // cm³/atom
-             yDPolyN=0.5e-24;           // cm³/atom
-             StickingProbabilityCFxonPolymer=0.1;
-             StickingProbabilityCFxonSi=0.1;
-             StickingProbabilityCFxonMask=0.1;
-             IonAngleDistribution=410.;
-             CFxAngleDistribution=1.;*/
 
              NumberOfParticleClusters[0]=(TotalFlux>0.)?static_cast<unsigned int>(Accuracy):0;
         }
@@ -135,7 +126,11 @@ namespace model {
             const double *Rates,
             int Material, bool Connected, bool Visible) const {
 
-        Velocity=0.;//Rates[0]*Yield;
+              if(Material<num_active){
+                Velocity=Rates[0]*Yield;
+              }else{
+                Velocity=0;
+              }
     }
 
     template<class VecType>
@@ -151,11 +146,7 @@ namespace model {
 
     static void UpdateCoverage(double *Coverages, const double *Rates) {}
 
-//        template <class DropletType, class ParameterType, class PartitionType>
-//        void DropletGeneration(DropletType& d, double* Position, const ParameterType& Parameter, const PartitionType& Partition) const {}
 
-//        template <class PT, class ParameterType, class PartitionType>
-//        void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position, const ParameterType& Parameter, const PartitionType& Partition) const {
     template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position) const {
       my::stat::CosineNDistributedRandomDirection(StartAngleDistribution,StartDirection,p.Direction);
       p.Probability=1.;
@@ -236,9 +227,9 @@ namespace model {
 
             // assign the new particle the reflection vector as direction: R = V - 2N<V,N>
             // http://mathworld.wolfram.com/Reflection.html
-	    
+
             const double dot=(NormalVector[0]*p.Direction[0]+NormalVector[1]*p.Direction[1]+NormalVector[2]*p.Direction[2]);
-            for (int d=0;d<dim;++d) {
+            for (int d=0;d<3;++d) {
                 p_new.Direction[d] = p.Direction[d] - 2.0 * NormalVector[d] * dot;
             }
           }
