@@ -22,6 +22,7 @@
 
 //Processes
 #define PROCESS_CONSTANT_RATES
+#define PROCESS_SELECTIVE_EPITAXY
 #define PROCESS_SIMPLE_DEPOSITION
 #define PROCESS_TiN_ALD
 #define PROCESS_TiN_PEALD
@@ -72,6 +73,9 @@
 
 #ifdef PROCESS_CONSTANT_RATES
 #include "Model/ModelConstantRates.h"
+#endif
+#ifdef PROCESS_SELECTIVE_EPITAXY
+#include "Model/ModelSelectiveEpitaxy.h"
 #endif
 #ifdef PROCESS_SIMPLE_DEPOSITION
 #include "Model/ModelSimpleDeposition.h"
@@ -419,6 +423,13 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 #ifdef PROCESS_CONSTANT_RATES
     if (pIter->ModelName == "ConstantRates") {
       model::ConstantRates m(pIter->ModelParameters, pIter->MaskLayer);
+      proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+    }
+#endif
+
+#ifdef PROCESS_SELECTIVE_EPITAXY
+    if (pIter->ModelName == "SelectiveEpitaxy") {
+      model::SelectiveEpitaxy m(pIter->ModelParameters);
       proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
     }
 #endif
