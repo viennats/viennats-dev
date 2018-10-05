@@ -232,13 +232,13 @@ namespace lvlset {
         return sum;
     }
 
-    template <class V, class T, int D> inline bool operator==(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator==(v0));
-    }
+    // template <class V, class T, int D> inline bool operator==(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator==(v0));
+    // }
 
-    template <class V, class T, int D> inline bool operator!=(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator!=(v0));
-    }
+    // template <class V, class T, int D> inline bool operator!=(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator!=(v0));
+    // }
 
     template <class T, int D> inline vec<T,D> operator*(T d, const vec<T,D>& v) {
         return v*d;
@@ -290,29 +290,29 @@ namespace lvlset {
         return k;
     }
 
-    template <class V, class T,int D> inline bool operator<(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator>(v0));
-    }
+    // template <class V, class T,int D> inline bool operator<(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator>(v0));
+    // }
 
-    template <class V, class T,int D> inline bool operator>(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator<(v0));
-    }
+    // template <class V, class T,int D> inline bool operator>(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator<(v0));
+    // }
 
-    template <class V, class T,int D> inline bool operator<=(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator>=(v0));
-    }
+    // template <class V, class T,int D> inline bool operator<=(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator>=(v0));
+    // }
 
-    template <class V, class T,int D> inline bool operator>=(const V& v0,const vec<T,D>& v1) {
-        return (v1.operator<=(v0));
-    }
+    // template <class V, class T,int D> inline bool operator>=(const V& v0,const vec<T,D>& v1) {
+    //     return (v1.operator<=(v0));
+    // }
 
-    template <class V, class T,int D> inline vec<T,D> operator+(const V& v0,const vec<T,D>& v1) {
-        return v1.operator+(v0);
-    }
+    // template <class V, class T,int D> inline vec<T,D> operator+(const V& v0,const vec<T,D>& v1) {
+    //     return v1.operator+(v0);
+    // }
 
-    template <class V, class T,int D> inline vec<T,D> operator-(const V& v0,const vec<T,D>& v1) {
-        return (-v1).operator+(v0);
-    }
+    // template <class V, class T,int D> inline vec<T,D> operator-(const V& v0,const vec<T,D>& v1) {
+    //     return (-v1).operator+(v0);
+    // }
 
     template <class T> inline T Volume(const vec<T,2>* p) {
         return  ((p[1]-p[0])%(p[2]-p[0]));
