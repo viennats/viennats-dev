@@ -506,12 +506,14 @@ namespace lvlset {
 
         for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) assert(ptr::deref(*it).number_of_layers()>=2);
 
+        // the levelset filled with the new values
         LevelSetType new_lvlset(LevelSet.grid());
 
         new_lvlset.initialize(seg, LevelSet.get_allocation()*(double(1)/LevelSet.number_of_layers()));
 
         std::vector<size_type> active_pt_count(seg.size()+1, LevelSetType::INACTIVE);
 
+        // split over threads via segmentations
         #pragma omp parallel num_threads(seg.size()+1) //use num_threads(seg.size()+1) threads
         {
             int p=0;
@@ -519,105 +521,106 @@ namespace lvlset {
             p=omp_get_thread_num();
             #endif
 
+            // holds the advection velocities which will be applied later
             std::vector<std::pair<value_type, value_type> > TempRatesStops;
-
+            // allocation factor is ~1.2 which is the maximum amount of new points one would expect
             TempRatesStops.reserve(LevelSet.num_active_pts()*allocation_factor/(seg.size()+1));   //TODO
 
             value_type MaxTimeStep=std::numeric_limits<value_type>::max();
-            //std::cout << "1.\n";
+
+            // initialise integration by passing all found velocities to the scheme class
             typename lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType> scheme(LevelSet, Velocities, IntegrationScheme);
 
             //iterators which iterate simultaneously over level sets
             std::vector<typename LevelSetType::const_iterator_runs> ITs;
-            for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it)));
+            for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it){
+              ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it)));
+            }
 
+            // set start and end indices in the grid for each thread
             typename LevelSetType::point_type start_v=(p==0)?LevelSet.grid().min_point_index():seg[p-1];
             typename LevelSetType::point_type end_v=(p!=static_cast<int>(seg.size()))?seg[p]:LevelSet.grid().increment_indices(LevelSet.grid().max_point_index());
 
-            //iteration
+            // iterate over the LS points in the segmentation of each thread
             for (typename LevelSetType::const_iterator_runs srfIT(LevelSet, start_v);srfIT.start_indices()<end_v;srfIT.next()) {
-//              srfIT.print();
-//              std::cout << "srfIT.start_indices("<<srfIT.start_indices(0)<<","<<srfIT.start_indices(1)<<","<<srfIT.start_indices(2)<<")\n";
+
+                // if LS point is not an active point, push an undefined point to new levelset
                 if (!srfIT.is_active()) {
                     assert(math::abs(srfIT.value())>0.5);
                     new_lvlset.push_back_undefined(p,srfIT.start_indices(),(srfIT.sign()==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);
                     continue;
                 }
+
+
                 if (active_pt_count[p]==LevelSetType::INACTIVE) active_pt_count[p]=srfIT.active_pt_id();
 
-
+                // Phi_im1 holds the LS value of the current grid point
                 value_type Phi_im1=srfIT.value();
 
                 assert(math::abs(srfIT.value())<=0.5);
 
+                // push current active point to new_lvlset
                 new_lvlset.push_back(p,srfIT.start_indices(),Phi_im1);
 
-                //remaining distance
+                // q = cfl condition
                 value_type q=TimeStepRatio;
 
                 value_type tmp_tmax=0;
 
-                typename LevelSetsType::size_type i=LevelSets.size()-1;
 
-               while(i!=0) {
+                /*
+                NEW LOOP
+                */
+                for(typename LevelSetsType::size_type i=LevelSets.size()-1; i>=0; --i){
 
-                  //need to deal with two types of velocities. One modifies the surface
-                  //and one moves the entire LS surface in a given direction
+                  value_type v=scheme(srfIT, LevelSets.size()-1);
 
-                    //calculate increment rate for actual Material i
-                   value_type v=scheme(srfIT, LevelSets.size()-1-i);
-//                   if (v!=0) std::cout << "v: " << v << std::endl;
+                  for(unsigned level_num=0; level_num<LevelSets.size()-1; ++level_num){
+                    // put iterator to same position as the top levelset
+                    ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
 
+                    if(ITs[level_num].is_active()){
+                      // std::cout << ITs[level_num].start_indices() << " == " << srfIT.start_indices() << std::endl;
+                      v = scheme(srfIT, level_num);
+                      break;
+                    }
+                  }
 
+                  // Phi_i LS value of material i
+                  value_type Phi_i=Phi_im1;
+
+                  // find LS point of material i-1, which is below i
+                  if(i>0){
                     ITs[i-1].go_to_indices_sequential(srfIT.start_indices());
-
-                    value_type Phi_i=Phi_im1;
                     Phi_im1=ITs[i-1].value();
-//                   if (v!=0) std::cout << "Phi_im1: " << Phi_im1 << std::endl;
-//                   if (v!=0) std::cout << "Phi_i: " << Phi_i << std::endl;
+                  }else Phi_im1 = std::numeric_limits<value_type>::max();
 
 
-                    //if rate is positive
-                    if (v>0.) {
-                        tmp_tmax+=q/v;
-                        TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
-                        break;
-
-                    } else if (v==0.) {
-                        if (Phi_i<Phi_im1) {
-                            tmp_tmax=std::numeric_limits<value_type>::max();
-                            TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
-                            break;
-                        }
-                    } else {
-
-                        if (Phi_i<Phi_im1) {
-                            value_type tmp=Phi_im1-Phi_i;
-
-                            if (tmp>=q) {
-                                tmp_tmax-=q/v;
-                                TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
-                                break;
-                            } else {
-                                tmp_tmax-=tmp/v;
-                                TempRatesStops.push_back(std::make_pair(v,Phi_im1));
-                                q-=tmp;
-                            }
-                        }
-                    }
-                    i--;
-                }
-
-                if (i==0) {
-                    value_type v=scheme(srfIT,LevelSets.size()-1);
-                    if (v>0.) {
-                        tmp_tmax+=q/v;
-                    } else if (v==0.) {
-                        tmp_tmax=std::numeric_limits<value_type>::max();
-                    } else {
-                        tmp_tmax-=q/v;
-                    }
+                  // if velocity is positive, set maximum time step possible without violating the cfl confition and always take velocity of i LS
+                  if (v>0.) {
+                    tmp_tmax+=q/v;
+                    TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
+                    break;
+                    // if velocity is 0, maximum time step is infinite and take velocity of i, if the LS value of material i is smaller than that of material i-1
+                  } else if (v==0.) {
+                    tmp_tmax=std::numeric_limits<value_type>::max();
                     TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
+                    break;
+                    // if the velocity is negative and the LS value of material i is smaller than that of material i-1, take the velocity of i
+                  } else {
+                    value_type tmp= math::abs(Phi_im1-Phi_i);
+
+                    if (tmp>=q) {
+                      tmp_tmax-=q/v;
+                      TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
+                      break;
+                    } else {
+                      tmp_tmax-=tmp/v;
+                      // the second part of the pair indicates how far we can move in this time step until the end of the material is reached
+                      TempRatesStops.push_back(std::make_pair(v,Phi_im1));
+                      q-=tmp;
+                    }
+                  }
                 }
 
                 if (tmp_tmax<MaxTimeStep) MaxTimeStep=tmp_tmax;
@@ -638,25 +641,38 @@ namespace lvlset {
                 LevelSet.swap(new_lvlset);
             }
 
-            //update level set values
-            typename std::vector<std::pair<value_type, value_type> >::const_iterator itRS=TempRatesStops.begin();
-            for (size_type local_pt_id=0;local_pt_id<LevelSet.num_pts(p);++local_pt_id) {
+            /*
+                This is where the magic happens
+                Here the velocites are applied to the LS values
+            */
 
+            // iterator over all velocities in TempStopRates to apply them
+            typename std::vector<std::pair<value_type, value_type> >::const_iterator itRS=TempRatesStops.begin();
+
+            // iterate over all points in the segmentation of new topmost levelset
+            for (size_type local_pt_id=0;local_pt_id<LevelSet.num_pts(p);++local_pt_id) {
+                // phi is the LS value at the current grid point
                 value_type Phi=LevelSet.value(p, local_pt_id);
 
-                TimeStepType t=MaxTimeStep2;
+                TimeStepType t=MaxTimeStep2;  // maximum time step we can take
 
+                // if there is a change in materials during one time step, deduct the time taken to advect up to the end of the top material and set the LS value to the one below
                 while (math::abs(itRS->second-Phi)<math::abs(t*itRS->first)) {
                     t-=math::abs((itRS->second-Phi)/itRS->first);
                     Phi=itRS->second;
                     ++itRS;
                 }
 
+                // now deduct the velocity times the time step we take
                 Phi-=t*itRS->first;
 
+                // set the new LS value for the new layer
                 LevelSet.set_value(p, local_pt_id, Phi);
 
+                // this is run when two materials are close but the velocity is too slow to actually reach the second material, to get read of the extra entry in the TempRatesStop
                 while(math::abs(itRS->second)!=std::numeric_limits<value_type>::max()) ++itRS;
+
+                // advance the TempStopRates iterator by one
                 ++itRS;
             }
 
