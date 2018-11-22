@@ -564,23 +564,20 @@ namespace lvlset {
 
                 // q = cfl condition
                 value_type q=TimeStepRatio;
-
                 value_type tmp_tmax=0;
 
-
-                /*
-                NEW LOOP
-                */
                 for(typename LevelSetsType::size_type i=LevelSets.size()-1; i>=0; --i){
 
                   value_type v=scheme(srfIT, LevelSets.size()-1);
 
+                  // check if there is any other levelset at the same point:
+                  // if yes, take the velocity of the lowest levelset
                   for(unsigned level_num=0; level_num<LevelSets.size()-1; ++level_num){
                     // put iterator to same position as the top levelset
                     ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
 
-                    if(ITs[level_num].is_active()){
-                      // std::cout << ITs[level_num].start_indices() << " == " << srfIT.start_indices() << std::endl;
+                    // if the lower surface is actually outside, e.g. its LS value is lower or equal
+                    if(ITs[level_num].value() <= Phi_im1){
                       v = scheme(srfIT, level_num);
                       break;
                     }
@@ -596,17 +593,17 @@ namespace lvlset {
                   }else Phi_im1 = std::numeric_limits<value_type>::max();
 
 
-                  // if velocity is positive, set maximum time step possible without violating the cfl confition and always take velocity of i LS
+                  // if velocity is positive, set maximum time step possible without violating the cfl confition
                   if (v>0.) {
                     tmp_tmax+=q/v;
                     TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
                     break;
-                    // if velocity is 0, maximum time step is infinite and take velocity of i, if the LS value of material i is smaller than that of material i-1
+                    // if velocity is 0, maximum time step is infinite
                   } else if (v==0.) {
                     tmp_tmax=std::numeric_limits<value_type>::max();
                     TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
                     break;
-                    // if the velocity is negative and the LS value of material i is smaller than that of material i-1, take the velocity of i
+                    // if the velocity is negative apply the velocity for as long as possible without infringing on material below
                   } else {
                     value_type tmp= math::abs(Phi_im1-Phi_i);
 
@@ -679,7 +676,7 @@ namespace lvlset {
             assert(itRS==TempRatesStops.end());
 
         }
-//        std::cout << "time step = " << MaxTimeStep2 << "\n";
+
         return MaxTimeStep2;
 
     }
