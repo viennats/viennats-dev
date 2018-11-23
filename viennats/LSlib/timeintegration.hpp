@@ -568,7 +568,7 @@ namespace lvlset {
 
                 for(typename LevelSetsType::size_type i=LevelSets.size()-1; i>=0; --i){
 
-                  value_type v=scheme(srfIT, LevelSets.size()-1);
+                  value_type v=scheme(srfIT, 0);  // rate of topmost levelset
 
                   // check if there is any other levelset at the same point:
                   // if yes, take the velocity of the lowest levelset
@@ -578,7 +578,7 @@ namespace lvlset {
 
                     // if the lower surface is actually outside, e.g. its LS value is lower or equal
                     if(ITs[level_num].value() <= Phi_im1){
-                      v = scheme(srfIT, level_num);
+                      v = scheme(srfIT, LevelSets.size()-1-level_num);
                       break;
                     }
                   }
