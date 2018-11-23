@@ -541,8 +541,11 @@ namespace lvlset {
             typename LevelSetType::point_type start_v=(p==0)?LevelSet.grid().min_point_index():seg[p-1];
             typename LevelSetType::point_type end_v=(p!=static_cast<int>(seg.size()))?seg[p]:LevelSet.grid().increment_indices(LevelSet.grid().max_point_index());
 
+            // initialise top levelset iterator
+            ITs.push_back(typename LevelSetType::const_iterator_runs(LevelSet, start_v));
+
             // iterate over the LS points in the segmentation of each thread
-            for (typename LevelSetType::const_iterator_runs srfIT(LevelSet, start_v);srfIT.start_indices()<end_v;srfIT.next()) {
+            for (typename LevelSetType::const_iterator_runs& srfIT=ITs.back(); srfIT.start_indices()<end_v; srfIT.next()) {
 
                 // if LS point is not an active point, push an undefined point to new levelset
                 if (!srfIT.is_active()) {
@@ -568,11 +571,12 @@ namespace lvlset {
 
                 for(typename LevelSetsType::size_type i=LevelSets.size()-1; i>=0; --i){
 
-                  value_type v=scheme(srfIT, 0);  // rate of topmost levelset
+                  //value_type v=scheme(srfIT, 0);  // rate of topmost levelset
+                  value_type v = 0;
 
                   // check if there is any other levelset at the same point:
                   // if yes, take the velocity of the lowest levelset
-                  for(unsigned level_num=0; level_num<LevelSets.size()-1; ++level_num){
+                  for(unsigned level_num=0; level_num<LevelSets.size(); ++level_num){
                     // put iterator to same position as the top levelset
                     ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
 
