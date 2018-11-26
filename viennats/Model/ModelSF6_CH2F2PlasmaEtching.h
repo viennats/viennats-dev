@@ -59,7 +59,8 @@ namespace model {
 
 		double Flux_ev;
 
-		std::vector<int> ActiveLayers;
+		int AddLayer;
+
 
 	public:
 
@@ -93,7 +94,7 @@ namespace model {
 
 		SF6_CH2F2_PlasmaEtching(typename std::list<PPT>::const_iterator p) {//, int stacked_material) {
 
-			ActiveLayers = p->ActiveLayers;
+			AddLayer = p->AddLayer;
 
 			using namespace boost::spirit::classic;
 
@@ -140,7 +141,7 @@ namespace model {
 						Velocity=0;
 					}
 				} else { 			//Etching
-					if (Material<(int)ActiveLayers.size()) {	//Si
+					if (Material<=AddLayer) {	//Si
 						Velocity = -1e-1*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;	//m/s
 						//std::cout << "Etch: " << Velocity << std::endl;
 					} else {
