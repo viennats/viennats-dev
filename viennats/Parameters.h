@@ -187,8 +187,6 @@ struct ReportError {
                 double AFMStartPosition[3];
                 double AFMEndPosition[3];
                 int AddLayer;                   //the number of level set layers added to the geometry before the process is started
-                std::vector<int> ActiveLayers;  //Layers that are to be etched/deposited on
-                std::vector<int> MaskLayers;    //Layers that will be masks and stop etching
                 double ProcessTime;             //the process time in seconds
                 unsigned int ALDStep;
                 std::string ModelName;          //the name of the used process model
@@ -222,8 +220,6 @@ struct ReportError {
 
                 ProcessParameterType(){
                     AddLayer=0;
-                    ActiveLayers.clear();
-                    MaskLayers.clear();
                     ProcessTime=0;
                     ALDStep=1;
                     ModelName.clear();
@@ -375,8 +371,6 @@ struct ReportError {
         (double, AFMStartPosition[3])
         (double, AFMEndPosition[3])
         (int, AddLayer)
-        (std::vector<int>, ActiveLayers)
-        (std::vector<int>, MaskLayers)
         (double, ProcessTime)
         (unsigned int, ALDStep)
         (std::string, ModelName)
@@ -507,8 +501,6 @@ struct ReportError {
                 process_distance %= lit("process_distance") > '=' > lexeme[double_] > ';';
                 afm_start_position %= lit("afm_start_position") > '=' > lexeme[double_] > ';';
                 afm_end_position %= lit("afm_end_position") > '=' > lexeme[double_] > ';';
-                active_layers %= lit("active_layers") > '=' > intvec > ';';
-                mask_layers %= lit("mask_layers") > '=' > intvec > ';';
                 process_time %= lit("process_time") > '=' > lexeme[double_] > ';';
                 ald_step %= (lit("ald_step") | lit("ALD_step")) > '=' > lexeme[int_] > ';';
                 model_name %= lit("model_name") > '=' > quotes > ';';
@@ -536,8 +528,8 @@ struct ReportError {
 
                 // PROCESS PARAMETERS
                 //ORDER OF RULES MUST MATCH VARIABLE DECLARATION IN STRUCT
-                process_params %= process_distance ^ afm_start_position ^ afm_end_position ^ add_layer ^ active_layers ^
-                mask_layers ^ process_time ^ ald_step ^ model_name ^ model_parameters ^ iteration_cycles ^
+                process_params %= process_distance ^ afm_start_position ^ afm_end_position ^ add_layer ^
+                process_time ^ ald_step ^ model_name ^ model_parameters ^ iteration_cycles ^
                 start_iteration_cycles ^ max_time_step ^ smoothing_max_curvature ^ smoothing_min_curvature ^
                 smoothing_material_level ^ smoothing_max_iterations ^ print_coverages ^ print_rates ^
                 print_velocities ^ print_materials ^ finite_difference_scheme ^ dissipation_coefficient ^
@@ -585,9 +577,7 @@ struct ReportError {
             qi::rule<Iterator, std::vector<bnc::boundary_condition_type>(), Skipper> boundary_conditions;
             qi::rule<Iterator, std::vector<int>(), Skipper> input_transformation,
                 ignore_materials,
-                material_mapping,
-                active_layers,
-                mask_layers;
+                material_mapping;
             qi::rule<Iterator, std::vector<double>(), Skipper> input_shift,
                 default_disc_orientation,
                 output_times,

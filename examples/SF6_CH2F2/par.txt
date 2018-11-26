@@ -30,17 +30,15 @@ boundary_conditions = {
 processes={
 	{
 		model_name="SF6_CH2F2PlasmaEtching";
-		active_layers = {2};
-		mask_layers = {1};
 		process_time=25;
 		add_layer=1;
-		
+
 		output_times={0};
 		output_times_period_length=1;
 		output_times_periodicity=25;
-		
+
 		// these are model specific parameters
-		parameters= {		
+		parameters= {
 			direction={0,0,-1};
 
 			// how many particles to launch per grid point
@@ -52,9 +50,8 @@ processes={
           		flux_ion=1.5e15;	// these are the input fluxes
           		flux_etchant=1.3e16;
           		flux_polymer=4.5e15;
-          		
+
 	  		temperature=298.;
-		};	
+		};
 	}
 };
-
