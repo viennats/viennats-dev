@@ -159,6 +159,9 @@ public:
   const index_type* minima() const {return Min_;}
   const index_type* maxima() const {return Max_;}
   const lvlset::boundary_type* boundary_conditions() const {return BoundaryConditions_;}
+  const coord_type grid_delta() const{
+    return GridDelta;
+  }
 
 
   ///GridTraitsType constructor to populate the minimum and maximum values and the boundary conditions

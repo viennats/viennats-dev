@@ -729,6 +729,8 @@ namespace geometry {
     std::vector<lvlset::vec<double, D> > Nodes;
     std::vector<lvlset::vec<unsigned int, D> > Elements;
 
+    static constexpr int dimension=D;
+
     lvlset::vec<double, D> Min,Max; //for bounding box
 
     unsigned int number_of_nodes() const {
@@ -931,7 +933,7 @@ namespace geometry {
 
           for (int k=0;k<D;k++) tmp[k]=Geometry.Elements[i][(j+k)%(D+1)];
 
-          std::bitset<2*D> flags;
+          /*std::bitset<2*D> flags;
           flags.set();
 
           //if triangle at border skip
@@ -951,7 +953,7 @@ namespace geometry {
 
           //if (is_open_boundary_negative) flags.reset(open_boundary_direction); else flags.reset(open_boundary_direction+D);
 
-          if (flags.any()) continue;
+          if (flags.any()) continue;*/
 
           tmp.sort();
 
