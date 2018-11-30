@@ -452,6 +452,10 @@ namespace lvlset {
             return GridTraits;
         }
 
+        const typename GridTraitsType::coord_type grid_delta() const{
+            return GridTraits.grid_delta();
+        }
+
 
         coord_type grid_position_of_global_index(int dir, index_type offset) const {    //TODO check
             //returns the grid position for a global index

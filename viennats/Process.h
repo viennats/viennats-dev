@@ -503,14 +503,17 @@ namespace proc {
                 OutputInfoType & output_info
         ) {
 
-//        assert(LevelSets.size()>=2);
-
       typedef typename LevelSetsType::value_type LevelSetType;
       const int D=LevelSetType::dimensions;
 
-        geometry::geometry<D> mask_geometry;
-        geometry::surface<D> mask_surface;
+      geometry::geometry<D> mask_geometry;
+      geometry::surface<D> mask_surface;
 
+      LevelSetType mask_ls(LevelSets.back().grid());
+
+      if(Model.file_name().find(".lvst") != std::string::npos){
+        mask_ls.import_levelset(Model.file_name());
+      } else {
         if (Model.surface()) {
           mask_surface.ReadVTK(Model.file_name(), Parameter.input_scale, Parameter.input_transformation,
           Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.input_shift);
@@ -519,63 +522,56 @@ namespace proc {
             Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
-//      mask_geometry.Read(Model.file_name(),Parameter.input_scale,Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
+        //      mask_geometry.Read(Model.file_name(), Parameter.input_scale, Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 
-      typedef std::list<geometry::surface<D> > SurfacesType;
-      SurfacesType Surfaces;
+        typedef std::list<geometry::surface<D> > SurfacesType;
+        SurfacesType Surfaces;
 
-      if (Model.surface()) {
-        Surfaces.push_back(mask_surface);
-      } else {
-        std::bitset<2*D> remove_flags;
+        if (Model.surface()) {
+          Surfaces.push_back(mask_surface);
+        } else {
+          std::bitset<2*D> remove_flags;
 
-        for (int i=0;i<D;++i) {
-          if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-              Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
-              Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                remove_flags.set(i);
-          } else if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) {
-                remove_flags.set(i);
+          for (int i=0;i<D;++i) {
+            if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+                Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+                Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                  remove_flags.set(i);
+            } else if (i==Parameter.open_boundary && !Parameter.open_boundary_negative && Model.remove_bottom()) {
+                  remove_flags.set(i);
+            }
+            if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
+                Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
+                Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
+                  remove_flags.set(i+D);
+            } else if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) {
+                  remove_flags.set(i+D);
+            }
           }
-          if (Parameter.boundary_conditions[i].min==bnc::PERIODIC_BOUNDARY ||
-              Parameter.boundary_conditions[i].min==bnc::REFLECTIVE_BOUNDARY ||
-              Parameter.boundary_conditions[i].min==bnc::EXTENDED_BOUNDARY) {
-                remove_flags.set(i+D);
-          } else if (i==Parameter.open_boundary && Parameter.open_boundary_negative && Model.remove_bottom()) {
-                remove_flags.set(i+D);
-          }
+
+          msg::print_start("Extract surface and interfaces...");
+          geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+          msg::print_done();
         }
-        geometry::TransformGeometryToSurfaces(mask_geometry, Surfaces, remove_flags, Parameter.grid_delta*Parameter.snap_to_boundary_eps, Parameter.report_import_errors);
+
+        msg::print_start("Distance transformation...");
+        //LevelSetType mask_ls(LevelSets.back().grid());
+
+        init(mask_ls,Surfaces.back(),Parameter.report_import_errors);
+        msg::print_done();
+
       }
 
-      /*geometry::TransformGeometryToSurfaces(     mask_geometry,
-                                                   Surfaces,
-                                                   Parameter.open_boundary,
-                                                   Parameter.open_boundary_negative,
-                                                   Parameter.grid_delta*Parameter.snap_to_boundary_eps
-                                               );*/
 
-      LevelSetType mask_ls(LevelSets.back().grid());
+      // wrap all higher levelsets around mask before pushing it to the front
+      for(auto LS=LevelSets.begin(); LS != LevelSets.end(); ++LS){
+        LS->min(mask_ls);
+      }
 
-      init(mask_ls,Surfaces.back(),Parameter.report_import_errors);
-
-      if (LevelSets.size()<2) {
+      // now put the mask as the lowest levelset
       LevelSets.push_front(mask_ls);
-      LevelSets.back().prune();
-      LevelSets.back().segment();
-      } else {
-        LevelSets.push_back(mask_ls);
-        LevelSetType & l1=LevelSets.back();
-        const LevelSetType & l2 =*(++LevelSets.rbegin());
 
-        //l1=min(max(l1,mask_ls),l2);
 
-        l1.max(mask_ls);
-        l1.min(l2);
-
-        l1.prune();
-      l1.segment();
-      }
         //TODO output and time
 
     }

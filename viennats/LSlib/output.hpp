@@ -288,7 +288,7 @@ namespace lvlset {
         //the TriangulationType has to have the same properties as for the levelset-initialization
         //function init (see surface2levelset.hpp)
 
-        const int D=TriangulationType::dimensions;
+        const int D=TriangulationType::dimension;
 
         std::map<typename TriangulationType::node_index_type,unsigned int> node_ids;
 
