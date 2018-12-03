@@ -23,6 +23,8 @@ namespace model {
 
         bool surf;
 
+        bool ignore_other_mat;
+
     public:
 
         const std::string & file_name() const {
@@ -37,12 +39,17 @@ namespace model {
             return surf;
         }
 
+        const bool ignore_other_materials() const {
+            return ignore_other_mat;
+        }
+
         Mask(const std::string & Parameters)  {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
             remove=true;
             surf=false;
+            ignore_other_mat = false;
 
             bool b = parse(
                     Parameters.begin(),
@@ -50,7 +57,8 @@ namespace model {
                     *(
                             (str_p("mask_file") >> '='  >>  '\"' >> *((~ch_p('\"'))[push_back_a(fn)]) >> '\"' >> ';') |
                             (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(surf)]) >> ';') |
-                            (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';')
+                            (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';') |
+                            (str_p("ignore_other_materials")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(ignore_other_mat)]) >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
