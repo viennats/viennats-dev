@@ -44,7 +44,7 @@ namespace geometry {
 
     lvlset::vec<double, D> Min,Max; //for bounding box
 
-    geometry()  {}
+    geometry()  {};
 
     // Silvaco Structure Reader
     void ReadSTR(std::string   const& FileName,

@@ -644,14 +644,14 @@ namespace proc {
       LevelSetType dummy_ls(LevelSets.back().grid());
       init(dummy_ls,Surfaces.back(),Parameter.report_import_errors);
       boolop_ls = &dummy_ls;
-    }
-    else if(Model.levelset()>0){      //If internal levelset should be used
+
+    } else if(Model.levelset()>=0){      //If internal levelset should be used
       typename LevelSetsType::iterator it = LevelSets.begin();
       for(int i=0; i<Model.levelset(); ++i) ++it;
       boolop_ls = &(*it);
     } else{
             return;
-        }
+    }
 
         if (Model.level()>0) {
 

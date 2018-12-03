@@ -69,6 +69,7 @@ namespace model {
 
             remove=true;
             surf=false;
+            lvlset=-1;
 
             bool b = parse(
                     Parameters.begin(),

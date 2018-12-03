@@ -134,7 +134,7 @@ namespace model {
 				double DR_p = (Rates[3])/rho_p;
 
 				if (Coverages[1]>1) {	//Deposition
-					if (Material==0) {	//Si
+					if (Material<=AddLayer) {	//Si
 						Velocity = 5e-3*(DR_p - ER_p); 	//m/s
 						//std::cout << Velocity << std::endl;
 					} else {
