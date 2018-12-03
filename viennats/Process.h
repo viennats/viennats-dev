@@ -562,6 +562,14 @@ namespace proc {
 
       }
 
+      // only put mask, where no other LS was before
+      if(!Model.ignore_other_materials()){
+        mask_ls.invert();
+        for(auto LS=LevelSets.begin(); LS != LevelSets.end(); ++LS){
+          mask_ls.min(*LS);
+        }
+        mask_ls.invert();
+      }
 
       // wrap all higher levelsets around mask before pushing it to the front
       for(auto LS=LevelSets.begin(); LS != LevelSets.end(); ++LS){
