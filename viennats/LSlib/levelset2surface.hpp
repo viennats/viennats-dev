@@ -293,18 +293,23 @@ namespace lvlset {
 
         typedef typename LevelSetType::index_type index_type;
         typedef typename LevelSetType::value_type value_type;
-        const int D=LevelSetType::dimensions;
+        static constexpr int D=LevelSetType::dimensions;
 
         // Add borderpoints to levelset before extracting the surface
         std::vector< std::pair< vec<index_type, D>, value_type> > points;
 
         //allocate enough space for all points
         index_type num_points=0;
-        for(int i=0; i<D; ++i) num_points+=4*std::abs(start[i]-end[i])*std::abs(start[(i+1)%D]-end[(i+1)%D]);
-        points.reserve(num_points);      //resize to stop many reallocs
+        for(int i=0; i<D; ++i) num_points+=4.2*std::abs(start[i]-end[i])* ((D==3)?std::abs(start[(i+1)%D]-end[(i+1)%D]):1);
+        points.reserve(num_points);      //resize to stop many reallocs 4.2 instead of 4 for extra points
 
         // add points on simulation boundary
-        vec<index_type,D> unity[3]= {vec<index_type,D>(1,0,0), vec<index_type,D>(0,1,0), vec<index_type,D>(0,0,1)};
+        std::vector< vec<index_type,D> > unity;
+        for(unsigned i=0; i<D; ++i){ // fill with 1,0,0; 0,1,0; 0,0,1
+          vec<index_type,D> temp = vec<index_type,D>(0);
+          temp[i] = 1;
+          unity.push_back(temp);
+        }
 
         // slight offset for numerical stability
         double eps=1e-6;
@@ -313,8 +318,8 @@ namespace lvlset {
             vec<index_type,D> index;
             int y=(i+1)%D, z=(i+2)%D;   //permutation of other dimensions
 
-            int jmin=start[y], jmax = end[y];
-            int kmin=start[z], kmax = end[z];
+            int jmin = start[y], jmax = end[y];
+            int kmin = (D==3)?start[z]:0, kmax = (D==3)?end[z]:2; //in 2D, make loop run only once
 
             for(int j=jmin+1; j<jmax; ++j){
                 for(int k=kmin+1; k<kmax; ++k){

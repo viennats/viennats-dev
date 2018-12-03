@@ -1693,8 +1693,6 @@ namespace proc {
             }
 
       if(VolumeOutput){
-        if(D<3) std::cout << "WARNING: Volume Output is only possible in 3D! Not printing output..." << std::endl;
-        else{
           {
             std::ostringstream oss;
             oss << "Writing volume " << output_info.output_counter;
@@ -1762,7 +1760,6 @@ namespace proc {
           output_info.output_counter++;
           msg::print_done();
 
-        }
       }
 
             TimeOutput+=my::time::GetTime();
