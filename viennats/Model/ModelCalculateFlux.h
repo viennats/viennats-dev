@@ -74,7 +74,6 @@ namespace model {
     CalculateFlux(typename std::list<PPT>::const_iterator p, int D):StartAngleDistribution(1.),ReemittedAngleDistribution(1.),dim(D) {
 
             double Accuracy;
-            num_active = p->ActiveLayers.size();
             using namespace boost::spirit::classic;
 
             // Default reflection model
@@ -119,18 +118,14 @@ namespace model {
         }
 
     template<class VecType>
-        void CalculateVelocity(
+    void CalculateVelocity(
             double &Velocity,
             const VecType& NormalVector,
             const double *Coverages,
             const double *Rates,
             int Material, bool Connected, bool Visible) const {
 
-              if(Material<num_active){
-                Velocity=Rates[0]*Yield;
-              }else{
-                Velocity=0;
-              }
+            Velocity=Rates[0]*Yield;    // always apply the calculated rate
     }
 
     template<class VecType>

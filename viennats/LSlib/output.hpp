@@ -288,7 +288,7 @@ namespace lvlset {
         //the TriangulationType has to have the same properties as for the levelset-initialization
         //function init (see surface2levelset.hpp)
 
-        const int D=TriangulationType::dimensions;
+        const int D=TriangulationType::dimension;
 
         std::map<typename TriangulationType::node_index_type,unsigned int> node_ids;
 
@@ -603,9 +603,28 @@ namespace lvlset {
       fout.write((char *)&bits_per_distance, 1); //bits per distance; as binary
       /************************************************ WRITE GRID PROPERTIES ************************************************/
       //get grid properties(minima, maxima and boundary conditions)
-      const index_type* grid_minima = ls.grid().grid_traits().minima();
-      const index_type* grid_maxima = ls.grid().grid_traits().maxima();
+      index_type grid_minima[D];
+      index_type grid_maxima[D];
+
       const boundary_type* grid_b_conditions = ls.grid().grid_traits().boundary_conditions();
+
+      for(unsigned i=0; i<D; ++i){
+        if(grid_b_conditions[i] == lvlset::INFINITE_BOUNDARY ||
+              grid_b_conditions[i] == lvlset::POS_INFINITE_BOUNDARY){
+            grid_maxima[i] = ls.get_max_runbreak(i);
+        } else{
+          grid_maxima[i] = ls.grid().max_grid_index(i);
+        }
+        if(grid_b_conditions[i] == lvlset::INFINITE_BOUNDARY ||
+              grid_b_conditions[i] == lvlset::NEG_INFINITE_BOUNDARY){
+            grid_minima[i] = ls.get_min_runbreak(i);
+        } else{
+          grid_minima[i] = ls.grid().min_grid_index(i);
+        }
+
+        //std::cout << grid_minima[i] << ", " << grid_maxima[i] << std::endl;
+      }
+
       //write grid properties, using adaptive size for min/max
       unsigned int bytes_grid_limits;
       //search for smallest grid_min and highest grid_max

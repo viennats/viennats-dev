@@ -170,19 +170,13 @@ namespace lvlset {
             if (l.grid().is_neg_boundary_infinite(i)) {
                 boundary_eps_min[i]=static_cast<value_type>(0);
             } else {
-                boundary_eps_min[i]  =  l.grid().global_index_2_global_coordinate(i, l.grid().min_grid_index(i)+1)  -
-                                        l.grid().global_index_2_global_coordinate(i, l.grid().min_grid_index(i));
-
-                boundary_eps_min[i]*=eps_boundary;
+                boundary_eps_min[i] = eps_boundary*l.grid().grid_delta();
             }
 
             if (l.grid().is_pos_boundary_infinite(i)) {
                 boundary_eps_max[i]=static_cast<value_type>(0);
             } else {
-                boundary_eps_max[i]  =  l.grid().global_index_2_global_coordinate(i, l.grid().max_grid_index(i))  -
-                                        l.grid().global_index_2_global_coordinate(i, l.grid().max_grid_index(i)-1);
-
-                boundary_eps_max[i]*=eps_boundary;
+                boundary_eps_max[i] = eps_boundary*l.grid().grid_delta();
             }
 
             if (l.grid().parity(i)) {
@@ -204,7 +198,6 @@ namespace lvlset {
             point_vector points;
 
             //for each surface element do
-
             for (element_index_type e=0;e<srf.number_of_elements();e++) {
                 vec<value_type,D> c[D];            //nodes of element
                 vec<value_type,D> center(value_type(0));  //center point of triangle
@@ -216,17 +209,23 @@ namespace lvlset {
 
                     for (int q=0;q<D;q++) {
                         c[q][dim]=srf.node_coordinate(srf.element_node_id(e, q), dim);
-                        if (math::abs(c[q][dim]-l.grid().min_local_coordinate(dim))<boundary_eps_min[dim]) c[q][dim]= l.grid().min_local_coordinate(dim);
-                        if (math::abs(c[q][dim]-l.grid().max_local_coordinate(dim))<boundary_eps_max[dim]) c[q][dim]= l.grid().max_local_coordinate(dim);
+                        if (math::abs(c[q][dim]-l.grid().min_local_coordinate(dim))<boundary_eps_min[dim])
+                          c[q][dim]= l.grid().min_local_coordinate(dim);
+                        if (math::abs(c[q][dim]-l.grid().max_local_coordinate(dim))<boundary_eps_max[dim])
+                          c[q][dim]= l.grid().max_local_coordinate(dim);
 
-                        if (c[q][dim]>l.grid().min_local_coordinate(dim)) flags.reset(dim);      //TODO
-                        if (c[q][dim]<l.grid().max_local_coordinate(dim)) flags.reset(dim+D);    //TODO
+                        if (c[q][dim]>l.grid().min_local_coordinate(dim))
+                          flags.reset(dim);      //TODO
+                        if (c[q][dim]<l.grid().max_local_coordinate(dim))
+                          flags.reset(dim+D);    //TODO
 
                         center[dim]+=c[q][dim];  //center point calculation
                     }
                 }
 
-                if (flags.any()) continue;  //triangle is outside of domain
+                if (flags.any()){
+                  continue;
+                }   //triangle is outside of domain
 
 
                 center/=static_cast<value_type>(D);  //center point calculation
@@ -366,12 +365,12 @@ namespace lvlset {
         l.insert_points(points2);    //initialize level set function
 
         if (report_import_errors) {
-      std::string err= misc::test(l);     //check level set function
-      if (err.size()) {                   //if inconsistent print out error message
-        std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
-        std::cout << err << std::endl;
-        assert(0);
-      }
+          std::string err= misc::test(l);     //check level set function
+          if (err.size()) {                   //if inconsistent print out error message
+            std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
+            std::cout << err << std::endl;
+            assert(0);
+          }
         }
 
         l.prune();       //remove active grid point which have no opposite signed neighbor grid point

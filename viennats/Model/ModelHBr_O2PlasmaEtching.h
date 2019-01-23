@@ -53,9 +53,7 @@ class HBr_O2_PlasmaEtching {
 
 	double Flux_ev;
 
-	std::vector<int> ActiveLayers;
-
-
+	int AddLayer;
 
 public:
 
@@ -90,7 +88,7 @@ public:
 
 	HBr_O2_PlasmaEtching(typename std::list<PPT>::const_iterator p) {//, int stacked_material) {
 
-		ActiveLayers = p->ActiveLayers;
+		AddLayer = p->AddLayer;
 
 		using namespace boost::spirit::classic;
 //		    stacked_mat=stacked_material;
@@ -138,7 +136,7 @@ public:
 				Velocity=0;
 			}
 		} else { 			//Etching
-			if (Material<(int)ActiveLayers.size()){//}<(int)ActiveLayers.size()){//Material<=2){//my::stat::AnyElement<int>(ActiveLayers,  Material)) {	//Si
+			if (Material<=AddLayer){//}<(int)ActiveLayers.size()){//Material<=2){//my::stat::AnyElement<int>(ActiveLayers,  Material)) {	//Si
 				Velocity = -0.1*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;
 			} else {
 				Velocity = 0;

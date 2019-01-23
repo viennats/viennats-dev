@@ -23,7 +23,7 @@ namespace model{
         double const rho_Cl = 4.2399e19;
         double const kB_over_m_Cl = 234.6938;
 
-        std::vector<int> ActiveLayers;
+        int AddLayer;
 
     public:
         static const int CoverageStorageSize=1;
@@ -52,7 +52,8 @@ namespace model{
         };
 
         Cl2_N2Etching(typename std::list<PPT>::const_iterator p){
-            ActiveLayers = p->ActiveLayers;
+
+            AddLayer = p->AddLayer;
 
             using namespace boost::spirit::classic;
 
@@ -81,10 +82,10 @@ namespace model{
 
         template <class VecType>
 		void CalculateVelocity(double &Velocity, const VecType& NormalVector, const double *Coverages, const double *Rates, int Material, bool Connected, bool Visible) const {
-            if(Material<(int)ActiveLayers.size()){
+            if(Material<=AddLayer){
                 Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100);        //m/s
             }
-            //else if(Material==(int)ActiveLayers.size()) Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100)/5;
+            //else if(Material==1) Velocity = -Rates[0]*Coverages[0]/(rho_TiN*100)/5;
             else{
                 Velocity = 0;
             }
