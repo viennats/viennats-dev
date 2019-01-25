@@ -293,10 +293,13 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     }
   }
 
+
+
   //output initial LevelSets if print lvst is specified
   if(p.print_lvst){
     int LevelsetCounter = 0;
     for(auto ls: LevelSets){
+      ls.print();
       std::ostringstream oss;
       oss << p.output_path << "InterfaceInitial" << LevelsetCounter++ << ".lvst";
       ls.export_levelset(oss.str(), p.bits_per_distance);

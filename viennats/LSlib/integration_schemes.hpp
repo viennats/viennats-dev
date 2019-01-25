@@ -20,6 +20,8 @@
 #include <vector>
 #include "math.hpp"
 
+#include "../Math.h"
+
 namespace lvlset {
 
 
@@ -53,6 +55,30 @@ namespace lvlset {
         return LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE(alpha);
     }
 
+    //at
+    class LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE {
+    public:
+        const double alpha;
+        LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE(double a) : alpha(a) {}
+    };
+
+    LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE LAX_FRIEDRICHS_SCALAR_2ND_ORDER(double alpha) {
+        return LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE(alpha);
+    }
+
+    //at
+
+    class STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE {
+    public:
+        const double gamma;
+        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(double a) : gamma(a) {}
+    };
+
+    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS(double gamma) {
+        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(gamma);
+    }
+
+
     class SMOOTHING_SCHEME_TYPE {
     public:
         const int material_level;
@@ -78,6 +104,11 @@ namespace lvlset {
 
     template <class LevelSetType, class VelocityType, int order>
     class LaxFriedrichsScalar;
+
+    template <class LevelSetType, class VelocityType, int order>
+    class StencilLocalLaxFriedrichsScalar;
+
+
 
     template <class LevelSetType>
     class SmoothingScheme;
@@ -128,6 +159,21 @@ namespace lvlset {
     public:
         IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 1>(l,v,s.alpha) {}
     };
+
+    //at
+    template <class LevelSetType, class VelocityType>
+    class IntegrationScheme<LevelSetType, VelocityType, LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE>:public LaxFriedrichsScalar<LevelSetType, VelocityType, 2> {
+    public:
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 2>(l,v,s.alpha) {}
+    };
+
+    //at
+    template <class LevelSetType, class VelocityType>
+    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 2> {
+    public:
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 2>(l,v,s.gamma) {}
+    };
+
 
     template <class LevelSetType, class VelocityType>
     class IntegrationScheme<LevelSetType, VelocityType, SMOOTHING_SCHEME_TYPE>:public SmoothingScheme<LevelSetType> {
@@ -528,7 +574,8 @@ namespace lvlset {
     template <class LevelSetType, class VelocityType, int order>
     class LaxFriedrichsScalar {
 
-        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
+
+        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       // derivative neighbor iterators, relative to central point
 
         const LevelSetType & LS;
 
@@ -558,33 +605,45 @@ namespace lvlset {
         template <class IteratorType>
         value_type operator()(const IteratorType& it, unsigned int material) {
 
-            assert(it.is_active());
+          assert(it.is_active());
 
-            const int D=LevelSetType::dimensions;
+          const int D=LevelSetType::dimensions;
+
+          if (initialized) {
+                for (int i=0;i<2*D*order;i++)
+                  it_neighbors[i].go_to_indices_sequential(it.start_indices());
+          } else {
+            for (int i=0;i<2*D;i++) {
+              vec<index_type,D> tv(index_type(0));
+
+              for (int j=0;j<order;j++) {
+                if ( i<D ){
+
+                  tv[i]++;
+                }
+                else {
+                  //tv[i-D]=index_type(1);
+                  tv[i-D]--;
+                }
+                it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
 
 
-            if (initialized) {
-         for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
-            } else {
-              for (int i=0;i<2*D;i++) {
-          vec<index_type,D> tv(index_type(0));
-          for (int j=0;j<order;j++) {
-            if (i<D) tv[i]++; else tv[i-D]--;
-            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+
+
+              }
+            initialized=true;
+            }
           }
-          initialized=true;
-         }
-       }
 
             value_type grad=0.;
             value_type dissipation=0.;
 
-            for (int i=0;i<D;i++) {
+            for (int i=0;i<D;i++) { //iterate over dimensions
 
                 const value_type pos    =   LS.grid().grid_position_of_local_index(i,it.start_indices(i));
 
-                const value_type d_p    =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)-pos);
-                const value_type d_n    =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-1)-pos);
+                const value_type d_p    =   math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)  - pos );
+                const value_type d_n    =   -math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)-1) - pos );
 
                 const value_type phi_0=it.value();
                 const value_type phi_p=it_neighbors[i*order].value();
@@ -597,8 +656,11 @@ namespace lvlset {
 
                 if (order==2) {         //if second order time integration scheme is used
 
+
                     const value_type d_pp   =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+2)-pos);
                     const value_type d_nn   =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-2)-pos);
+
+                  //  std::cout << "d_p, d_n, d_pp, d_nn = " << d_p << ", " << d_n << ", " << d_pp << ", " <<d_nn << ", " << std::endl;
 
                     const value_type phi_pp=it_neighbors[i*order+1].value();
                     const value_type phi_nn=it_neighbors[(i+D)*order+1].value();
@@ -631,6 +693,258 @@ namespace lvlset {
 
             value_type v=velocities(it.active_pt_id(), material);
             return v*std::sqrt(grad)-((v==0.)?0:dissipation);                   //TODO
+
+        }
+    };
+
+    //at
+    template <class LevelSetType, class VelocityType, int order>
+    class StencilLocalLaxFriedrichsScalar {
+
+        std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_points;
+        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
+        const LevelSetType & LS;
+        const VelocityType& velocities;
+
+        typedef typename LevelSetType::value_type value_type;
+        typedef typename LevelSetType::index_type index_type;
+
+        const double gamma;
+
+        const int slf_order = 1;
+
+        //TODO at: hard coded just for testing
+        const value_type r100=0.0166;
+        const value_type r110=0.0309;
+        const value_type r111=0.00012;
+        const value_type r311=0.030;
+
+
+        bool initialized;
+
+    public:
+
+        static void prepare_surface_levelset(LevelSetType& l) {
+            assert((order==1) || (order==2));                   //the user in the level-set-traits-class
+
+            l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
+                                                        //the level set values of the neighbor grid points,
+                                                        //which are necessary to calculate the derivatives are also defined
+        }
+
+
+        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a): LS(l), velocities(v), gamma(a),initialized(false) {}
+
+
+        template <class IteratorType>
+        value_type operator()(const IteratorType& it, unsigned int material) {
+
+          assert(it.is_active());
+
+          const int D=LevelSetType::dimensions;
+
+
+          vec<value_type,3> direction100;
+          direction100[0]=1; direction100[1]=1; direction100[2]=0; //TODO more elegant solution??
+          vec<value_type,3> direction010;
+          direction010[0]=-1; direction010[1]=1; direction010[2]=0; //TODO more elegant solution??
+
+
+          //prepare neighbor iterators for derivation stencil
+          if (initialized) {
+                for (int i=0;i<2*D*order;i++)
+                  it_neighbors[i].go_to_indices_sequential(it.start_indices());
+          } else {
+            for (int i=0;i<2*D;i++) {
+              vec<index_type,D> tv(index_type(0));
+              for (int j=0;j<order;j++) {
+                if ( i<D )
+                  tv[i]++;
+                else
+                  tv[i-D]--;
+
+                it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+
+              }
+            initialized=true;
+            }
+          }
+
+            value_type numhamiltonian=0.; //numerical Hamiltonian
+            value_type dissipation=0.;
+            vec<value_type,D> dphi_p(value_type(0)); //dphi previous dphi_l^-
+            vec<value_type,D> dphi_n(value_type(0)); //dphi next dphi_l^+
+
+            vec<value_type,3> NormalVector;
+
+            value_type v = velocities(it.active_pt_id(), material);
+
+            if( v == 0 ){
+              return 0;
+            }
+            else{
+              //numerical Hamiltonian
+              for (int i=0;i<D;i++) { //iterate over dimensions
+
+                  const value_type pos    =   LS.grid().grid_position_of_local_index(i,it.start_indices(i));
+
+                  const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)  - pos );
+
+                  const value_type phi_0=it.value();
+                  const value_type phi_p=it_neighbors[i*order + 0].value();
+                  const value_type phi_n=it_neighbors[(i+D)*order + 0].value();
+                  //const value_type phi_pp=it_neighbors[i*order + 1].value();
+                  //const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
+
+                  dphi_p[i] = (phi_0-phi_p)/dx;
+                  dphi_n[i] = (phi_n-phi_0)/dx;
+              }
+
+              for(int d=0; d < D; ++d)
+              {
+                  numhamiltonian += math::pow2( (dphi_p[d]+dphi_n[d]) * 0.5);
+              }
+              numhamiltonian = std::sqrt(numhamiltonian);
+              numhamiltonian *= velocities(it.active_pt_id(), material);
+
+              //now take care of dissipation term
+
+              int num_stencil_points = std::pow(2*slf_order + 1, D);
+              std::vector< vec<value_type,D>> alphas( num_stencil_points);
+
+              vec<index_type,D> slf_offset(index_type(0));
+
+              //prepare offset vectors for SLF stencil, they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
+              for( int i = 0; i < num_stencil_points; ++i){
+                for (int d = 0; d < D; ++d){
+                  slf_offset[d] = index_type( (int) (i / std::pow(2*slf_order + 1,d) ) % (2 * slf_order + 1) - slf_order );
+                }
+
+                //std::cout << "SLF Stencil: ";
+                //std::cout << "\t" << slf_offset << "\n";
+                it_slf_stencil_points.push_back(typename LevelSetType::const_iterator_runs_offset(LS, slf_offset ,it.start_indices()));
+
+              }
+
+              //interate through the SLF stencil points
+              for(int i_slf = 0; i_slf < num_stencil_points; ++i_slf){
+
+                std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_point_neighbors;
+
+
+                //TODO: use some predefined iterator????
+                //prepare neighbor iterators for derivation stencil
+                for (int i=0;i<2*D;i++) {
+                  vec<index_type,D> tv(index_type(0));
+                  for (int j=0;j<order;j++) {
+                    if ( i<D )
+                      tv[i]++;
+                    else
+                      tv[i-D]--;
+
+                    it_slf_stencil_point_neighbors.push_back(
+                           typename LevelSetType::const_iterator_runs_offset(LS, tv,it_slf_stencil_points[i_slf].start_indices()));
+                  }
+                }
+
+                vec<value_type,D> slf_dphi(value_type(0)); //forward derivative or ENO or WENO
+                vec<value_type,D> slf_dv(value_type(0)); //velocity derivative
+                vec<value_type,D> slf_normal(value_type(0)); //normal vector
+                value_type slf_gradient = 0; //abs(gradient)
+                const value_type DN = value_type(1e-6);
+
+                //determine derivatives
+                for (int i=0;i<D;i++) { //iterate over dimensions
+
+                    const value_type slf_pos    =   LS.grid().grid_position_of_local_index(i,it_slf_stencil_points[i_slf].start_indices(i));
+
+                    const value_type slf_dx =  math::abs( LS.grid().grid_position_of_global_index(i,it_slf_stencil_points[i_slf].start_indices(i)+1)  - slf_pos );
+
+                    const value_type slf_phi_0=it_slf_stencil_points[i_slf].value();
+                    const value_type slf_phi=it_slf_stencil_point_neighbors[i*order + 0].value();
+
+                    //const value_type phi_pp=it_neighbors[i*order + 1].value();
+                    //const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
+
+                    slf_dphi[i] = (slf_phi-slf_phi_0)/slf_dx;
+
+
+                    slf_gradient += std::pow(slf_dphi[i],2);
+                }
+                slf_gradient = std::sqrt(slf_gradient);
+
+                //determine normal vectors
+                for(int i=0; i < D; ++i){
+                  slf_normal[i] = slf_dphi[i] / slf_gradient;
+                }
+
+                //determine  velocity derivatives
+                for(int i=0; i < D; ++i){
+
+                  vec<value_type,3> normal_p,normal_n;
+
+                  //now it gets really dirty: force 3D vector for fourRateInterpolation
+                  if(D == 3){
+                    normal_p = slf_normal;
+                    normal_n = slf_normal;
+                  } else if(D==2){
+                    normal_p[0] = slf_normal[0];
+                    normal_n[0] = slf_normal[0];
+                    normal_p[1] = slf_normal[1];
+                    normal_n[1] = slf_normal[1];
+                    normal_p[2] = value_type(0);
+                    normal_n[2] = value_type(0);
+                  } else{
+                    std::cerr << "Are you really simulating a 1D problem????\n";
+                    return 0;
+                  }
+
+                  normal_p[i] -= DN;
+                  normal_n[i] += DN;
+
+                  value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
+                  value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
+
+                  //central difference
+                  slf_dv[i] = (vn - vp) / (2 * DN);
+                }
+
+                //determine \partial H / \partial phi_l
+                for (int i=0 ;i<D; ++i) { //iterate over dimensions
+                  //Monti term
+                  value_type monti=0;
+                  for(int j= 0; j < D - 1; ++j ){
+                       int idx = (i + 1) % D;
+                        monti += slf_dphi[idx] * slf_dphi[idx];
+                  }
+                  monti  *= slf_dv[i] / (slf_gradient * slf_gradient);
+
+                  //Toifl Quell term
+                  value_type toifl=0;
+                  for(int j= 0; j < D - 1; ++j ){
+                       int idx = (i + 1) % D;
+                       toifl = slf_dphi[idx] * slf_dv[idx];
+                  }
+                  toifl *= -slf_dphi[i] / (slf_gradient * slf_gradient);
+
+                  //Osher (constant V) term
+                  value_type osher=velocities(it.active_pt_id(), material) * slf_normal[i];
+
+                  //Total derivative is sum of terms given above
+                  alphas[i_slf][i] = monti + toifl + osher;
+
+                }
+
+              }
+
+              for(int d=0; d < D; ++d)
+              {
+                    dissipation += (alphas[d].element_max()) * (dphi_n[d]-dphi_p[d]) * 0.5;
+              }
+
+              return numhamiltonian - dissipation;
+
+          }
 
         }
     };

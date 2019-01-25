@@ -75,6 +75,7 @@ namespace lvlset {
         template<class V> vec<T,D>& operator=(const V&);
 
         T size() const;
+        T element_max() const;
         void sort();
         void reverse_sort();
 
@@ -211,6 +212,10 @@ namespace lvlset {
         return (sizeof(x)/sizeof(*x));
     }
 
+    template <class T, int D> inline T vec<T,D>::element_max() const{
+        return *std::max_element(std::begin(x), std::end(x));
+    }
+
     //###################################################################
 
     template <class T, int D> inline vec<T,D> Min(const vec<T,D>& v1,const vec<T,D>& v2) {
@@ -220,6 +225,12 @@ namespace lvlset {
     }
 
     template <class T, int D> inline vec<T,D> Max(const vec<T,D>& v1,const vec<T,D>& v2) {
+        vec<T,D> v;
+        for (int i=0;i<D;i++) v[i]=std::max(v1[i],v2[i]);
+        return v;
+    }
+
+    template <class T, int D> inline T Element_Max(const vec<T,D>& v1,const vec<T,D>& v2) {
         vec<T,D> v;
         for (int i=0;i<D;i++) v[i]=std::max(v1[i],v2[i]);
         return v;

@@ -1236,7 +1236,49 @@ namespace proc {
                             Model.CoverageStorageSize);
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else assert(0);
+                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {           //at
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::LAX_FRIEDRICHS_SCALAR_2ND_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+
+                else assert(0);
 
                 if (time_step>=MaxTimeStep) {
                     assert(time_step==MaxTimeStep);
@@ -1837,6 +1879,45 @@ namespace proc {
                             LevelSets,
                             Velocities,
                             lvlset::LAX_FRIEDRICHS_SCALAR_1ST_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {                  //NOTE TODO
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::LAX_FRIEDRICHS_SCALAR_2ND_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
