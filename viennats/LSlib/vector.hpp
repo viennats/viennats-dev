@@ -212,7 +212,7 @@ namespace lvlset {
         return (sizeof(x)/sizeof(*x));
     }
 
-    template <class T, int D> inline T vec<T,D>::element_max() const{
+   template <class T, int D> inline T vec<T,D>::element_max() const{
         return *std::max_element(std::begin(x), std::end(x));
     }
 

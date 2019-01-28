@@ -3394,6 +3394,7 @@ namespace lvlset {
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::go_up_BA;
     public:
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::is_finished;
+        vec<index_type,D> offset; //TODO at:  public for testing 
     private:
 
         template <class I>
@@ -3414,7 +3415,7 @@ namespace lvlset {
         vec<index_type,D> start_run_rel_coords;
         vec<index_type,D> end_run_rel_coords;
         vec<index_type,D> rel_coords;
-        vec<index_type,D> offset;
+        //TODO at: uncomment vec<index_type,D> offset;
         std::bitset<D> move_inverse;
 
     protected:
