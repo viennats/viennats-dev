@@ -787,7 +787,7 @@ namespace my {
         directions[1]=Normalize(directions[1]-directions[0]*dot(directions[0],directions[1]));
         directions[2]=cross(directions[0], directions[1]);
 
-      //  NormalVector=Normalize(NormalVector);
+        NormalVector=Normalize(NormalVector);
 
         for (int i=0;i<3;++i) assert(dot(directions[i], directions[(i+1)%3])<1e-6);
 

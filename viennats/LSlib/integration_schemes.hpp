@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <cassert>
 #include <vector>
+
+
 #include "math.hpp"
 
 #include "../Math.h"
@@ -660,7 +662,7 @@ namespace lvlset {
                     const value_type d_pp   =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+2)-pos);
                     const value_type d_nn   =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-2)-pos);
 
-                  //  std::cout << "d_p, d_n, d_pp, d_nn = " << d_p << ", " << d_n << ", " << d_pp << ", " <<d_nn << ", " << std::endl;
+                  //  //std::cout << "d_p, d_n, d_pp, d_nn = " << d_p << ", " << d_n << ", " << d_pp << ", " <<d_nn << ", " << std::endl;
 
                     const value_type phi_pp=it_neighbors[i*order+1].value();
                     const value_type phi_nn=it_neighbors[(i+D)*order+1].value();
@@ -701,7 +703,7 @@ namespace lvlset {
     template <class LevelSetType, class VelocityType, int order>
     class StencilLocalLaxFriedrichsScalar {
 
-        std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_points;
+        //std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_points;
         std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
         const LevelSetType & LS;
         const VelocityType& velocities;
@@ -744,11 +746,8 @@ namespace lvlset {
           const int D=LevelSetType::dimensions;
 
 
-          vec<value_type,3> direction100{1,1,0};
-          //direction100[0]=1; direction100[1]=1; direction100[2]=0; //TODO more elegant solution??
-          vec<value_type,3> direction010{-1,1,0};
-          //direction010[0]=-1; direction010[1]=1; direction010[2]=0; //TODO more elegant solution??
-
+          vec<value_type,3> direction100{0,1,0};
+          vec<value_type,3> direction010{1,0,-1};
 
           //prepare neighbor iterators for derivation stencil
           if (initialized) {
@@ -763,6 +762,7 @@ namespace lvlset {
                 else
                   tv[i-D]--;
 
+              //  std::cout << tv << std::endl;
                 it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
 
 
@@ -770,10 +770,12 @@ namespace lvlset {
             initialized=true;
             }
           }
+
+
           if(0){
           for(auto n : it_neighbors ){
             n.print();
-            std::cout << std::endl;
+            ////std::cout << std::endl;
           }
           }
 
@@ -787,6 +789,8 @@ namespace lvlset {
 
             value_type v = velocities(it.active_pt_id(), material);
 
+            const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(0,it.start_indices(0)+1)  - LS.grid().grid_position_of_local_index(0,it.start_indices(0)) );
+
             if( v == 0 ){
               return 0;
             }
@@ -796,8 +800,6 @@ namespace lvlset {
               for (int i=0 ; i < D ; ++i) { //iterate over dimensions
 
                   const value_type pos    =   LS.grid().grid_position_of_local_index(i,it.start_indices(i));
-
-                  const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)  - pos );
 
                   const value_type phi_0=it.value();
                   const value_type phi_p=it_neighbors[i*order + 0].value();
@@ -810,8 +812,25 @@ namespace lvlset {
 
                   numhamiltonian += math::pow2( (dphi_p[i]+dphi_n[i]) * 0.5); //phi_x**2 + phi_y**2 + ...
                   coord[i] = pos;
+
+                  // //std::cout << LS.grid().grid_position_of_local_index(i,it.start_indices(i))  << ", " <<
+                  //           LS.grid().grid_position_of_local_index(i,it_neighbors[i*order + 0].start_indices(i)) <<  ", " <<
+                  //           LS.grid().grid_position_of_local_index(i,it_neighbors[(i+D)*order + 0].start_indices(i)) <<  ", " <<
+                  //           it.start_indices(i) << ", " <<
+                  //           it.value() << ", " <<
+                  //           it_neighbors[i*order + 0].value() <<
+                  //
+                  //           std::endl;
               }
               std::cout << "NumHam pos = " << coord << std::endl;
+              bool showLog=true;
+
+              if(coord[1] < -3 )
+                showLog=false;
+
+
+
+
 
               numhamiltonian = std::sqrt(numhamiltonian); //|grad(phi)|
               numhamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
@@ -837,26 +856,29 @@ namespace lvlset {
 
               for( int i = 0; i < num_stencil_points; ++i){
                 for (int d = 0; d < D; ++d){
-                  slf_offset[d] = index_type( (int) (i / std::pow(2*slf_order + 1,d) ) % (2 * slf_order + 1) - slf_order );
+                  slf_offset[i][d] = index_type( (int) (i / std::pow(2*slf_order + 1,d) ) % (2 * slf_order + 1) - slf_order );
                 }
 
-                //std::cout << "SLF Stencil: ";
-                //std::cout << "\t" << slf_offset << "\n";
-                it_slf_stencil_points.push_back(typename LevelSetType::const_iterator_runs_offset(LS, slf_offset ,it.start_indices()));
-                it_slf_stencil_points[i].go_to_indices(it_slf_stencil_points[i].start_indices());
+
+                //it_slf_stencil_points.push_back(typename LevelSetType::const_iterator_runs_offset(LS, slf_offset[i] ,it.start_indices()));
+                //it_slf_stencil_points[i].go_to_indices(it_slf_stencil_points[i].start_indices());
               }
 
               //iterate through the SLF stencil points
               for(int i_slf = 0; i_slf < num_stencil_points; ++i_slf){
 
-                std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_point_neighbors;
 
+                std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_point_neighbors;
+                //std::cout << "SLF Stencil: ";
+                //std::cout << "\t" << slf_offset[i_slf] << "\n";
 
                   //TODO: use some predefined iterator????
                   //prepare neighbor iterators for derivation stencil for every SLF stencil point
 
+
+                  typename LevelSetType::const_iterator_runs_offset it_slf_stencil_center(LS,slf_offset[i_slf],it.start_indices());
                 for (int i = 0; i < 2*D; i++) {
-                    vec<index_type,D> tv(index_type(0));
+                    vec<index_type,D> tv(slf_offset[i_slf]);
                     for (int j=0;j<order;j++) {
                       if ( i<D )
                         tv[i]++;
@@ -864,20 +886,12 @@ namespace lvlset {
                         tv[i-D]--;
 
 
+                      //std::cout << tv << std::endl;
                       it_slf_stencil_point_neighbors.push_back(
-                             typename LevelSetType::const_iterator_runs_offset(LS, tv,it_slf_stencil_points[i_slf].start_indices()));
+                             typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
 
                     }
                   }
-
-              if(0){
-              std::cout << "SLF\n";
-              for(auto n : it_slf_stencil_point_neighbors ){
-                n.print();
-                std::cout << std::endl;
-              }
-              exit(0);
-              }
 
               vec<value_type,D> slf_coord(value_type(0));
               vec<value_type,D> slf_phi(value_type(0));
@@ -887,29 +901,32 @@ namespace lvlset {
               vec<value_type,D> slf_dv(value_type(0)); //velocity derivative
               vec<value_type,D> slf_normal(value_type(0)); //normal vector
               value_type slf_gradient = 0; //|gradient|
-              const value_type DN = value_type(1e-6);
+              const value_type DN = value_type(1e-2);
 
             //  it_slf_stencil_points[i_slf].print();
 
               //determine derivatives
               for (int i = 0; i < D; ++i) { //iterate over dimensions
 
-                  const value_type slf_pos = LS.grid().grid_position_of_local_index(i,it_slf_stencil_points[i_slf].start_indices(i));
+                  const value_type slf_pos =  LS.grid().grid_position_of_local_index(i,it.start_indices(i) + slf_offset[i_slf][i]);
 
-                  const value_type slf_dx =  math::abs( LS.grid().grid_position_of_global_index(i,it_slf_stencil_points[i_slf].start_indices(i)+1)  - slf_pos );
-
-                  const value_type slf_phi_0=it_slf_stencil_points[i_slf].value();
+                  const value_type slf_phi_0=it_slf_stencil_center.value();
                   const value_type slf_phi_p=it_slf_stencil_point_neighbors[i*order + 0].value();
                   const value_type slf_phi_n=it_slf_stencil_point_neighbors[(i+D)*order + 0].value();
 
-                  slf_dphi_n[i] = (slf_phi_n-slf_phi_0)/slf_dx;
-                  slf_dphi_p[i] = (slf_phi_0-slf_phi_p)/slf_dx;
+                  if(showLog)
+                    std::cout << "phis = " << slf_phi_0 << ", " << slf_phi_p << ", " << slf_phi_n << std::endl;
 
-                  slf_gradient += math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5);
-                  slf_normal[i] = (slf_phi_n - slf_phi_p) / (2.0 * slf_dx); //central difference for normal
+                  slf_dphi_n[i] = (slf_phi_n-slf_phi_0)/dx;
+                  slf_dphi_p[i] = (slf_phi_0-slf_phi_p)/dx;
+
+                  slf_gradient += math::pow2( slf_dphi_n[i]);//math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5);
+                  slf_normal[i] = (slf_phi_n - slf_phi_p) / (2.0 * dx); //central difference for normal
 
                   slf_coord[i] = slf_pos;
                   slf_phi[i] = slf_phi_0;
+
+                  ////std::cout << LS.grid().grid_position_of_global_index(i,it_slf_stencil_points[i_slf].start_indices(i) + slf_offset[i_slf][i]) << std::endl;
               }
               slf_gradient = std::sqrt(slf_gradient);
 
@@ -917,8 +934,16 @@ namespace lvlset {
 
               //normalize normal vectors
               for(int i = 0; i < D; ++i){
-                slf_normal[i] /= slf_gradient;
+                if(std::fabs(slf_gradient) < 1e-4){
+                  std::cout << slf_gradient;
+                  slf_normal[i] /= math::abs(slf_normal.element_max());
+                }else
+                  slf_normal[i] /= slf_gradient;
               }
+
+              if(showLog)
+                std::cout << "offset = " << slf_offset[i_slf]<< ", dx = " << dx << ", pos = " << slf_coord << ", phi = " << slf_phi[0] << ", slf_dphi_n = " << slf_dphi_n << ", slf_dphi_p = " << slf_dphi_p <<", slf_normal = " << slf_normal <<", slf_gradient = " << slf_gradient;
+
 
 
               //determine  velocity derivatives
@@ -945,11 +970,18 @@ namespace lvlset {
                 normal_p[i] -= DN;
                 normal_n[i] += DN;
 
+
                 value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
                 value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
+                if(showLog)
+                  if(std::fabs(slf_normal[1] - 1.0) > 1e-4  )
+                    std::cout << "vp, vn = " << vp <<", " << vn << std::endl;
 
                 //central difference
                 slf_dv[i] = (vn - vp) / (2.0 * DN);
+
+                normal_p[i] += DN;
+                normal_n[i] -= DN;
               }
 
               //determine \partial H / \partial phi_l
@@ -976,18 +1008,20 @@ namespace lvlset {
                 toifl *= -slf_dphi_n[i] / (slf_gradient * slf_gradient);
                 }
                 //Osher (constant V) term
-                value_type osher=velocities(it.active_pt_id(), material) * slf_normal[i];
+                value_type osher=0;
+                if(1)
+                  osher=velocities(it.active_pt_id(), material) * slf_normal[i];
 
                 //Total derivative is sum of terms given above
                 alphas[i_slf][i] = gamma * (std::fabs(monti + toifl + osher) );
 
               }
-
-              std::cout  << "offset = " << it_slf_stencil_points[i_slf].offset << ", pos = " << slf_coord << ", phi = " << slf_phi << ", alpha_local = " << alphas[i_slf] << std::endl;
+              if(showLog)
+                std::cout  << ", slf_dv = " << slf_dv << ", alpha_local = " << alphas[i_slf] << std::endl;
 
             }
-
-            std::cout << "max alphas = [";
+              if(showLog)
+                std::cout << "max alphas = [";
             for(int d=0; d < D; ++d)
             {
                 std::vector<value_type> alpha_comp(num_stencil_points);
@@ -996,13 +1030,13 @@ namespace lvlset {
                   alpha_comp[i] = alphas[i][d];
                 }
                 value_type maxal = *std::max_element(alpha_comp.begin(),alpha_comp.end());
-
-                std::cout << maxal << ", ";
+                if(showLog)
+                  std::cout << maxal << ", ";
 
                 dissipation += maxal * (dphi_n[d]-dphi_p[d]) * 0.5;
             }
-
-            std::cout << "]\n\n";
+            if(showLog)
+              std::cout << "]\n\n";
 
             return numhamiltonian - dissipation;
 
@@ -1119,7 +1153,7 @@ namespace lvlset {
                     if ((k>max_curvature) || (k<min_curvature)) s= -num/denom;
 
                 } else {
-                    std::cout << "warning!!!dlkajf" << std::endl;
+                    //std::cout << "warning!!!dlkajf" << std::endl;
                     if (num>0) {
                         s=-std::numeric_limits<double>::max();
                     } else {
