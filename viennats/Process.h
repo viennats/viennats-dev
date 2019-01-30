@@ -1262,7 +1262,7 @@ namespace proc {
                   VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
                     TimeExpansion-=my::time::GetTime();
-                    LevelSets.back().expand(5);
+                    LevelSets.back().expand(7);
                     TimeExpansion+=my::time::GetTime();
 
                     TimeTimeIntegration-=my::time::GetTime();

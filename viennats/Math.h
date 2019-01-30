@@ -778,7 +778,7 @@ namespace my {
     T fourRateInterpolation(lvlset::vec<T,3> NormalVector, lvlset::vec<T,3> direction100, lvlset::vec<T,3> direction010, T r100, T r110, T r111, T r311 ){
 
         T Velocity=0;
-        lvlset::vec<double,3> directions[3];
+        lvlset::vec<T,3> directions[3];
 
         directions[0] = direction100;
         directions[1] = direction010;
@@ -791,7 +791,7 @@ namespace my {
 
         for (int i=0;i<3;++i) assert(dot(directions[i], directions[(i+1)%3])<1e-6);
 
-        lvlset::vec<double,3> N;
+        lvlset::vec<T,3> N;
 
         for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
         N.reverse_sort();
@@ -807,13 +807,92 @@ namespace my {
         assert(std::fabs(Norm(N)-1)<1e-4);
 
 
-        if (dot(N, lvlset::vec<double,3>(-1,1,2))<0) {
+        if (dot(N, lvlset::vec<T,3>(-1,1,2))<0) {
             Velocity=-((r100*(N[0]-N[1]-2*N[2])+r110*(N[1]-N[2])+3*r311*N[2])/N[0]);    //region A
         } else {
             Velocity=-((r111*((N[1]-N[0])*0.5+N[2])+r110*(N[1]-N[2])+1.5*r311*(N[0]-N[1]))/N[0]);//region C
         }
 
         return Velocity;
+    }
+
+
+    //(at)
+    template<class T>
+    inline T weno3(T x1, T x2, T x3, T x4, T x5, T dx, bool plus=true, T eps=1e-6){
+
+      T dxp1 = x2 - x1; //i-2
+      T dxp2 = x3 - x2; //i-1
+      T dxp3 = x4 - x3; //i
+      T dxp4 = x5 - x4;  //i+1
+
+
+      T result = 0;
+
+      if(plus==true){
+
+          T rp = (eps + math::pow2( dxp4 - dxp3 )) / (eps + math::pow2(dxp3 - dxp2));
+          T wp = 1.0 / (1 + 2.0 * math::pow2(rp));
+
+          result = dxp2 + dxp3 - wp * (dxp4 - 2.0 * dxp3 + dxp2);
+
+          result /= (2.0 * dx);
+
+      } else {
+          T rp = (eps + math::pow2( dxp2 - dxp1)) / (eps + math::pow2( dxp3 - dxp2 ));
+          T wp = 1.0 / (1 + 2.0 * math::pow2(rp));
+
+          result = dxp2 + dxp3 - wp * (dxp1 - 2.0 * dxp2 + dxp3);
+
+          result /= (2.0 * dx);
+      }
+
+      return result;
+    }
+
+    //(at)
+    template<class T>
+    inline T weno5(T x1, T x2, T x3, T x4, T x5, T x6, T x7, T dx, bool plus=true, T eps=1e-6){
+
+      T dxp1 = x2 - x1; //i-3
+      T dxp2 = x3 - x2; //i-2
+      T dxp3 = x4 - x3; //i-1
+      T dxp4 = x5 - x4; //i
+      T dxp5 = x6 - x5;  //i+1
+      T dxp6 = x7 - x6;  //i+2
+
+      T a = (dxp2 - dxp1)/dx;
+      T b = (dxp3 - dxp2)/dx;
+      T c = (dxp4 - dxp3)/dx;
+      T d = (dxp5 - dxp4)/dx;
+      T e = (dxp6 - dxp5)/dx;
+
+      T is0 = 13.0*my::math::pow2(a-b) + 3.0 * my::math::pow2(a-3*b);
+      T is1 = 13.0*my::math::pow2(b-c) + 3.0 * my::math::pow2(b+c);
+      T is2 = 13.0*my::math::pow2(c-d) + 3.0 * my::math::pow2(3*c-d);
+
+      T wp0 = 1.0 / my::math::pow2(eps + is0);
+      T wp1 = 6.0 / my::math::pow2(eps + is1);
+      T wp2 = 3.0 / my::math::pow2(eps + is2);
+
+      T wdenom = wp0 + wp1 + wp2;
+
+      T w0 = wp0 / wdenom;
+      //T w1 = wp1 / wdenom;
+      T w2 = wp2 / wdenom;
+
+      T pweno = 0;
+      T result = 0;
+
+      if(plus==true){
+        pweno = w0 * (e - 2*d + c)/3.0 + (w2 - 0.5)*(d - 2*c + b)/6.0;
+      } else {
+
+        pweno = -(w0 * (a - 2*b + c)/3.0 + (w2 - 0.5)*(b - 2*c + d)/6.0);
+      }
+      result = (-dxp2 + 7*dxp3 + 7*dxp4 - dxp5)/(12.0*dx) + pweno;
+
+      return result;
     }
 
   }
