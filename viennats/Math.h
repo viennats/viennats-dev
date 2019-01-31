@@ -854,45 +854,62 @@ namespace my {
     template<class T>
     inline T weno5(T x1, T x2, T x3, T x4, T x5, T x6, T x7, T dx, bool plus=true, T eps=1e-6){
 
-      T dxp1 = x2 - x1; //i-3
-      T dxp2 = x3 - x2; //i-2
-      T dxp3 = x4 - x3; //i-1
-      T dxp4 = x5 - x4; //i
-      T dxp5 = x6 - x5;  //i+1
-      T dxp6 = x7 - x6;  //i+2
+      if(plus==false){
+        T v1 = (x2 - x1)/dx; //i-3
+        T v2 = (x3 - x2)/dx; //i-2
+        T v3 = (x4 - x3)/dx; //i-1
+        T v4 = (x5 - x4)/dx; //i
+        T v5 = (x6 - x5)/dx;  //i+1
 
-      T a = (dxp2 - dxp1)/dx;
-      T b = (dxp3 - dxp2)/dx;
-      T c = (dxp4 - dxp3)/dx;
-      T d = (dxp5 - dxp4)/dx;
-      T e = (dxp6 - dxp5)/dx;
 
-      T is0 = 13.0*my::math::pow2(a-b) + 3.0 * my::math::pow2(a-3*b);
-      T is1 = 13.0*my::math::pow2(b-c) + 3.0 * my::math::pow2(b+c);
-      T is2 = 13.0*my::math::pow2(c-d) + 3.0 * my::math::pow2(3*c-d);
+        T p1 = v1/3.0 - 7*v2/6.0 + 11*v3/6.0;
+        T p2 = -v2/6.0 + 5*v3/6.0 + v4/3.0;
+        T p3 = v3/3.0 + 5*v4/6.0 - v5/6.0;
 
-      T wp0 = 1.0 / my::math::pow2(eps + is0);
-      T wp1 = 6.0 / my::math::pow2(eps + is1);
-      T wp2 = 3.0 / my::math::pow2(eps + is2);
+        T s1 = 13/12.0  * pow2(v1 - 2*v2 + v3) + 1/4.0 * pow2(v1 - 4*v2 + 3*v3);
+        T s2 = 13/12.0  * pow2(v2 - 2*v3 + v4) + 1/4.0 * pow2(v2 - v4);
+        T s3 = 13/12.0  * pow2(v3 - 2*v4 + v5) + 1/4.0 * pow2(3*v3 - 4*v4 + v5);
 
-      T wdenom = wp0 + wp1 + wp2;
+        T al1 = 0.1/(eps + s1);
+        T al2 = 0.6/(eps + s2);
+        T al3 = 0.3/(eps + s3);
 
-      T w0 = wp0 / wdenom;
-      //T w1 = wp1 / wdenom;
-      T w2 = wp2 / wdenom;
+        T alsum = al1 + al2 + al3;
 
-      T pweno = 0;
-      T result = 0;
+        T w1=al1 / alsum;
+        T w2=al2 / alsum;
+        T w3=al3 / alsum;
 
-      if(plus==true){
-        pweno = w0 * (e - 2*d + c)/3.0 + (w2 - 0.5)*(d - 2*c + b)/6.0;
-      } else {
+        return w1 * p1 + w2 * p2 + w3 * p3;
+      } else{
+        T v1 = (x7 - x6)/dx;
+        T v2 = (x6 - x5)/dx;
+        T v3 = (x5 - x4)/dx;
+        T v4 = (x4 - x3)/dx;
+        T v5 = (x3 - x2)/dx;
 
-        pweno = -(w0 * (a - 2*b + c)/3.0 + (w2 - 0.5)*(b - 2*c + d)/6.0);
+
+        T p1 = v1/3.0 - 7*v2/6.0 + 11*v3/6.0;
+        T p2 = -v2/6.0 + 5*v3/6.0 + v4/3.0;
+        T p3 = v3/3.0 + 5*v4/6.0 - v5/6.0;
+
+        T s1 = 13/12.0  * pow2(v1 - 2*v2 + v3) + 1/4.0 * pow2(v1 - 4*v2 + 3*v3);
+        T s2 = 13/12.0  * pow2(v2 - 2*v3 + v4) + 1/4.0 * pow2(v2 - v4);
+        T s3 = 13/12.0  * pow2(v3 - 2*v4 + v5) + 1/4.0 * pow2(3*v3 - 4*v4 + v5);
+
+        T al1 = 0.1/(eps + s1);
+        T al2 = 0.6/(eps + s2);
+        T al3 = 0.3/(eps + s3);
+
+        T alsum = al1 + al2 + al3;
+
+        T w1=al1 / alsum;
+        T w2=al2 / alsum;
+        T w3=al3 / alsum;
+
+        return w1 * p1 + w2 * p2 + w3 * p3;
+
       }
-      result = (-dxp2 + 7*dxp3 + 7*dxp4 - dxp5)/(12.0*dx) + pweno;
-
-      return result;
     }
 
   }

@@ -171,9 +171,9 @@ namespace lvlset {
 
     //at
     template <class LevelSetType, class VelocityType>
-    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 2> {
+    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 1> {
     public:
-        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 2>(l,v,s.gamma) {}
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 1>(l,v,s.gamma) {}
     };
 
 
