@@ -229,6 +229,46 @@ namespace lvlset {
         return true;
     }
 
+    //this function returns a*lA + b*lB
+    template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType> numerical_linear_combination(const levelset<GridTraitsType, LevelSetTraitsType>& lA, const levelset<GridTraitsType, LevelSetTraitsType>& lB, double a, double b ) {
+
+
+        typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
+
+        typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs itA(lA);
+        typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs itB(lB);
+
+        LevelSetType tmp(lA.grid());
+        tmp.initialize();
+
+        while (!itA.is_finished() || !itB.is_finished()) {
+
+            typename LevelSetType::value_type d =  a*itA.value() + b*itB.value();
+            vec<typename LevelSetType::index_type,GridTraitsType::dimensions> pos=std::max(itA.start_indices(),itB.start_indices());
+
+            if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
+                tmp.push_back(0,pos, d);      //TODO
+            } else {
+                tmp.push_back_undefined(0, pos, (tmp.sign(d)==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);     //TODO
+            }
+
+            switch(compare(itA.end_indices(), itB.end_indices())) {
+                case -1:
+                    itA.next();
+                    break;
+                case 0:
+                    itA.next();
+                default:
+                    itB.next();
+            }
+        }
+
+        tmp.finalize(std::min(lA.number_of_layers(), lB.number_of_layers()));
+
+
+        return tmp;
+    }
+
     template <class GridTraitsType, class LevelSetTraitsType> bool operator>=(const levelset<GridTraitsType, LevelSetTraitsType>& lA, const levelset<GridTraitsType, LevelSetTraitsType>& lB) {
         //this function returns true if for all grid points the level set values of lA are greater or equal than those of lB
         return (lB<=lA);

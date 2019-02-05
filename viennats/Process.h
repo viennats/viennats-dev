@@ -596,6 +596,7 @@ namespace proc {
       if (Model.level()==0) return;
 
         typedef typename LevelSetsType::value_type LevelSetType;
+
         const int D=LevelSetType::dimensions;
     LevelSetType* boolop_ls;
 
@@ -1913,6 +1914,9 @@ namespace proc {
                     LevelSets.back().expand(5);
                     TimeExpansion+=my::time::GetTime();
 
+
+                    LevelSetsType phi_p = LevelSets;
+
                     TimeTimeIntegration-=my::time::GetTime();
                     time_step=lvlset::time_integrate(
                             LevelSets,
@@ -1922,6 +1926,28 @@ namespace proc {
                             MaxTimeStep,
                             Coverages,
                             Model.CoverageStorageSize);
+
+
+
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize);
+
+
+                    auto it=LevelSets.begin();
+                    auto it2 = phi_p.begin();
+
+                    for(;  (it!=LevelSets.end()) && (it2!=phi_p.end()) ; ++it, ++it2){
+
+                      typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.5,0.5);
+                      it->swap(tmp);
+                    }
+
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else assert(0);

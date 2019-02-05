@@ -299,7 +299,6 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   if(p.print_lvst){
     int LevelsetCounter = 0;
     for(auto ls: LevelSets){
-      ls.print();
       std::ostringstream oss;
       oss << p.output_path << "InterfaceInitial" << LevelsetCounter++ << ".lvst";
       ls.export_levelset(oss.str(), p.bits_per_distance);
@@ -317,7 +316,7 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   //organization of the output information by initiation of required models
   OutputInfoType output_info;
 
-  //!Initialize the required models and call "proc::ExecuteProcess(...)"
+  //!Initialize the required models and call "proc::LevelSetType(...)"
   //!    Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
   //!    HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
   //!    and BooleanOperation

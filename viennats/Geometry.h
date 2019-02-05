@@ -992,9 +992,9 @@ namespace geometry {
       for (unsigned int m=0;m<max_mat;++m) {
 
         for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-          if ((m>=it->second.first-1) && (m<it->second.second-1)) {
+          if ((m>=it->second.first-1) && (m<it->second.second-1)) { //if ((m>=it->second.first-1) && (m<it->second.second-1)) {
             srf_it->Elements.push_back(it->first);
-          } else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
+          } else if ((m>=it->second.second-1) && (m<it->second.first-1)) { //} else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
             srf_it->Elements.push_back(it->first);
             std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
           }

@@ -3394,7 +3394,7 @@ namespace lvlset {
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::go_up_BA;
     public:
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::is_finished;
-        vec<index_type,D> offset; //TODO at:  public for testing 
+        vec<index_type,D> offset; //TODO at:  public for testing
     private:
 
         template <class I>
