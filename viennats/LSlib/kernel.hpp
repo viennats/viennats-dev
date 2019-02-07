@@ -554,11 +554,14 @@ namespace lvlset {
                 }
             }
 
+
             void print(std::ostream& out = std::cout) const {
                 std::ostringstream oss;
 
                 out << std::endl;
                 out << "levelset data structure" << std::endl << std::endl;
+
+
 
                 for (int dim=D-1;dim>=0;--dim) {
                     out <<  dim <<  " start_indices: " << start_indices[dim].size();
@@ -965,6 +968,12 @@ namespace lvlset {
         //writes the levelset to a file
         levelset& export_levelset(const std::string& path, int bits_per_distance = 8){
           export_levelset_to_file(*this, path, bits_per_distance);
+          return *this;
+        }
+
+        //writes the levelset to a vtk file
+        levelset& export_levelset_vtk(const std::string& path){
+          export_levelset_to_vtkfile(*this, path);
           return *this;
         }
 

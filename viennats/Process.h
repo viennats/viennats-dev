@@ -37,6 +37,8 @@
 #include "./LSlib/vector.hpp"
 #include "boundaries.h"
 
+#include "../LSlib/levelset.hpp"
+
 ///Process related objects and methods.
 namespace proc {
   template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
@@ -1727,6 +1729,10 @@ namespace proc {
 
                         it->export_levelset(oss.str(), Parameter.bits_per_distance);
                     }
+                    std::ostringstream oss;
+                    oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_implicit.vtk";
+                    //TODO new parameter for levelset output to vtk (implicit, no surface mesh)
+                    it->export_levelset_vtk(oss.str());
                     it++;
                 }
 
@@ -1793,7 +1799,9 @@ namespace proc {
             if(Parameter.print_lvst){
               oss << ".lvst";
               LS.export_levelset(oss.str(), Parameter.bits_per_distance);
+
             }
+
 
             //lvlset::write_explicit_surface_vtk(LS, oss.str());
 
@@ -1908,14 +1916,43 @@ namespace proc {
                 }
                 else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
 
-                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                    VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    const int rk_order =1; //Runge Kutta (RK) order, Euler == RK 1st order
+                    //NOTE 3rd order does not work at the moment
 
                     TimeExpansion-=my::time::GetTime();
-                    LevelSets.back().expand(5);
+                    LevelSets.back().expand(3);
                     TimeExpansion+=my::time::GetTime();
 
+                    //std::ofstream out("out.txt",std::ios_base::app);
 
-                    LevelSetsType phi_p = LevelSets;
+                    /*typedef typename LevelSetsType::value_type LevelSetType;
+                    out << "Time step: " << std::endl;
+                    int m=0;
+                    for(auto it=LevelSets.begin(); it!=LevelSets.end() ; ++it,++m){
+                      out << "Material #" << m << std::endl;
+                      //it->print_without_segmentation(out);
+
+                      typename LevelSetType::const_iterator_runs itA(*it);
+                      while (!itA.is_finished() ) {
+
+                          typename LevelSetType::value_type d =  itA.value();
+                          auto idx = itA.start_indices();
+
+                          if(itA.is_defined()){
+                            for(int i =0; i < LevelSetType::dimensions; ++i){
+                              out << idx[i] << ",";
+
+                            }
+                            out << d  << std::endl;
+                          }
+
+                          itA.next();
+                      }
+                    }*/
+
+                    LevelSetsType phi_n = LevelSets; //phi^n
 
                     TimeTimeIntegration-=my::time::GetTime();
                     time_step=lvlset::time_integrate(
@@ -1928,24 +1965,60 @@ namespace proc {
                             Model.CoverageStorageSize);
 
 
+                    if(rk_order > 1){ //first euler integration all RK >= 2nd order
+                      time_step=lvlset::time_integrate(
+                              LevelSets,
+                              Velocities,
+                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                              Parameter.cfl_condition,
+                              MaxTimeStep,
+                              Coverages,
+                              Model.CoverageStorageSize);
 
-                    time_step=lvlset::time_integrate(
-                            LevelSets,
-                            Velocities,
-                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
-                            Parameter.cfl_condition,
-                            MaxTimeStep,
-                            Coverages,
-                            Model.CoverageStorageSize);
+                      if(rk_order == 2){ //RK 2nd order: phi^(n+1) = 0.5*phi^n + 0.5 * phi^(n+2)
+                        auto it=LevelSets.begin();
+                        auto it2 = phi_n.begin();
+
+                        for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
+
+                          typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.5,0.5);
+                          it->swap(tmp);
+                        }
+
+                      } else if(rk_order == 3){//RK 3rd order: phi^(n+1) = 0.333*phi^n + 0.667 * phi^(n+3/2)
+
+                        auto it=LevelSets.begin();
+                        auto it2 = phi_n.begin();
+
+                        for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
+
+                          typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.25,0.75);
+                          it->swap(tmp);
+                        }
+
+                         time_step=lvlset::time_integrate(
+                                  LevelSets,
+                                  Velocities,
+                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                                  Parameter.cfl_condition,
+                                  MaxTimeStep,
+                                  Coverages,
+                                  Model.CoverageStorageSize);
 
 
-                    auto it=LevelSets.begin();
-                    auto it2 = phi_p.begin();
+                          it=LevelSets.begin();
+                          it2 = phi_n.begin();
 
-                    for(;  (it!=LevelSets.end()) && (it2!=phi_p.end()) ; ++it, ++it2){
+                          for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
 
-                      typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.5,0.5);
-                      it->swap(tmp);
+                            typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.6667,0.3333);
+
+                            it->swap(tmp);
+
+                          }
+
+                      }
+
                     }
 
                     TimeTimeIntegration+=my::time::GetTime();

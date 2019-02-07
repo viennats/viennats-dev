@@ -778,6 +778,9 @@ namespace lvlset {
             ////std::cout << std::endl;
           }
           }
+          LS.print();
+
+            bool showLog=false;
 
             value_type numhamiltonian=0.; //numerical Hamiltonian
             value_type dissipation=0.;
@@ -788,6 +791,8 @@ namespace lvlset {
             vec<value_type,3> NormalVector;
 
             value_type v = velocities(it.active_pt_id(), material);
+
+
 
             const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(0,it.start_indices(0)+1)  - LS.grid().grid_position_of_local_index(0,it.start_indices(0)) );
 
@@ -804,6 +809,11 @@ namespace lvlset {
                   const value_type phi_0=it.value();
                   const value_type phi_p=it_neighbors[i*order + 0].value();
                   const value_type phi_n=it_neighbors[(i+D)*order + 0].value();
+
+                  if(showLog){
+                    std::cout << "v(p) = " << it_neighbors[i*order + 0].active_pt_id() <<
+                                ", v(n) = " << it_neighbors[(i+D)*order + 0].active_pt_id() << std::endl;
+                  }
 
 
                   if(order == 1){
@@ -848,10 +858,10 @@ namespace lvlset {
 
 
 
-              bool showLog=false;
 
-              if(coord[1] < -3 )
-                showLog=false;
+
+            //  if(coord[1] < -3 )
+              //  showLog=false;
 
               if(showLog)
                 std::cout << "NumHam pos = " << coord << std::endl;
@@ -928,8 +938,8 @@ namespace lvlset {
                              typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
 
                       if(showLog){
-                        it_slf_stencil_point_neighbors[i*order+j].print();
-                        std::cout << std::endl;
+                        //it_slf_stencil_point_neighbors[i*order+j].print();
+                        //std::cout << std::endl;
                       }
                     }
                   }

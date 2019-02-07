@@ -246,6 +246,7 @@ namespace lvlset {
             typename LevelSetType::value_type d =  a*itA.value() + b*itB.value();
             vec<typename LevelSetType::index_type,GridTraitsType::dimensions> pos=std::max(itA.start_indices(),itB.start_indices());
 
+
             if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
                 tmp.push_back(0,pos, d);      //TODO
             } else {

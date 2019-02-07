@@ -539,6 +539,57 @@ namespace lvlset {
     }
 
     template <class GridTraitsType, class LevelSetTraitsType>
+    void export_levelset_to_vtkfile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path){
+      std::ofstream out(path);
+
+
+      typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
+
+      typename LevelSetType::const_iterator_runs itA(ls);
+
+      std::vector< vec<typename LevelSetType::index_type, LevelSetType::dimensions> > indices;
+      std::vector<typename LevelSetType::value_type> values;
+
+      while (!itA.is_finished() ) {
+
+
+          if(itA.is_defined()){
+            values.push_back(itA.value() );
+            indices.push_back( itA.start_indices() );
+          }
+
+          itA.next();
+      }
+
+      out << "# vtk DataFile Version 3.0\nLevelSet\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS ";
+      out << indices.size() << " double\n";
+
+
+      for(size_t i = 0; i < indices.size(); ++i){
+        for(int k =0; k < LevelSetType::dimensions; ++k){
+          out << indices[i][k];
+
+          if(k == LevelSetType::dimensions - 1){
+            if(2 == LevelSetType::dimensions) // fill with 0 in 2D case to pacify paraview
+              out << "\t0";
+          }else{
+            out << "\t";
+          }
+        }
+
+        out << std::endl;
+      }
+
+      out << "POINT_DATA " << values.size() << "\n";
+      out << "SCALARS Phi double 1\nLOOKUP_TABLE default\n";
+
+      for(size_t i = 0; i < indices.size(); ++i){
+        out << values[i] << std::endl;
+      }
+
+    }
+
+    template <class GridTraitsType, class LevelSetTraitsType>
     void export_levelset_to_file(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path, const int& bits_per_distance = 8) {
       /*
       **************************************************************************************************************

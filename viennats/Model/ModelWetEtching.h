@@ -101,10 +101,16 @@ namespace model {
 
             lvlset::vec<double,3> N;
 
+
             for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
             N.reverse_sort();
 
-            assert(std::fabs(Norm(N)-1)<1e-4);
+            //assert(std::fabs(Norm(N)-1)<1e-4);
+            if(std::fabs(Norm(N)-1)>=1e-4){
+              std::cout << "ModelWetEtching.h: Problematic NormalVector = " << NormalVector[0] << ", " <<  NormalVector[1] << ", " << NormalVector[2]<< std::endl;
+              Velocity=0;
+              return;
+            }
 
             if (dot(N, lvlset::vec<double,3>(-1,1,2))<0) {
                 Velocity=-((r100*(N[0]-N[1]-2*N[2])+r110*(N[1]-N[2])+3*r311*N[2])/N[0]);    //region A
