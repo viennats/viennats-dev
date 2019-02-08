@@ -629,9 +629,6 @@ namespace lvlset {
                 }
                 it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
 
-
-
-
               }
             initialized=true;
             }
@@ -761,38 +758,24 @@ namespace lvlset {
                   tv[i]++;
                 else
                   tv[i-D]--;
-
               //  std::cout << tv << std::endl;
                 it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-
-
               }
             initialized=true;
             }
           }
 
-
-          if(0){
-          for(auto n : it_neighbors ){
-            n.print();
-            ////std::cout << std::endl;
-          }
-          }
-          LS.print();
-
             bool showLog=false;
 
             value_type numhamiltonian=0.; //numerical Hamiltonian
             value_type dissipation=0.;
-            vec<value_type,D> coord(value_type(0)); //dphi previous dphi_l^-
+            vec<value_type,D> coord(value_type(0));
             vec<value_type,D> dphi_p(value_type(0)); //dphi previous dphi_l^-
             vec<value_type,D> dphi_n(value_type(0)); //dphi next dphi_l^+
 
             vec<value_type,3> NormalVector;
 
             value_type v = velocities(it.active_pt_id(), material);
-
-
 
             const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(0,it.start_indices(0)+1)  - LS.grid().grid_position_of_local_index(0,it.start_indices(0)) );
 
@@ -815,7 +798,6 @@ namespace lvlset {
                                 ", v(n) = " << it_neighbors[(i+D)*order + 0].active_pt_id() << std::endl;
                   }
 
-
                   if(order == 1){
                     dphi_p[i] = (phi_0-phi_p)/dx;
                     dphi_n[i] = (phi_n-phi_0)/dx;
@@ -837,8 +819,6 @@ namespace lvlset {
                     dphi_n[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true);
                   }
 
-
-
                 //  std::cout << "5 stencil phi = " << phi_pp << ", " << phi_p << ", " << phi_0 << ", " << phi_n << ", " << phi_nn << "\n";
                 //  std::cout << "\tdphi_p = " << dphi_p[i] << ", " << "dphi_n = " << dphi_n[i] << std::endl;
 
@@ -855,19 +835,11 @@ namespace lvlset {
                   //           std::endl;
               }
 
-
-
-
-
-
             //  if(coord[1] < -3 )
               //  showLog=false;
 
               if(showLog)
                 std::cout << "NumHam pos = " << coord << std::endl;
-
-
-
 
               numhamiltonian = std::sqrt(numhamiltonian); //|grad(phi)|
               numhamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
@@ -881,7 +853,6 @@ namespace lvlset {
 
               std::vector< vec<value_type,D>> alphas( num_stencil_points);
               std::vector< vec<index_type,D>> slf_offset(num_stencil_points);
-
 
               //prepare offset vectors for iteration over all SLF stencils, they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
               // for( int i = 0; i < num_stencil_points; ++i){
@@ -912,7 +883,6 @@ namespace lvlset {
                 //it_slf_stencil_points.push_back(typename LevelSetType::const_iterator_runs_offset(LS, slf_offset[i] ,it.start_indices()));
                 //it_slf_stencil_points[i].go_to_indices(it_slf_stencil_points[i].start_indices());
 
-
               //iterate through the SLF stencil points
               for(int i_slf = 0; i_slf < num_stencil_points; ++i_slf){
                 std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_point_neighbors;
@@ -922,7 +892,6 @@ namespace lvlset {
                   //TODO: use some predefined iterator????
                   //prepare neighbor iterators for derivation stencil for every SLF stencil point
 
-
                 typename LevelSetType::const_iterator_runs_offset it_slf_stencil_center(LS,slf_offset[i_slf],it.start_indices());
                 for (int i = 0; i < 2*D; i++) {
                     vec<index_type,D> tv(slf_offset[i_slf]);
@@ -931,7 +900,6 @@ namespace lvlset {
                         tv[i]++;
                       else
                         tv[i-D]--;
-
 
                       //std::cout << tv << std::endl;
                       it_slf_stencil_point_neighbors.push_back(
@@ -991,17 +959,20 @@ namespace lvlset {
                   slf_gradient += math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5); //math::pow2( slf_dphi_n[i]);
                   slf_dphi[i] = (slf_phi_n - slf_phi_p) / (2.0 * dx); //central difference for normal
 
-
-
                   slf_coord[i] = slf_pos;
                   slf_phi[i] = slf_phi_0;
 
                   ////std::cout << LS.grid().grid_position_of_global_index(i,it_slf_stencil_points[i_slf].start_indices(i) + slf_offset[i_slf][i]) << std::endl;
               }
+
+              if(showLog){
+                std::cout << "indices = " << it.start_indices() << ", offset = " << slf_offset[i_slf]<< ", dx = " << dx << ", pos = " << slf_coord << ", phi = " << slf_phi[0];// <<", slf_normal = " << slf_normal <<", slf_gradient = " << slf_gradient;
+                
+              }
+
+
               slf_normal=slf_dphi;
               slf_gradient = std::sqrt(slf_gradient);
-
-
 
               //normalize normal vectors
               for(int i = 0; i < D; ++i){
@@ -1011,10 +982,6 @@ namespace lvlset {
                 }else
                   slf_normal[i] /= slf_gradient;
               }
-
-              if(showLog)
-                std::cout << "offset = " << slf_offset[i_slf]<< ", dx = " << dx << ", pos = " << slf_coord << ", phi = " << slf_phi[0] << ", slf_dphi_n = " << slf_dphi_n << ", slf_dphi_p = " << slf_dphi_p <<", slf_normal = " << slf_normal <<", slf_gradient = " << slf_gradient;
-
 
 
               //determine  velocity derivatives
@@ -1040,7 +1007,6 @@ namespace lvlset {
 
                 normal_p[i] -= DN;
                 normal_n[i] += DN;
-
 
                 value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
                 value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);

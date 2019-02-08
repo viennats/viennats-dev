@@ -2661,6 +2661,8 @@ namespace lvlset {
             const value_type phi_p=neighbor(dir,0).value();
             const value_type phi_n=neighbor(dir+D,0).value();
 
+
+
             return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
         }
 
