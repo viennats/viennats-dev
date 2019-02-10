@@ -710,7 +710,7 @@ namespace lvlset {
 
         const double gamma;
 
-        const int slf_order = 0;
+
 
         //TODO at: hard coded just for testing
         const value_type r100=0.0166;
@@ -726,7 +726,9 @@ namespace lvlset {
         static void prepare_surface_levelset(LevelSetType& l) {
             assert((order==1) || (order==2) || (order==3));                   //the user in the level-set-traits-class
 
-            l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
+            //TODO sparse field expansion must depend on slf stencil order!
+            l.expand(11);
+            // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
                                                         //which are necessary to calculate the derivatives are also defined
         }
@@ -740,7 +742,13 @@ namespace lvlset {
 
           assert(it.is_active());
 
+
+
+          const int slf_order = 2;
           const int D=LevelSetType::dimensions;
+          typename LevelSetType::neighbor_stencil ns(LS,it, slf_order);
+          ns.derivs();
+          exit(0);
 
 
           vec<value_type,3> direction100{0,1,0};
@@ -967,7 +975,7 @@ namespace lvlset {
 
               if(showLog){
                 std::cout << "indices = " << it.start_indices() << ", offset = " << slf_offset[i_slf]<< ", dx = " << dx << ", pos = " << slf_coord << ", phi = " << slf_phi[0];// <<", slf_normal = " << slf_normal <<", slf_gradient = " << slf_gradient;
-                
+
               }
 
 

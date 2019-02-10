@@ -1611,6 +1611,9 @@ namespace lvlset {
                                             //the const_iterator_neighbor iterator stops
                                             //this iterator is internally used for rebuilding and expanding the level set function
 
+        class neighbor_stencil;
+        class star_stencil;
+
     private:
          template <class I>
          void next(I &) const;
@@ -4002,6 +4005,180 @@ namespace lvlset {
     }
 
 
+    template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::star_stencil {
+
+      const levelset<GridTraitsType, LevelSetTraitsType> &l;
+      typename levelset<GridTraitsType,LevelSetTraitsType>::const_iterator_runs_offset it_center;
+      std::vector<const_iterator_runs_offset> it_neighbors;
+      vec<index_type,D> offset;
+
+      const int order;
+
+      public:
+
+        star_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                     const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs_offset& it_mid,
+                     const int o) :
+                            l(lx),it_center(it_mid), order(o){
+
+          it_neighbors.reserve(2*D*order);
+
+          offset = it_mid.offset; //TODO change to proper get function
+
+          for (int i = 0; i < 2*D; ++i){
+              vec<index_type,D> tv(offset);
+              for (int j = 0; j < order; ++j) {
+                  if (i<D) tv[i]++; else tv[i-D]--;
+                  it_neighbors.push_back(const_iterator_runs_offset(l, tv,it_center.start_indices()));
+              }
+          }
+
+        }
+        const const_iterator_runs_offset& neighbor(int direction, int item=0) const {
+            //access to a certain neighbor grid point
+            return it_neighbors[order*direction+item];
+        }
+
+        const const_iterator_runs_offset& center() const {     //access to the center grid point
+            return it_center;
+        }
+
+        vec<index_type,D> indices() const { //returns the indices of the center
+            return it_center.start_indices() + offset;
+        }
+
+        index_type indices(int dir) const {         //returns the index of the center for the given axis direction
+            return it_center.start_indices(dir) + offset[dir];
+        }
+
+        vec<value_type,D>  position() const {
+          vec<value_type, D> tmp;
+          for (int i=0;i<D;++i) tmp[i]=position(i);
+          return tmp;
+        }
+
+        value_type position(int dir ) const {
+          return l.Grid.grid_position_of_local_index(dir,indices(dir));
+        }
+
+        value_type gradient(int dir) const {
+            //returns the derivation in respect to the real coordinates for the given axis direction
+            //this function requires that the level set function consists at least of 3 layers of grid points,
+            //which means that all neighbor grid points of active grid points are defined
+
+            const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+            const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+            const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+
+            const value_type phi_0=center().value();
+            const value_type phi_p=neighbor(dir,0).value();
+            const value_type phi_n=neighbor(dir+D,0).value();
+
+            return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
+        }
+
+        vec<value_type,D>  gradient() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient(i);
+            return tmp;
+        }
+
+        vec<value_type,D>  normal_vector() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient(i);
+
+            tmp /= Norm2(tmp);
+
+            return tmp;
+        }
+
+        value_type gradient2(int dir) const {       //returns the derivation of the level set function in respect to the index for the given axis direction
+            const value_type phi_p=neighbor(dir,0).value();
+            const value_type phi_n=neighbor(dir+D,0).value();
+
+            return (phi_p-phi_n)/2.;
+        }
+
+        vec<value_type,D>  gradient2() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient2(i);
+            return tmp;
+        }
+
+    };
+
+
+    //NOTE Sparse field is assumed to be properly expanded (with respect to given stencil order in constructor)
+    //This requirement is not checked here
+    template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::neighbor_stencil {
+
+    private:
+      const levelset<GridTraitsType, LevelSetTraitsType> &l;
+      typename levelset<GridTraitsType,LevelSetTraitsType>::const_iterator_runs it_center;
+      std::vector<const_iterator_runs_offset> it_stencil_points;
+
+      const int stencil_order;
+      std::vector< vec<index_type,D>> offsets;
+
+      public:
+
+        neighbor_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                        const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs& it_mid,
+                        const int order) :
+                            l(lx),it_center(it_mid), stencil_order(order){
+
+          int num_stencil_points = std::pow(2*stencil_order + 1, D); //for neighborhood including diagonal neighbors
+
+          offsets.reserve(num_stencil_points);
+          it_stencil_points.reserve(num_stencil_points);
+
+          //prepare offset vectors for iteration over all SLF stencils,
+          //they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
+          for( int i = 0; i < num_stencil_points; ++i){
+            vec<index_type,D> tmp;
+            for (int d = 0; d < D; ++d){
+              tmp[d] = index_type( (int) (i / std::pow(2*stencil_order + 1,d) ) % (2 * stencil_order + 1) - stencil_order );
+            }
+
+            offsets.push_back(tmp);
+            it_stencil_points.push_back(const_iterator_runs_offset(l, offsets[i], it_center.start_indices()));
+          }
+        }
+
+        std::vector<const_iterator_runs_offset>& get_stencil_points() const{
+          return it_stencil_points;
+        }
+
+        void print(std::ostream& out = std::cout) const {
+          out << "Compact stencil order = " << stencil_order << std::endl;
+          for(size_t i = 0; i < it_stencil_points.size(); ++i){
+              print_point(i,out);
+          }
+        }
+
+        void print_point(size_t index, std::ostream& out = std::cout) const{
+          out << "Offset: " << it_stencil_points[index].offset <<
+                 ", start_indices(): " <<  it_stencil_points[index].start_indices() + it_stencil_points[index].offset <<
+                 ", is_defined(): " << it_stencil_points[index].is_defined();
+          if( it_stencil_points[index].is_defined()){
+            out << ", phi=" << it_stencil_points[index].value() << std::endl;
+          }else{
+            out << std::endl;
+          }
+        }
+
+
+        //DEBUG function: please remove
+        void derivs(){
+          for(size_t i = 0; i < it_stencil_points.size(); ++i){
+            print_point(i,std::cout);
+            star_stencil stencil(l,it_stencil_points[i],1);
+            std::cout << "\tnormal vector = " << stencil.normal_vector() << std::endl;
+            std::cout << "\tposition = " << stencil.position() << std::endl;
+        }
+      }
+    };
+
 
     template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_neighbor {
 
@@ -4215,6 +4392,10 @@ namespace lvlset {
         }
 
     };
+
+
+
+
 
 }
 
