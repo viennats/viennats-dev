@@ -710,6 +710,7 @@ namespace lvlset {
 
         const double gamma;
 
+        const int slf_order = 2;
 
 
         //TODO at: hard coded just for testing
@@ -750,13 +751,20 @@ namespace lvlset {
             return 0;
           }
           else{
-            const int slf_order = 2;
+
             const int D=LevelSetType::dimensions;
+
+            const bool DEBUG = false;
 
             typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
 
             std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(order);
             typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
+
+            //dirty hack
+            if(center.position()[1] < -0.7){
+              return 0;
+            }
 
 
             value_type hamiltonian=0.; //numerical Hamiltonian
@@ -765,7 +773,7 @@ namespace lvlset {
             hamiltonian = NormL2(center.gradient()); //|grad(phi)|
             hamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
 
-            std::cout <<"H = " << hamiltonian << std::endl;
+            if(DEBUG) std::cout <<"H = " << hamiltonian << std::endl;
 
             //dissipation block
             {
@@ -832,9 +840,9 @@ namespace lvlset {
                 alphas.push_back(alpha);
               }
 
-              std::cout << "Alphas:\n";
+              if(DEBUG) std::cout << "Alphas:\n";
               for(auto a : alphas)
-                std::cout << a << std::endl;
+                if(DEBUG) std::cout << a << std::endl;
 
               //determine max alphas for every axis
               for(int d=0; d < D; ++d)
@@ -849,11 +857,11 @@ namespace lvlset {
                   dissipation += maxal * center.gradient_diff(d);
               }
 
-              std::cout << "D = " << dissipation << std::endl;
+              if(DEBUG) std::cout << "D = " << dissipation << std::endl;
 
             }
 
-            std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
+            if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
             return hamiltonian - dissipation;
           }
 
