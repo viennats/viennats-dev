@@ -713,6 +713,8 @@ namespace lvlset {
 
 
         //TODO at: hard coded just for testing
+        vec<value_type,3> direction100{0,1,0};
+        vec<value_type,3> direction010{1,0,-1};
         const value_type r100=0.0166;
         const value_type r110=0.0309;
         const value_type r111=0.00012;
@@ -744,225 +746,50 @@ namespace lvlset {
 
 
 
-          const int slf_order = 2;
-          const int D=LevelSetType::dimensions;
-          typename LevelSetType::neighbor_stencil ns(LS,it, slf_order);
-          ns.derivs();
-          exit(0);
 
+          value_type v = velocities(it.active_pt_id(), material);
 
-          vec<value_type,3> direction100{0,1,0};
-          vec<value_type,3> direction010{1,0,-1};
-
-          //prepare neighbor iterators for derivation stencil
-          if (initialized) {
-                for (int i=0;i<2*D*order;i++)
-                  it_neighbors[i].go_to_indices_sequential(it.start_indices());
-          } else {
-            for (int i=0;i<2*D;i++) {
-              vec<index_type,D> tv(index_type(0));
-              for (int j=0;j<order;j++) {
-                if ( i<D )
-                  tv[i]++;
-                else
-                  tv[i-D]--;
-              //  std::cout << tv << std::endl;
-                it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-              }
-            initialized=true;
-            }
+          if( v == value_type(0) ){
+            return 0;
           }
+          else{
+            const int slf_order = 1;
+            const int D=LevelSetType::dimensions;
 
-            bool showLog=false;
+            typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
+
+            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(order);
+            typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
+
 
             value_type numhamiltonian=0.; //numerical Hamiltonian
             value_type dissipation=0.;
-            vec<value_type,D> coord(value_type(0));
-            vec<value_type,D> dphi_p(value_type(0)); //dphi previous dphi_l^-
-            vec<value_type,D> dphi_n(value_type(0)); //dphi next dphi_l^+
+
+            numhamiltonian = NormL2(center.gradient()); //|grad(phi)|
+            numhamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
+
+            std::cout << numhamiltonian << std::endl;
+
+            std::vector< vec<value_type,D>> alphas( stars.size() );
+            exit(0);
+
+
+
+          }
+
+
+
+
+
+
+
+
+
+            /*
+            bool showLog=false;
+
 
             vec<value_type,3> NormalVector;
-
-            value_type v = velocities(it.active_pt_id(), material);
-
-            const value_type dx =  math::abs( LS.grid().grid_position_of_global_index(0,it.start_indices(0)+1)  - LS.grid().grid_position_of_local_index(0,it.start_indices(0)) );
-
-            if( v == 0 ){
-              return 0;
-            }
-            else{
-              //numerical Hamiltonian
-
-              for (int i=0 ; i < D ; ++i) { //iterate over dimensions
-
-                  const value_type pos    =   LS.grid().grid_position_of_local_index(i,it.start_indices(i));
-
-                  const value_type phi_0=it.value();
-                  const value_type phi_p=it_neighbors[i*order + 0].value();
-                  const value_type phi_n=it_neighbors[(i+D)*order + 0].value();
-
-                  if(showLog){
-                    std::cout << "v(p) = " << it_neighbors[i*order + 0].active_pt_id() <<
-                                ", v(n) = " << it_neighbors[(i+D)*order + 0].active_pt_id() << std::endl;
-                  }
-
-                  if(order == 1){
-                    dphi_p[i] = (phi_0-phi_p)/dx;
-                    dphi_n[i] = (phi_n-phi_0)/dx;
-                  }
-                  else if(order == 2){
-                    const value_type phi_pp=it_neighbors[i*order + 1].value();
-                    const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
-
-                    dphi_p[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false);
-                    dphi_n[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true);
-
-                  } else if(order == 3){
-                    const value_type phi_pp=it_neighbors[i*order + 1].value();
-                    const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
-                    const value_type phi_ppp=it_neighbors[i*order + 2].value();
-                    const value_type phi_nnn=it_neighbors[(i+D)*order + 2].value();
-
-                    dphi_p[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false);
-                    dphi_n[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true);
-                  }
-
-                //  std::cout << "5 stencil phi = " << phi_pp << ", " << phi_p << ", " << phi_0 << ", " << phi_n << ", " << phi_nn << "\n";
-                //  std::cout << "\tdphi_p = " << dphi_p[i] << ", " << "dphi_n = " << dphi_n[i] << std::endl;
-
-                  numhamiltonian += math::pow2( (dphi_p[i]+dphi_n[i]) * 0.5); //phi_x**2 + phi_y**2 + ...
-                  coord[i] = pos;
-
-                  // //std::cout << LS.grid().grid_position_of_local_index(i,it.start_indices(i))  << ", " <<
-                  //           LS.grid().grid_position_of_local_index(i,it_neighbors[i*order + 0].start_indices(i)) <<  ", " <<
-                  //           LS.grid().grid_position_of_local_index(i,it_neighbors[(i+D)*order + 0].start_indices(i)) <<  ", " <<
-                  //           it.start_indices(i) << ", " <<
-                  //           it.value() << ", " <<
-                  //           it_neighbors[i*order + 0].value() <<
-                  //
-                  //           std::endl;
-              }
-
-            //  if(coord[1] < -3 )
-              //  showLog=false;
-
-              if(showLog)
-                std::cout << "NumHam pos = " << coord << std::endl;
-
-              numhamiltonian = std::sqrt(numhamiltonian); //|grad(phi)|
-              numhamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
-              //-------------------------------
-              //-------dissipation term--------
-              //-------------------------------
-              //for every stencil point the corresponding dissipation coefficient alpha is calculated
-
-              int num_stencil_points = 2*D*slf_order + 1;
-            //  int num_stencil_points = std::pow(2*slf_order + 1, D); //for neighborhood including diagonal neighbors
-
-              std::vector< vec<value_type,D>> alphas( num_stencil_points);
-              std::vector< vec<index_type,D>> slf_offset(num_stencil_points);
-
-              //prepare offset vectors for iteration over all SLF stencils, they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
-              // for( int i = 0; i < num_stencil_points; ++i){
-              //   for (int d = 0; d < D; ++d){
-              //     slf_offset[i][d] = index_type( (int) (i / std::pow(2*slf_order + 1,d) ) % (2 * slf_order + 1) - slf_order );
-              //   }
-
-              for (int i = 0; i < 2*D; i++) {
-                for (int j=0;j<slf_order;j++) {
-                  for (int d=0;d<D;++d) {
-                    slf_offset[i*slf_order+j][d] = index_type(0);
-                  }
-
-                  if ( i<D )
-                    slf_offset[i*slf_order+j][i]++;
-                  else
-                    slf_offset[i*slf_order+j][i-D]--;
-                }
-              }
-              for (int d=0;d<D;++d) {
-                slf_offset[num_stencil_points-1][d]=0;
-              }
-
-            //  for(auto vec:slf_offset){
-            //    std::cout << vec << std::endl;
-            //  }
-
-                //it_slf_stencil_points.push_back(typename LevelSetType::const_iterator_runs_offset(LS, slf_offset[i] ,it.start_indices()));
-                //it_slf_stencil_points[i].go_to_indices(it_slf_stencil_points[i].start_indices());
-
-              //iterate through the SLF stencil points
-              for(int i_slf = 0; i_slf < num_stencil_points; ++i_slf){
-                std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_point_neighbors;
-                //std::cout << "SLF Stencil: ";
-                //std::cout << "\t" << slf_offset[i_slf] << "\n";
-
-                  //TODO: use some predefined iterator????
-                  //prepare neighbor iterators for derivation stencil for every SLF stencil point
-
-                typename LevelSetType::const_iterator_runs_offset it_slf_stencil_center(LS,slf_offset[i_slf],it.start_indices());
-                for (int i = 0; i < 2*D; i++) {
-                    vec<index_type,D> tv(slf_offset[i_slf]);
-                    for (int j=0;j<order;j++) {
-                      if ( i<D )
-                        tv[i]++;
-                      else
-                        tv[i-D]--;
-
-                      //std::cout << tv << std::endl;
-                      it_slf_stencil_point_neighbors.push_back(
-                             typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-
-                      if(showLog){
-                        //it_slf_stencil_point_neighbors[i*order+j].print();
-                        //std::cout << std::endl;
-                      }
-                    }
-                  }
-
-              vec<value_type,D> slf_coord(value_type(0));
-              vec<value_type,D> slf_phi(value_type(0));
-
-              vec<value_type,D> slf_dphi_p(value_type(0)); //forward derivative or ENO or WENO -
-              vec<value_type,D> slf_dphi_n(value_type(0)); //forward derivative or ENO or WENO +
-              vec<value_type,D> slf_dv(value_type(0)); //velocity derivative
-              vec<value_type,D> slf_dphi(value_type(0)); //central difference
-              vec<value_type,D> slf_normal(value_type(0)); //normal vector
-              value_type slf_gradient = 0; //|gradient|
-              const value_type DN = value_type(1e-2);
-
-            //  it_slf_stencil_points[i_slf].print();
-
-              //determine derivatives
-              for (int i = 0; i < D; ++i) { //iterate over dimensions
-
-                  const value_type slf_pos =  LS.grid().grid_position_of_local_index(i,it.start_indices(i) + slf_offset[i_slf][i]);
-
-                  const value_type slf_phi_0=it_slf_stencil_center.value();
-                  const value_type slf_phi_p=it_slf_stencil_point_neighbors[i*order + 0].value();
-                  const value_type slf_phi_n=it_slf_stencil_point_neighbors[(i+D)*order + 0].value();
-
-
-                  if(order == 1){
-                    slf_dphi_p[i] = (slf_phi_0-slf_phi_p)/dx;
-                    slf_dphi_n[i] = (slf_phi_n-slf_phi_0)/dx;
-                  }
-                  else if(order == 2){
-                    const value_type slf_phi_pp=it_slf_stencil_point_neighbors[i*order + 1].value();
-                    const value_type slf_phi_nn=it_slf_stencil_point_neighbors[(i+D)*order + 1].value();
-
-                    slf_dphi_p[i] = my::math::weno3<value_type>(slf_phi_pp, slf_phi_p, slf_phi_0, slf_phi_n,  slf_phi_nn, dx, false);
-                    slf_dphi_n[i] = my::math::weno3<value_type>(slf_phi_pp, slf_phi_p, slf_phi_0, slf_phi_n,  slf_phi_nn, dx,  true);
-
-                  } else if(order == 3){
-                    const value_type slf_phi_pp=it_slf_stencil_point_neighbors[i*order + 1].value();
-                    const value_type slf_phi_nn=it_slf_stencil_point_neighbors[(i+D)*order + 1].value();
-                    const value_type slf_phi_ppp=it_slf_stencil_point_neighbors[i*order + 2].value();
-                    const value_type slf_phi_nnn=it_slf_stencil_point_neighbors[(i+D)*order + 2].value();
-
-                    slf_dphi_p[i] = my::math::weno5<value_type>(slf_phi_ppp, slf_phi_pp, slf_phi_p, slf_phi_0, slf_phi_n,  slf_phi_nn, slf_phi_nnn, dx, false);
-                    slf_dphi_n[i] = my::math::weno5<value_type>(slf_phi_ppp, slf_phi_pp, slf_phi_p, slf_phi_0, slf_phi_n,  slf_phi_nn, slf_phi_nnn, dx,  true);
-                  }
 
                   slf_gradient += math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5); //math::pow2( slf_dphi_n[i]);
                   slf_dphi[i] = (slf_phi_n - slf_phi_p) / (2.0 * dx); //central difference for normal
@@ -1085,7 +912,7 @@ namespace lvlset {
 
             return numhamiltonian - dissipation;
 
-        }
+        }*/
 
       }
     };

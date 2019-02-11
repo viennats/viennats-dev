@@ -4087,7 +4087,7 @@ namespace lvlset {
             vec<value_type, D> tmp;
             for (int i=0;i<D;++i) tmp[i]=gradient(i);
 
-            tmp /= Norm2(tmp);
+            tmp /= NormL2(tmp);
 
             return tmp;
         }
@@ -4105,6 +4105,35 @@ namespace lvlset {
             return tmp;
         }
 
+        void print(std::ostream& out = std::cout) const {
+          out << "Star stencil\nindices = " << indices()
+              <<  ", center position = " << position()
+              << ", normal vector = " << normal_vector() << std::endl;
+        }
+
+        //TODO gradientWENO3, gradientWENO5
+        /*
+        if(order == 1){
+          dphi_p[i] = (phi_0-phi_p)/dx;
+          dphi_n[i] = (phi_n-phi_0)/dx;
+        }
+        else if(order == 2){
+          const value_type phi_pp=it_neighbors[i*order + 1].value();
+          const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
+
+          dphi_p[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false);
+          dphi_n[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true);
+
+        } else if(order == 3){
+          const value_type phi_pp=it_neighbors[i*order + 1].value();
+          const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
+          const value_type phi_ppp=it_neighbors[i*order + 2].value();
+          const value_type phi_nnn=it_neighbors[(i+D)*order + 2].value();
+
+          dphi_p[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false);
+          dphi_n[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true);
+        }*/
+
     };
 
 
@@ -4114,8 +4143,9 @@ namespace lvlset {
 
     private:
       const levelset<GridTraitsType, LevelSetTraitsType> &l;
-      typename levelset<GridTraitsType,LevelSetTraitsType>::const_iterator_runs it_center;
       std::vector<const_iterator_runs_offset> it_stencil_points;
+
+      int center_index;
 
       const int stencil_order;
       std::vector< vec<index_type,D>> offsets;
@@ -4125,7 +4155,7 @@ namespace lvlset {
         neighbor_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
                         const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs& it_mid,
                         const int order) :
-                            l(lx),it_center(it_mid), stencil_order(order){
+                            l(lx), stencil_order(order){
 
           int num_stencil_points = std::pow(2*stencil_order + 1, D); //for neighborhood including diagonal neighbors
 
@@ -4141,7 +4171,19 @@ namespace lvlset {
             }
 
             offsets.push_back(tmp);
-            it_stencil_points.push_back(const_iterator_runs_offset(l, offsets[i], it_center.start_indices()));
+            it_stencil_points.push_back(const_iterator_runs_offset(l, offsets[i], it_mid.start_indices()));
+
+            bool is_center=false;
+            for(int d = 0; d < D; ++d){
+              if(tmp[d] == index_type(0))
+                is_center=true;
+              else{
+                is_center=false;
+                break;
+              }
+            }
+            if(true == is_center)
+              center_index=i;
           }
         }
 
@@ -4152,8 +4194,11 @@ namespace lvlset {
         void print(std::ostream& out = std::cout) const {
           out << "Compact stencil order = " << stencil_order << std::endl;
           for(size_t i = 0; i < it_stencil_points.size(); ++i){
+              out << "#" << i << " ";
               print_point(i,out);
           }
+
+          out << "Center stencil index = " << center_index << std::endl;
         }
 
         void print_point(size_t index, std::ostream& out = std::cout) const{
@@ -4168,15 +4213,22 @@ namespace lvlset {
         }
 
 
-        //DEBUG function: please remove
-        void derivs(){
-          for(size_t i = 0; i < it_stencil_points.size(); ++i){
-            print_point(i,std::cout);
-            star_stencil stencil(l,it_stencil_points[i],1);
-            std::cout << "\tnormal vector = " << stencil.normal_vector() << std::endl;
-            std::cout << "\tposition = " << stencil.position() << std::endl;
+        std::vector<star_stencil> star_stencils(const int deriv_order) const {
+
+          std::vector<star_stencil> s;
+          s.reserve(it_stencil_points.size());
+
+          for(auto sp : it_stencil_points)
+            s.push_back(star_stencil(l,sp,deriv_order));
+
+          return s;
+
         }
-      }
+
+        int get_center_index() const{
+          return center_index;
+        }
+
     };
 
 
