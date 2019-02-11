@@ -744,16 +744,13 @@ namespace lvlset {
 
           assert(it.is_active());
 
-
-
-
           value_type v = velocities(it.active_pt_id(), material);
 
           if( v == value_type(0) ){
             return 0;
           }
           else{
-            const int slf_order = 1;
+            const int slf_order = 2;
             const int D=LevelSetType::dimensions;
 
             typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
@@ -762,19 +759,102 @@ namespace lvlset {
             typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
 
 
-            value_type numhamiltonian=0.; //numerical Hamiltonian
-            value_type dissipation=0.;
+            value_type hamiltonian=0.; //numerical Hamiltonian
+            value_type dissipation=0.; //dissipation
 
-            numhamiltonian = NormL2(center.gradient()); //|grad(phi)|
-            numhamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
+            hamiltonian = NormL2(center.gradient()); //|grad(phi)|
+            hamiltonian *= velocities(it.active_pt_id(), material); //V |grad(phi)|
 
-            std::cout << numhamiltonian << std::endl;
+            std::cout <<"H = " << hamiltonian << std::endl;
 
-            std::vector< vec<value_type,D>> alphas( stars.size() );
-            exit(0);
+            //dissipation block
+            {
+              std::vector< vec<value_type,D>> alphas;
+              alphas.reserve(stars.size());
 
+              for(size_t i = 0; i < stars.size(); ++i){
+                vec<value_type,D> alpha;
 
+                //vec<value_type,D> normalvector = stars[i].normal_vector();
+                //value_type vp = my::math::fourRateInterpolation<value_type>(normalvector, direction100, direction010, r100, r110, r111, r311);
 
+                vec<value_type,D> normal_p =  stars[i].normal_vector();
+                vec<value_type,D> normal_n =  normal_p;
+                vec<value_type,D> dv;
+                const value_type DN = 1e-4;
+
+                for(int k=0; k < D; ++k){
+
+                  normal_p[k] -= DN;
+                  normal_n[k] += DN;
+
+                  value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
+                  value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
+                  //central difference
+                  dv[k] = (vn - vp) / (2.0 * DN);
+
+                  normal_p[k] += DN;
+                  normal_n[k] -= DN;
+                }
+
+                //determine \partial H / \partial phi_l
+                for (int k = 0 ; k < D; ++k) { //iterate over dimensions
+
+                  //Monti term
+                  value_type monti = 0;
+                  if(1){
+                    for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
+                         int idx = (k + 1) % D;
+                          monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
+                    }
+                    monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+                  }
+
+                  //Toifl Quell term
+                  value_type toifl=0;
+                  if(1){
+                    for(int j= 0; j < D - 1; ++j ){
+                       int idx = (k + 1) % D;
+                       toifl += stars[i].gradient(idx) * dv[idx];
+                    }
+                  toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+                  }
+                  //Osher (constant V) term
+                  value_type osher=0;
+                  if(1)
+                    osher=velocities(it.active_pt_id(), material) * stars[i].normal_vector()[k];
+
+                  //Total derivative is sum of terms given above
+                  alpha[k] = gamma * (std::fabs(monti + toifl + osher) );
+
+                }
+
+                alphas.push_back(alpha);
+              }
+
+              std::cout << "Alphas:\n";
+              for(auto a : alphas)
+                std::cout << a << std::endl;
+
+              //determine max alphas for every axis
+              for(int d=0; d < D; ++d)
+              {
+                  std::vector<value_type> alpha_comp;
+
+                  for(size_t i = 0 ; i < stars.size() ; ++i){
+                    alpha_comp.push_back(alphas[i][d]);
+                  }
+                  value_type maxal = *std::max_element(alpha_comp.begin(),alpha_comp.end());
+
+                  dissipation += maxal * center.gradient_diff(d);
+              }
+
+              std::cout << "D = " << dissipation << std::endl;
+
+            }
+
+            std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
+            return hamiltonian - dissipation;
           }
 
 
@@ -789,7 +869,6 @@ namespace lvlset {
             bool showLog=false;
 
 
-            vec<value_type,3> NormalVector;
 
                   slf_gradient += math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5); //math::pow2( slf_dphi_n[i]);
                   slf_dphi[i] = (slf_phi_n - slf_phi_p) / (2.0 * dx); //central difference for normal
@@ -824,21 +903,7 @@ namespace lvlset {
 
                 vec<value_type,3> normal_p,normal_n;
 
-                //now it gets really dirty: force 3D vector for fourRateInterpolation
-                if(D == 3){
-                  normal_p = slf_normal;
-                  normal_n = slf_normal;
-                } else if(D==2){
-                  normal_p[0] = slf_normal[0];
-                  normal_n[0] = slf_normal[0];
-                  normal_p[1] = slf_normal[1];
-                  normal_n[1] = slf_normal[1];
-                  normal_p[2] = value_type(0);
-                  normal_n[2] = value_type(0);
-                } else{
-                  std::cerr << "Are you really simulating a 1D problem????\n";
-                  return 0;
-                }
+
 
                 normal_p[i] -= DN;
                 normal_n[i] += DN;
@@ -910,7 +975,7 @@ namespace lvlset {
             if(showLog)
               std::cout << "]\n\n";
 
-            return numhamiltonian - dissipation;
+            return hamiltonian - dissipation;
 
         }*/
 

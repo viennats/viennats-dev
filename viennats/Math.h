@@ -816,6 +816,54 @@ namespace my {
         return Velocity;
     }
 
+    template<class T>
+    T fourRateInterpolation(lvlset::vec<T,2> nv, lvlset::vec<T,3> direction100, lvlset::vec<T,3> direction010, T r100, T r110, T r111, T r311 ){
+
+        T Velocity=0;
+        lvlset::vec<T,3> directions[3];
+
+        directions[0] = direction100;
+        directions[1] = direction010;
+
+        directions[0]=Normalize(directions[0]);
+        directions[1]=Normalize(directions[1]-directions[0]*dot(directions[0],directions[1]));
+        directions[2]=cross(directions[0], directions[1]);
+
+        lvlset::vec<T,3> NormalVector;
+        NormalVector[0] = nv[0];
+        NormalVector[1] = nv[1];
+        NormalVector[2] = 0;
+
+        NormalVector=Normalize(NormalVector);
+
+        for (int i=0;i<3;++i) assert(dot(directions[i], directions[(i+1)%3])<1e-6);
+
+        lvlset::vec<T,3> N;
+
+        for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
+        N.reverse_sort();
+
+        if(std::fabs(Norm(N)-1)>=1e-4){
+          std::cout << "direction100 = " << direction100 << ", norm = " << Norm(direction100) << std::endl;
+          std::cout << "direction010 = " << direction010 << ", norm = " << Norm(direction010) << std::endl;
+          std::cout << "NormalVector = " << NormalVector << ", norm = " << Norm(NormalVector) << std::endl;
+          std::cout << "N = " << N << ", norm = " << Norm(N) << std::endl;
+        //  exit(0);
+        }
+
+        assert(std::fabs(Norm(N)-1)<1e-4);
+
+
+        if (dot(N, lvlset::vec<T,3>(-1,1,2))<0) {
+            Velocity=-((r100*(N[0]-N[1]-2*N[2])+r110*(N[1]-N[2])+3*r311*N[2])/N[0]);    //region A
+        } else {
+            Velocity=-((r111*((N[1]-N[0])*0.5+N[2])+r110*(N[1]-N[2])+1.5*r311*(N[0]-N[1]))/N[0]);//region C
+        }
+
+        return Velocity;
+    }
+
+
 
     //(at)
     template<class T>

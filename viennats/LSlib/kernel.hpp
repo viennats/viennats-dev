@@ -4104,6 +4104,24 @@ namespace lvlset {
             for (int i=0;i<D;++i) tmp[i]=gradient2(i);
             return tmp;
         }
+        
+         //returns 0.5*(phi_x^+ - phi_x^-), which is needed for Lax Friedrichs NOTE we assume uniform grid
+        value_type gradient_diff(int dir) const {
+          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+          const value_type d_p  =  math::abs(l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos);
+
+
+          const value_type phi_0=center().value();
+          const value_type phi_p=neighbor(dir,0).value();
+          const value_type phi_n=neighbor(dir+D,0).value();
+
+          return (phi_p - 2*phi_0 + phi_n) / (2.0 * d_p);
+      }
+        vec<value_type,D>  gradient_diff() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient_diff(i);
+            return tmp;
+        }
 
         void print(std::ostream& out = std::cout) const {
           out << "Star stencil\nindices = " << indices()
