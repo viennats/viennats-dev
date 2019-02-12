@@ -171,9 +171,9 @@ namespace lvlset {
 
     //at
     template <class LevelSetType, class VelocityType>
-    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 1> {
+    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5> {
     public:
-        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 1>(l,v,s.gamma) {}
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v,s.gamma) {}
     };
 
 
@@ -727,10 +727,10 @@ namespace lvlset {
     public:
 
         static void prepare_surface_levelset(LevelSetType& l) {
-            assert((order==1) || (order==2) || (order==3));                   //the user in the level-set-traits-class
+            assert(order > 4);                   //the user in the level-set-traits-class
 
             //TODO sparse field expansion must depend on slf stencil order!
-            l.expand(11);
+            l.expand(order*2+1);
             // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
                                                         //which are necessary to calculate the derivatives are also defined
@@ -758,10 +758,7 @@ namespace lvlset {
 
             typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
 
-            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(5);
-            for(size_t i = 0; i < stars.size(); ++i){
-              stars[i].set_differentiation_scheme(LevelSetType::differentiation_scheme::WENO5);
-            }
+            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(LevelSetType::differentiation_scheme::FIRST_ORDER);
             typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
 
             //dirty hack
@@ -791,7 +788,10 @@ namespace lvlset {
 
                 vec<value_type,D> normal_p =  stars[i].normal_vector();
                 vec<value_type,D> normal_n =  normal_p;
-                vec<value_type,D> dv;
+
+                //std::cout << "Normal = " << normal_p << ", position = " << stars[i].position() << ", index = " << stars[i].indices() << ", grad(0) = " << stars[i].gradient(0) << ", grad(1) = " << stars[i].gradient(1)<< std::endl;
+
+                vec<value_type,D> dv(value_type(0));
                 const value_type DN = 1e-4;
 
                 for(int k=0; k < D; ++k){

@@ -803,7 +803,7 @@ namespace lvlset {
 
         //########################################################################
         //Numerical scheme definitions, central is default
-        enum class differentiation_scheme {CENTRAL,WENO3, WENO5};
+        enum class differentiation_scheme {FIRST_ORDER,WENO3, WENO5};
         //########################################################################
 
         /*class local_pt_id_type {
@@ -4019,17 +4019,50 @@ namespace lvlset {
       vec<index_type,D> offset;
 
       //TODO (priority): check order and dscheme !
-      const int order;
+      int order;
       differentiation_scheme dscheme;
 
       public:
 
         star_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
                      const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs_offset& it_mid,
-                     const int o) :
-                            l(lx),it_center(it_mid), order(o){
+                     const differentiation_scheme ds) :
+                            l(lx),it_center(it_mid),dscheme(ds){
 
-          dscheme=differentiation_scheme::CENTRAL;
+          switch(dscheme){
+            case differentiation_scheme::WENO3:
+              order=2;
+              break;
+            case differentiation_scheme::WENO5:
+              order=3;
+              break;
+            default:
+              order=1;
+          }
+
+
+          it_neighbors.reserve(2*D*order);
+
+
+          offset = it_mid.offset; //TODO change to proper get function
+
+          for (int i = 0; i < 2*D; ++i){
+              vec<index_type,D> tv(offset);
+              for (int j = 0; j < order; ++j) {
+                  if (i<D) tv[i]++; else tv[i-D]--;
+                  it_neighbors.push_back(const_iterator_runs_offset(l, tv,it_center.start_indices()));
+              }
+          }
+
+        }
+
+        star_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                     const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs_offset& it_mid) :
+                            l(lx),it_center(it_mid){
+
+          dscheme = differentiation_scheme::FIRST_ORDER;
+          order=1;
+
           it_neighbors.reserve(2*D*order);
 
 
@@ -4061,7 +4094,7 @@ namespace lvlset {
             return it_center.start_indices(dir) + offset[dir];
         }
 
-        vec<value_type,D>  position() const {
+        vec<value_type,D>  position() const { //center position
           vec<value_type, D> tmp;
           for (int i=0;i<D;++i) tmp[i]=position(i);
           return tmp;
@@ -4084,25 +4117,25 @@ namespace lvlset {
             const value_type phi_p=neighbor(dir,0).value();
             const value_type phi_n=neighbor(dir+D,0).value();
 
-            if(dscheme == differentiation_scheme::CENTRAL){
+            if(dscheme == differentiation_scheme::FIRST_ORDER){
 
               return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
 
             } else{
-              const value_type phi_pp=neighbor(dir*order + 1).value();
-              const value_type phi_nn=neighbor( (dir+D)*order + 1).value();
+              const value_type phi_pp=neighbor(dir, 1).value();
+              const value_type phi_nn=neighbor(dir+D, 1).value();
 
               const value_type dx = math::abs(d_p); //we assume uniform grid here
 
               if(dscheme == differentiation_scheme::WENO3){
 
-                return 0.5*(my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true) -
+                return 0.5*(my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true) +
                             my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false) );
 
               } else if(dscheme == differentiation_scheme::WENO5){
-                const value_type phi_ppp=neighbor(dir*order + 2).value();
-                const value_type phi_nnn=neighbor( (dir+D)*order + 2).value();
-                return 0.5*(my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true) -
+                const value_type phi_ppp=neighbor(dir, 2).value();
+                const value_type phi_nnn=neighbor( dir+D, 2).value();
+                return 0.5*(my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true) +
                             my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false) );
               } else{
                 std::cerr << "Invalid differentiation_scheme\n";
@@ -4115,6 +4148,8 @@ namespace lvlset {
         vec<value_type,D>  gradient() const {
             vec<value_type, D> tmp;
             for (int i=0;i<D;++i) tmp[i]=gradient(i);
+
+
             return tmp;
         }
 
@@ -4158,9 +4193,10 @@ namespace lvlset {
             return tmp;
         }
 
-        void set_differentiation_scheme(differentiation_scheme ds){
-          dscheme = ds;
-        }
+        //TODO this function may cause segmentation fault, if user constructs star_stencil with order < required order for the differentiation_scheme
+      //void set_differentiation_scheme(differentiation_scheme ds){
+      //    dscheme = ds;
+      //  }
 
         void print(std::ostream& out = std::cout) const {
           out << "Star stencil\nindices = " << indices()
@@ -4247,13 +4283,13 @@ namespace lvlset {
         }
 
 
-        std::vector<star_stencil> star_stencils(const int deriv_order) const {
+        std::vector<star_stencil> star_stencils(const differentiation_scheme ds=differentiation_scheme::FIRST_ORDER) const {
 
           std::vector<star_stencil> s;
           s.reserve(it_stencil_points.size());
 
           for(auto sp : it_stencil_points)
-            s.push_back(star_stencil(l,sp,deriv_order));
+            s.push_back(star_stencil(l,sp,ds));
 
           return s;
 
