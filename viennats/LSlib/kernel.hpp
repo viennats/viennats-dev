@@ -30,6 +30,8 @@
 #include "grid.hpp"
 #include "math.hpp"
 
+#include "../Math.h" //for WENO3 and WENO5
+
 #ifdef _OPENMP
     #include <omp.h>
 #endif
@@ -799,6 +801,10 @@ namespace lvlset {
 
         //######################################################################
 
+        //########################################################################
+        //Numerical scheme definitions, central is default
+        enum class differentiation_scheme {CENTRAL,WENO3, WENO5};
+        //########################################################################
 
         /*class local_pt_id_type {
         public:
@@ -4012,7 +4018,9 @@ namespace lvlset {
       std::vector<const_iterator_runs_offset> it_neighbors;
       vec<index_type,D> offset;
 
+      //TODO (priority): check order and dscheme !
       const int order;
+      differentiation_scheme dscheme;
 
       public:
 
@@ -4021,7 +4029,9 @@ namespace lvlset {
                      const int o) :
                             l(lx),it_center(it_mid), order(o){
 
+          dscheme=differentiation_scheme::CENTRAL;
           it_neighbors.reserve(2*D*order);
+
 
           offset = it_mid.offset; //TODO change to proper get function
 
@@ -4074,7 +4084,32 @@ namespace lvlset {
             const value_type phi_p=neighbor(dir,0).value();
             const value_type phi_n=neighbor(dir+D,0).value();
 
-            return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
+            if(dscheme == differentiation_scheme::CENTRAL){
+
+              return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
+
+            } else{
+              const value_type phi_pp=neighbor(dir*order + 1).value();
+              const value_type phi_nn=neighbor( (dir+D)*order + 1).value();
+
+              const value_type dx = math::abs(d_p); //we assume uniform grid here
+
+              if(dscheme == differentiation_scheme::WENO3){
+
+                return 0.5*(my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true) -
+                            my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false) );
+
+              } else if(dscheme == differentiation_scheme::WENO5){
+                const value_type phi_ppp=neighbor(dir*order + 2).value();
+                const value_type phi_nnn=neighbor( (dir+D)*order + 2).value();
+                return 0.5*(my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true) -
+                            my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false) );
+              } else{
+                std::cerr << "Invalid differentiation_scheme\n";
+                exit(-1); //TODO better error handling
+
+              }
+            }
         }
 
         vec<value_type,D>  gradient() const {
@@ -4104,7 +4139,7 @@ namespace lvlset {
             for (int i=0;i<D;++i) tmp[i]=gradient2(i);
             return tmp;
         }
-        
+
          //returns 0.5*(phi_x^+ - phi_x^-), which is needed for Lax Friedrichs NOTE we assume uniform grid
         value_type gradient_diff(int dir) const {
           const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
@@ -4123,34 +4158,15 @@ namespace lvlset {
             return tmp;
         }
 
+        void set_differentiation_scheme(differentiation_scheme ds){
+          dscheme = ds;
+        }
+
         void print(std::ostream& out = std::cout) const {
           out << "Star stencil\nindices = " << indices()
               <<  ", center position = " << position()
               << ", normal vector = " << normal_vector() << std::endl;
         }
-
-        //TODO gradientWENO3, gradientWENO5
-        /*
-        if(order == 1){
-          dphi_p[i] = (phi_0-phi_p)/dx;
-          dphi_n[i] = (phi_n-phi_0)/dx;
-        }
-        else if(order == 2){
-          const value_type phi_pp=it_neighbors[i*order + 1].value();
-          const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
-
-          dphi_p[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false);
-          dphi_n[i] = my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true);
-
-        } else if(order == 3){
-          const value_type phi_pp=it_neighbors[i*order + 1].value();
-          const value_type phi_nn=it_neighbors[(i+D)*order + 1].value();
-          const value_type phi_ppp=it_neighbors[i*order + 2].value();
-          const value_type phi_nnn=it_neighbors[(i+D)*order + 2].value();
-
-          dphi_p[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false);
-          dphi_n[i] = my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true);
-        }*/
 
     };
 

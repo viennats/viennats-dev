@@ -710,7 +710,7 @@ namespace lvlset {
 
         const double gamma;
 
-        const int slf_order = 2;
+        const int slf_order = 1;
 
 
         //TODO at: hard coded just for testing
@@ -758,7 +758,10 @@ namespace lvlset {
 
             typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
 
-            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(order);
+            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(5);
+            for(size_t i = 0; i < stars.size(); ++i){
+              stars[i].set_differentiation_scheme(LevelSetType::differentiation_scheme::WENO5);
+            }
             typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
 
             //dirty hack
@@ -864,129 +867,6 @@ namespace lvlset {
             if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
             return hamiltonian - dissipation;
           }
-
-
-
-
-
-
-
-
-
-            /*
-            bool showLog=false;
-
-
-
-                  slf_gradient += math::pow2( (slf_dphi_n[i] + slf_dphi_p[i])*0.5); //math::pow2( slf_dphi_n[i]);
-                  slf_dphi[i] = (slf_phi_n - slf_phi_p) / (2.0 * dx); //central difference for normal
-
-                  slf_coord[i] = slf_pos;
-                  slf_phi[i] = slf_phi_0;
-
-                  ////std::cout << LS.grid().grid_position_of_global_index(i,it_slf_stencil_points[i_slf].start_indices(i) + slf_offset[i_slf][i]) << std::endl;
-              }
-
-              if(showLog){
-                std::cout << "indices = " << it.start_indices() << ", offset = " << slf_offset[i_slf]<< ", dx = " << dx << ", pos = " << slf_coord << ", phi = " << slf_phi[0];// <<", slf_normal = " << slf_normal <<", slf_gradient = " << slf_gradient;
-
-              }
-
-
-              slf_normal=slf_dphi;
-              slf_gradient = std::sqrt(slf_gradient);
-
-              //normalize normal vectors
-              for(int i = 0; i < D; ++i){
-                if(std::fabs(slf_gradient) < 1e-4){
-                  std::cout << slf_gradient;
-                  slf_normal[i] /= math::abs(slf_normal.element_max());
-                }else
-                  slf_normal[i] /= slf_gradient;
-              }
-
-
-              //determine  velocity derivatives
-              for(int i=0; i < D; ++i){
-
-                vec<value_type,3> normal_p,normal_n;
-
-
-
-                normal_p[i] -= DN;
-                normal_n[i] += DN;
-
-                value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
-                value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
-                if(showLog)
-                  if(std::fabs(slf_normal[1] - 1.0) > 1e-4  )
-                    std::cout << "vp, vn = " << vp <<", " << vn << std::endl;
-
-                //central difference
-                slf_dv[i] = (vn - vp) / (2.0 * DN);
-
-                normal_p[i] += DN;
-                normal_n[i] -= DN;
-              }
-
-              //determine \partial H / \partial phi_l
-              //NOTE  check d phi!!!!
-              for (int i = 0 ; i < D; ++i) { //iterate over dimensions
-                //Monti term
-
-                value_type monti = 0;
-                if(1){
-                  for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
-                       int idx = (i + 1) % D;
-                        monti += slf_dphi[idx] * slf_dphi[idx];
-                  }
-                  monti  *= slf_dv[i] / (slf_gradient * slf_gradient);
-                }
-                //Toifl Quell term
-
-                value_type toifl=0;
-                if(1){
-                  for(int j= 0; j < D - 1; ++j ){
-                     int idx = (i + 1) % D;
-                     toifl += slf_dphi[idx] * slf_dv[idx];
-                  }
-                toifl *= -slf_dphi[i] / (slf_gradient * slf_gradient);
-                }
-                //Osher (constant V) term
-                value_type osher=0;
-                if(1)
-                  osher=velocities(it.active_pt_id(), material) * slf_normal[i];
-
-                //Total derivative is sum of terms given above
-                alphas[i_slf][i] = gamma * (std::fabs(monti + toifl + osher) );
-
-              }
-              if(showLog)
-                std::cout  << ", slf_dv = " << slf_dv << ", alpha_local = " << alphas[i_slf] << std::endl;
-
-            }
-              if(showLog)
-                std::cout << "max alphas = [";
-            for(int d=0; d < D; ++d)
-            {
-                std::vector<value_type> alpha_comp(num_stencil_points);
-
-                for(int i = 0 ; i < num_stencil_points ; ++i){
-                  alpha_comp[i] = alphas[i][d];
-                }
-                value_type maxal = *std::max_element(alpha_comp.begin(),alpha_comp.end());
-                if(showLog)
-                  std::cout << maxal << ", ";
-
-                dissipation += maxal * (dphi_n[d]-dphi_p[d]) * 0.5;
-            }
-            if(showLog)
-              std::cout << "]\n\n";
-
-            return hamiltonian - dissipation;
-
-        }*/
-
       }
     };
 
