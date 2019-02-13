@@ -1918,7 +1918,7 @@ namespace proc {
 
                     VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
-                    const int rk_order =2; //Runge Kutta (RK) order, Euler == RK 1st order
+                    const int rk_order = 1; //Runge Kutta (RK) order, Euler == RK 1st order
                     //NOTE 3rd order does not work at the moment
 
                     TimeExpansion-=my::time::GetTime();

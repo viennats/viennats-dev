@@ -580,7 +580,7 @@ namespace lvlset {
                     // put iterator to same position as the top levelset
                     ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
 
-                    // if the lower surface is actually outside, e.g. its LS value is lower or equal
+                    // if the lower surface is actually outside, i.e. its LS value is lower or equal
                     if(ITs[level_num].value() <= Phi_im1){
                       v = scheme(srfIT, LevelSets.size()-1-level_num);
                       break;
@@ -597,7 +597,7 @@ namespace lvlset {
                   }else Phi_im1 = std::numeric_limits<value_type>::max();
 
 
-                  // if velocity is positive, set maximum time step possible without violating the cfl confition
+                  // if velocity is positive, set maximum time step possible without violating the cfl condition
                   if (v>0.) {
                     tmp_tmax+=q/v;
                     TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));

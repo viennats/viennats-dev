@@ -4104,52 +4104,94 @@ namespace lvlset {
           return l.Grid.grid_position_of_local_index(dir,indices(dir));
         }
 
-        value_type gradient(int dir) const {
-            //returns the derivation in respect to the real coordinates for the given axis direction
-            //this function requires that the level set function consists at least of 3 layers of grid points,
-            //which means that all neighbor grid points of active grid points are defined
+        // (d phi / d x)^+ .. right sided derivative
+        // NOTE we assume uniform grid here
+        value_type inline phi_x_p(int dir) const {
+          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+          const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+          //const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
 
-            const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
-            const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
-            const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+          const value_type dx = math::abs(d_p);
+          const value_type phi_0=center().value();
+          const value_type phi_p=neighbor(dir,0).value();
 
-            const value_type phi_0=center().value();
-            const value_type phi_p=neighbor(dir,0).value();
+          if(dscheme == differentiation_scheme::FIRST_ORDER){
+
+            return (phi_p-phi_0)/dx;
+
+          } else{
+
+            const value_type phi_pp=neighbor(dir, 1).value();
             const value_type phi_n=neighbor(dir+D,0).value();
 
-            if(dscheme == differentiation_scheme::FIRST_ORDER){
+            if(dscheme == differentiation_scheme::WENO3){
 
-              return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
+              return my::math::weno3<value_type>(0, phi_n, phi_0, phi_p,  phi_pp, dx,  true);
+
+            } else if(dscheme == differentiation_scheme::WENO5){
+
+              const value_type phi_nn=neighbor(dir+D, 1).value();
+              const value_type phi_ppp=neighbor(dir, 2).value();
+
+              return my::math::weno5<value_type>(0, phi_nn, phi_n, phi_0, phi_p,  phi_pp, phi_ppp, dx,  true);
 
             } else{
-              const value_type phi_pp=neighbor(dir, 1).value();
-              const value_type phi_nn=neighbor(dir+D, 1).value();
+              std::cerr << "Invalid differentiation_scheme\n";
+              exit(-1); //TODO better error handling
 
-              const value_type dx = math::abs(d_p); //we assume uniform grid here
-
-              if(dscheme == differentiation_scheme::WENO3){
-
-                return 0.5*(my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx,  true) +
-                            my::math::weno3<value_type>(phi_pp, phi_p, phi_0, phi_n,  phi_nn, dx, false) );
-
-              } else if(dscheme == differentiation_scheme::WENO5){
-                const value_type phi_ppp=neighbor(dir, 2).value();
-                const value_type phi_nnn=neighbor( dir+D, 2).value();
-                return 0.5*(my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx,  true) +
-                            my::math::weno5<value_type>(phi_ppp, phi_pp, phi_p, phi_0, phi_n,  phi_nn, phi_nnn, dx, false) );
-              } else{
-                std::cerr << "Invalid differentiation_scheme\n";
-                exit(-1); //TODO better error handling
-
-              }
             }
+          }
+
+        }
+
+        // (d phi / d x)^- .. left-sided derivative along axis x = {x,y,z}, given by axis index dir
+        // NOTE we assume uniform grid here
+        value_type inline phi_x_n(int dir) const {
+          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+          const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+          //const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+
+          const value_type dx = math::abs(d_p);
+
+          const value_type phi_0=center().value();
+          const value_type phi_n=neighbor(dir+D,0).value();
+
+          if(dscheme == differentiation_scheme::FIRST_ORDER){
+
+            return (phi_0-phi_n)/dx;
+
+          } else{
+
+            const value_type phi_p=neighbor(dir,0).value();
+            const value_type phi_nn=neighbor(dir+D, 1).value();
+
+            if(dscheme == differentiation_scheme::WENO3){
+
+              return my::math::weno3<value_type>(phi_nn, phi_n, phi_0, phi_p, 0, dx,  false);
+
+            } else if(dscheme == differentiation_scheme::WENO5){
+
+              const value_type phi_pp=neighbor(dir,1).value();
+              const value_type phi_nnn=neighbor(dir+D, 2).value();
+
+              return my::math::weno5<value_type>(phi_nnn, phi_nn, phi_n, phi_0, phi_p,  phi_pp, 0, dx,  false);
+
+            } else{
+              std::cerr << "Invalid differentiation_scheme\n";
+              exit(-1); //TODO better error handling
+
+            }
+          }
+
+        }
+        value_type gradient(int dir) const {
+            //returns the derivation in respect to the real coordinates for the given axis direction
+            return 0.5*(phi_x_p(dir) + phi_x_n(dir));
         }
 
         vec<value_type,D>  gradient() const {
             vec<value_type, D> tmp;
             for (int i=0;i<D;++i) tmp[i]=gradient(i);
-
-
             return tmp;
         }
 
@@ -4162,36 +4204,33 @@ namespace lvlset {
             return tmp;
         }
 
-        value_type gradient2(int dir) const {       //returns the derivation of the level set function in respect to the index for the given axis direction
-            const value_type phi_p=neighbor(dir,0).value();
-            const value_type phi_n=neighbor(dir+D,0).value();
-
-            return (phi_p-phi_n)/2.;
-        }
-
-        vec<value_type,D>  gradient2() const {
-            vec<value_type, D> tmp;
-            for (int i=0;i<D;++i) tmp[i]=gradient2(i);
-            return tmp;
-        }
-
-         //returns 0.5*(phi_x^+ - phi_x^-), which is needed for Lax Friedrichs NOTE we assume uniform grid
         value_type gradient_diff(int dir) const {
-          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
-          const value_type d_p  =  math::abs(l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos);
+            return 0.5*(phi_x_p(dir) - phi_x_n(dir));
+        }
 
-
-          const value_type phi_0=center().value();
-          const value_type phi_p=neighbor(dir,0).value();
-          const value_type phi_n=neighbor(dir+D,0).value();
-
-          return (phi_p - 2*phi_0 + phi_n) / (2.0 * d_p);
-      }
         vec<value_type,D>  gradient_diff() const {
             vec<value_type, D> tmp;
             for (int i=0;i<D;++i) tmp[i]=gradient_diff(i);
             return tmp;
         }
+
+
+        //TODO is gradient2() even useful???
+        // value_type gradient2(int dir) const {       //returns the derivation of the level set function in respect to the index for the given axis direction
+        //     const value_type phi_p=neighbor(dir,0).value();
+        //     const value_type phi_n=neighbor(dir+D,0).value();
+        //
+        //     return (phi_p-phi_n)/2.;
+        // }
+        //
+        // vec<value_type,D>  gradient2() const {
+        //     vec<value_type, D> tmp;
+        //     for (int i=0;i<D;++i) tmp[i]=gradient2(i);
+        //     return tmp;
+        // }
+
+         //returns 0.5*(phi_x^+ - phi_x^-), which is needed for Lax Friedrichs
+         //NOTE we assume uniform grid
 
         //TODO this function may cause segmentation fault, if user constructs star_stencil with order < required order for the differentiation_scheme
       //void set_differentiation_scheme(differentiation_scheme ds){
@@ -4257,7 +4296,7 @@ namespace lvlset {
           }
         }
 
-        std::vector<const_iterator_runs_offset>& get_stencil_points() const{
+        std::vector<const_iterator_runs_offset>& get_stencil_points(){
           return it_stencil_points;
         }
 
