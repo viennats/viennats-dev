@@ -57,41 +57,41 @@ namespace proc {
       const LevelSetsType& LS,
       std::vector<unsigned int>& PointMaterials) {
 
-      //this function determines the materials of the most top levelset
+      //this function determines the materials of the topmost levelset
 
-    typedef typename LevelSetsType::value_type LevelSetType;
+      typedef typename LevelSetsType::value_type LevelSetType;
 
-    PointMaterials.clear();
-    PointMaterials.resize(LS.back().num_active_pts());
+      PointMaterials.clear();
+      PointMaterials.resize(LS.back().num_active_pts());
 
-    typename LevelSetType::points_type segmentation=LS.back().get_new_segmentation();
+      typename LevelSetType::points_type segmentation=LS.back().get_new_segmentation();
 
-    #pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
-    for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
+      #pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+      for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
 
-      typename LevelSetType::point_type  begin_v=(p==0)?LS.back().grid().min_point_index():segmentation[p-1];
-      typename LevelSetType::point_type  end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:LS.back().grid().increment_indices(LS.back().grid().max_point_index());
+        typename LevelSetType::point_type  begin_v=(p==0)?LS.back().grid().min_point_index():segmentation[p-1];
+        typename LevelSetType::point_type  end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:LS.back().grid().increment_indices(LS.back().grid().max_point_index());
 
-      //iterator necessary to access
-      std::vector< typename LevelSetType::const_iterator_runs> ITs;
-      for (typename LevelSetsType::const_iterator it=LS.begin();&(*it)!=&(LS.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(*it,begin_v));
+        //iterator necessary to access
+        std::vector< typename LevelSetType::const_iterator_runs> ITs;
+        for (typename LevelSetsType::const_iterator it=LS.begin();&(*it)!=&(LS.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(*it,begin_v));
 
-      for (typename LevelSetType::const_iterator_runs it(LS.back(),begin_v );it.start_indices()<end_v;it.next()) {
-        if (!it.is_active()) continue;
+        for (typename LevelSetType::const_iterator_runs it(LS.back(),begin_v );it.start_indices()<end_v;it.next()) {
+          if (!it.is_active()) continue;
 
-        const typename LevelSetType::value_type d=it.value2();
+          const typename LevelSetType::value_type d=it.value2();
 
-        int z=LS.size()-1;
-        for (;z>0;z--) {
-          ITs[z-1].go_to_indices_sequential(it.start_indices());
-          if (d<ITs[z-1].value()) break;
+          int z=LS.size()-1;
+          for (;z>0;z--) {
+            ITs[z-1].go_to_indices_sequential(it.start_indices());
+            if (d<ITs[z-1].value()) break;
+          }
+
+          PointMaterials[it.active_pt_id2()]=LS.size()-1-z;
         }
-
-        PointMaterials[it.active_pt_id2()]=LS.size()-1-z;
       }
-    }
 
-        }
+    }
 
   namespace {
 
@@ -1917,6 +1917,7 @@ namespace proc {
                 else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
 
                     VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                    DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)
 
                     const int rk_order = 1; //Runge Kutta (RK) order, Euler == RK 1st order
                     //NOTE 3rd order does not work at the moment
@@ -1925,32 +1926,7 @@ namespace proc {
                     LevelSets.back().expand(3);
                     TimeExpansion+=my::time::GetTime();
 
-                    //std::ofstream out("out.txt",std::ios_base::app);
 
-                    /*typedef typename LevelSetsType::value_type LevelSetType;
-                    out << "Time step: " << std::endl;
-                    int m=0;
-                    for(auto it=LevelSets.begin(); it!=LevelSets.end() ; ++it,++m){
-                      out << "Material #" << m << std::endl;
-                      //it->print_without_segmentation(out);
-
-                      typename LevelSetType::const_iterator_runs itA(*it);
-                      while (!itA.is_finished() ) {
-
-                          typename LevelSetType::value_type d =  itA.value();
-                          auto idx = itA.start_indices();
-
-                          if(itA.is_defined()){
-                            for(int i =0; i < LevelSetType::dimensions; ++i){
-                              out << idx[i] << ",";
-
-                            }
-                            out << d  << std::endl;
-                          }
-
-                          itA.next();
-                      }
-                    }*/
 
                     LevelSetsType phi_n = LevelSets; //phi^n
 
@@ -1958,7 +1934,7 @@ namespace proc {
                     time_step=lvlset::time_integrate(
                             LevelSets,
                             Velocities,
-                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
@@ -1969,7 +1945,7 @@ namespace proc {
                       time_step=lvlset::time_integrate(
                               LevelSets,
                               Velocities,
-                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
                               Parameter.cfl_condition,
                               MaxTimeStep,
                               Coverages,
@@ -1999,7 +1975,7 @@ namespace proc {
                          time_step=lvlset::time_integrate(
                                   LevelSets,
                                   Velocities,
-                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
                                   Parameter.cfl_condition,
                                   MaxTimeStep,
                                   Coverages,

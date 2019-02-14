@@ -73,11 +73,12 @@ namespace lvlset {
     class STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE {
     public:
         const double gamma;
-        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(double a) : gamma(a) {}
+        const std::vector<unsigned int>& PointMaterials;
+        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(double a, const std::vector<unsigned int>& pm) : gamma(a), PointMaterials(pm){}
     };
 
-    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS(double gamma) {
-        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(gamma);
+    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS(double gamma, const std::vector<unsigned int>& pm) {
+        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(gamma,pm);
     }
 
 
@@ -171,9 +172,11 @@ namespace lvlset {
 
     //at
     template <class LevelSetType, class VelocityType>
-    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>:public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5> {
+    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>
+    :public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5> {
     public:
-        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s):StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v,s.gamma) {}
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s)
+           :StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v,s.gamma,s.PointMaterials) {}
     };
 
 
@@ -709,8 +712,9 @@ namespace lvlset {
         typedef typename LevelSetType::index_type index_type;
 
         const double gamma;
+        const std::vector<unsigned int>& PointMaterials;
 
-        const int slf_order = 1;
+        const int slf_order = 2;
 
 
         //TODO at: hard coded just for testing
@@ -737,7 +741,7 @@ namespace lvlset {
         }
 
 
-        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a): LS(l), velocities(v), gamma(a),initialized(false) {}
+        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {}
 
 
         template <class IteratorType>
@@ -745,7 +749,8 @@ namespace lvlset {
 
           assert(it.is_active());
 
-          value_type v = velocities(it.active_pt_id(), material);
+          //value_type v = velocities(it.active_pt_id(), material);
+          value_type v=1.0;
 
           if( v == value_type(0) ){
             return 0;
@@ -771,16 +776,7 @@ namespace lvlset {
             }
 
 
-            //dirty hack I
-            if(center.position()[1] < -0.7){ //bottom
-              return 0;
-            }
-            //dirty hack II: explicity set hamiltonian within mask to zero
-            if(center.position()[1] > 0.25){ //mask
-              if( (center.position()[0] < 1.25) || (center.position()[0] > 1.75) ){
-                return 0;
-              }
-            }
+
 
 
             value_type hamiltonian=0.; //numerical Hamiltonian
@@ -792,6 +788,17 @@ namespace lvlset {
             //hamiltonian *= v; //V |grad(phi)|
 
             //dirty hack III: we use directly the 'insect' here
+            //dirty hack I
+
+            if(center.position()[1] < -0.7){ //bottom
+              return 0;
+            }
+            //dirty hack II: explicity set hamiltonian within mask to zero
+            if(center.position()[1] >= 0.25){ //mask
+              if( (center.position()[0] <= 1.25) || (center.position()[0] >= 1.75) ){
+                return 0;
+              }
+            }
             hamiltonian *= my::math::fourRateInterpolation<value_type>(center.normal_vector(), direction100, direction010, r100, r110, r111, r311);
 
 
@@ -803,49 +810,52 @@ namespace lvlset {
               std::vector< vec<value_type,D>> alphas;
               alphas.reserve(stars.size());
 
-              value_type nu=0.5;
+              const value_type nu=0.0;
               value_type lambda=0;
 
               std::vector<value_type> vecs;
               vecs.reserve(stars.size());
+              std::vector<value_type> omegas;
+              omegas.reserve(stars.size());
               value_type vecs_mean=0;
 
               //
               for(size_t i = 0; i < stars.size(); ++i){
                 value_type vel=0;
+                value_type omega=0;
                 if(stars[i].position()[1] < -0.7){ //bottom
                    vel=0;
+                   omega=0.9;
                 }
                 else{
-                  if(stars[i].position()[1] > 0.25){ //mask
-                    if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
+                  if(stars[i].position()[1] >= 0.25){ //mask
+                    //if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
                        vel=0;
-                    }
+                       omega=0.9;
+                  //  }
                   } else{
-                    //  vel=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                    vel=1;
+                      vel=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
+                      omega=0.1;
                   }
                 }
 
                 vecs_mean += vel;
                 vecs.push_back(vel);
+                omegas.push_back(omega);
               }
               vecs_mean /= vecs.size();
 
               for(size_t i = 0; i < vecs.size(); ++i){
-                lambda += math::pow2(vecs[i] - vecs_mean);
+                lambda += omegas[i]*math::pow2(vecs[i] - vecs_mean);
               }
               lambda = nu * std::sqrt(lambda);
 
 
-            //  for(auto it : vecs){
-            //    std::cout << it << std::endl;
-            //  }
-            //  std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl << std::endl;
-
-
-
-
+          //    std::cout << "center position: " << center.position() << std::endl;
+          //    for(size_t i=0; i < vecs.size(); ++i){
+          //      std::cout << "position = " << stars[i].position() << ", vel = " << vecs[i] << ", omega = " << omegas[i] << std::endl;
+          //    }
+          //    std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
 
 
               for(size_t i = 0; i < stars.size(); ++i){
@@ -908,8 +918,8 @@ namespace lvlset {
                        osher=0;
                     }
                     else{
-                      if(stars[i].position()[1] > 0.25){ //mask
-                        if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
+                      if(stars[i].position()[1] >= 0.25){ //mask
+                        if( (stars[i].position()[0] <= 1.25) || (stars[i].position()[0] >= 1.75) ){
                            osher=0;
                         }
                       } else{
@@ -920,7 +930,7 @@ namespace lvlset {
 
                   //Total derivative is sum of terms given above
 
-                  lambda=0;
+
 
                   alpha[k] = gamma * (std::fabs(monti + toifl + osher + lambda) );
 
@@ -935,6 +945,8 @@ namespace lvlset {
             //    std::cout << a << std::endl;
 
               //determine max alphas for every axis
+
+              vec<value_type,D>  maxal;
               for(int d=0; d < D; ++d)
               {
                   std::vector<value_type> alpha_comp;
@@ -942,10 +954,12 @@ namespace lvlset {
                   for(size_t i = 0 ; i < stars.size() ; ++i){
                     alpha_comp.push_back(alphas[i][d]);
                   }
-                  value_type maxal = *std::max_element(alpha_comp.begin(),alpha_comp.end());
+                  maxal[d] = *std::max_element(alpha_comp.begin(),alpha_comp.end());
 
-                  dissipation += maxal * center.gradient_diff(d);
+                  dissipation += maxal[d] * center.gradient_diff(d);
               }
+            //  std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
+
 
 
 
