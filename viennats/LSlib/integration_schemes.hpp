@@ -735,6 +735,7 @@ namespace lvlset {
 
             //TODO sparse field expansion must depend on slf stencil order!
             l.expand(order*2+1);
+            //l.expand(21);
             // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
                                                         //which are necessary to calculate the derivatives are also defined
@@ -749,8 +750,8 @@ namespace lvlset {
 
           assert(it.is_active());
 
-          //value_type v = velocities(it.active_pt_id(), material);
-          value_type v=1.0;
+          value_type v = velocities(it.active_pt_id(), material);
+        //  value_type v=1.0;
 
           if( v == value_type(0) ){
             return 0;
@@ -776,23 +777,19 @@ namespace lvlset {
             }
 
 
-
-
-
             value_type hamiltonian=0.; //numerical Hamiltonian
             value_type dissipation=0.; //dissipation
 
             hamiltonian = NormL2(center.gradient()); //|grad(phi)|
 
             //NOTE this is the most general way to calculate the hamilonian
-            //hamiltonian *= v; //V |grad(phi)|
+            hamiltonian *= v; //V |grad(phi)|
 
-            //dirty hack III: we use directly the 'insect' here
+
             //dirty hack I
-
             if(center.position()[1] < -0.7){ //bottom
               return 0;
-            }
+            }/*
             //dirty hack II: explicity set hamiltonian within mask to zero
             if(center.position()[1] >= 0.25){ //mask
               if( (center.position()[0] <= 1.25) || (center.position()[0] >= 1.75) ){
@@ -800,7 +797,7 @@ namespace lvlset {
               }
             }
             hamiltonian *= my::math::fourRateInterpolation<value_type>(center.normal_vector(), direction100, direction010, r100, r110, r111, r311);
-
+          */
 
 
             if(DEBUG) std::cout <<"H = " << hamiltonian << std::endl;
@@ -810,8 +807,9 @@ namespace lvlset {
               std::vector< vec<value_type,D>> alphas;
               alphas.reserve(stars.size());
 
-              const value_type nu=0.0;
+              const value_type nu=gamma;
               value_type lambda=0;
+
 
               std::vector<value_type> vecs;
               vecs.reserve(stars.size());
@@ -825,17 +823,18 @@ namespace lvlset {
                 value_type omega=0;
                 if(stars[i].position()[1] < -0.7){ //bottom
                    vel=0;
-                   omega=0.9;
+                   omega=1;
                 }
                 else{
                   if(stars[i].position()[1] >= 0.25){ //mask
                     //if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
                        vel=0;
-                       omega=0.9;
+                       omega=1;
+
                   //  }
                   } else{
                       vel=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                      omega=0.1;
+                      omega=0.0;
                   }
                 }
 
@@ -848,18 +847,25 @@ namespace lvlset {
               for(size_t i = 0; i < vecs.size(); ++i){
                 lambda += omegas[i]*math::pow2(vecs[i] - vecs_mean);
               }
-              lambda = nu * std::sqrt(lambda);
+              lambda = math::abs(nu * std::sqrt(lambda) / vecs_mean);
 
 
-          //    std::cout << "center position: " << center.position() << std::endl;
-          //    for(size_t i=0; i < vecs.size(); ++i){
-          //      std::cout << "position = " << stars[i].position() << ", vel = " << vecs[i] << ", omega = " << omegas[i] << std::endl;
-          //    }
-          //    std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
+             // std::cout << "center position: " << center.position() << std::endl;
+             // for(size_t i=0; i < vecs.size(); ++i){
+             //   std::cout << "position = " << stars[i].position() << ", vel = " << vecs[i] << ", omega = " << omegas[i] << std::endl;
+             // }
+             // std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
 
 
               for(size_t i = 0; i < stars.size(); ++i){
                 vec<value_type,D> alpha;
+
+                bool is_mask=false;
+
+                if(stars[i].position()[1] >= 0.25){ //mask
+                    //if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
+                    is_mask=true;
+                }
 
                 //vec<value_type,D> normalvector = stars[i].normal_vector();
                 //value_type vp = my::math::fourRateInterpolation<value_type>(normalvector, direction100, direction010, r100, r110, r111, r311);
@@ -874,8 +880,8 @@ namespace lvlset {
 
                 for(int k=0; k < D; ++k){
 
-                  normal_p[k] -= DN;
-                  normal_n[k] += DN;
+                  normal_p[k] -= DN; //p=previous
+                  normal_n[k] += DN; //n==next
 
                   value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
                   value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
@@ -891,7 +897,7 @@ namespace lvlset {
 
                   //Monti term
                   value_type monti = 0;
-                  if(1){
+                  if(false == is_mask){
                     for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
                          int idx = (k + 1) % D;
                           monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
@@ -901,16 +907,18 @@ namespace lvlset {
 
                   //Toifl Quell term
                   value_type toifl=0;
-                  if(1){
+                  if(false == is_mask){
                     for(int j= 0; j < D - 1; ++j ){
                        int idx = (k + 1) % D;
                        toifl += stars[i].gradient(idx) * dv[idx];
                     }
                   toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
                   }
+
+
                   //Osher (constant V) term
                   value_type osher=0;
-                  if(1){
+                  if(false == is_mask){
                     //osher=velocities(it.active_pt_id(), material) * stars[i].normal_vector()[k];
 
                     //dirty hack IV
@@ -928,17 +936,13 @@ namespace lvlset {
                     }
                   }
 
+                //  if(0==k) lambda=0;
+
                   //Total derivative is sum of terms given above
-
-
-
-                  alpha[k] = gamma * (std::fabs(monti + toifl + osher + lambda) );
-
+                  alpha[k] = 1.0 * (std::fabs( (1.0 + lambda) * (monti + toifl) + osher)  );
                 }
-
                 alphas.push_back(alpha);
               }
-
 
             //  std::cout << "Position = " << center.position() << ", lambda= " << lambda << std::endl;
             //  for(auto a : alphas)
@@ -959,14 +963,9 @@ namespace lvlset {
                   dissipation += maxal[d] * center.gradient_diff(d);
               }
             //  std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
-
-
-
-
               if(DEBUG) std::cout << "D = " << dissipation << std::endl;
 
             }
-
 
             if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
             return hamiltonian - dissipation;
