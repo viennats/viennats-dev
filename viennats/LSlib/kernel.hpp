@@ -4086,6 +4086,10 @@ namespace lvlset {
             return it_center;
         }
 
+        const vec<index_type,D>& get_center_offset() const {
+            return offset;
+        }
+
         vec<index_type,D> indices() const { //returns the indices of the center
             return it_center.start_indices() + offset;
         }
@@ -4319,6 +4323,10 @@ namespace lvlset {
           }else{
             out << std::endl;
           }
+        }
+
+        int indexByOffset( vec<index_type,D> offset){ //returns index of the star stencil with a certain offset
+          return  std::distance(offsets.begin(), std::find(offsets.begin(), offsets.end(), offset));
         }
 
 

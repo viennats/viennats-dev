@@ -797,7 +797,7 @@ namespace my {
         N.reverse_sort();
 
         if(std::fabs(Norm(N)-1)>=1e-4){
-          std::cout << "direction100 = " << direction100 << ", norm = " << Norm(direction100) << std::endl;
+          std::cout << "direction1 00 = " << direction100 << ", norm = " << Norm(direction100) << std::endl;
           std::cout << "direction010 = " << direction010 << ", norm = " << Norm(direction010) << std::endl;
           std::cout << "NormalVector = " << NormalVector << ", norm = " << Norm(NormalVector) << std::endl;
           std::cout << "N = " << N << ", norm = " << Norm(N) << std::endl;

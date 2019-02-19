@@ -663,6 +663,7 @@ namespace lvlset {
                     Phi=itRS->second;
                     ++itRS;
                 }
+            
 
                 // now deduct the velocity times the time step we take
                 Phi-=t*itRS->first;

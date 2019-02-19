@@ -542,11 +542,11 @@ namespace lvlset {
     void export_levelset_to_vtkfile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path){
       std::ofstream out(path);
 
-      ls.expand(13);
+      ls.expand(7);
 
 
       typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
-      typename LevelSetType::template const_iterator_neighbor_filtered<typename LevelSetType::filter_value,  1> itA(ls, typename LevelSetType::filter_value(3.0));
+      typename LevelSetType::template const_iterator_neighbor_filtered<typename LevelSetType::filter_value,  1> itA(ls, typename LevelSetType::filter_value(2.0));
 
       std::vector< vec<typename LevelSetType::index_type, LevelSetType::dimensions> > indices;
       std::vector<typename LevelSetType::value_type> values;

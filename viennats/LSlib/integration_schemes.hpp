@@ -741,6 +741,25 @@ namespace lvlset {
                                                         //which are necessary to calculate the derivatives are also defined
         }
 
+        template <class ValueType>
+        static ValueType topMaterial(vec<ValueType,2> position){
+          if(position[1] < -0.7){ //bottom
+             return 1;
+          }
+          else{
+            if(position[1] >= 0.25){ //mask
+              if( (position[0] < 1.25) || (position[0] > 1.75) ){
+                return 1;
+               }else{
+                 return 0;
+               }
+            //  }
+            } else{
+              return 0;
+            }
+          }
+        }
+
 
         StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {}
 
@@ -817,55 +836,105 @@ namespace lvlset {
               omegas.reserve(stars.size());
               value_type vecs_mean=0;
 
-              //
-              for(size_t i = 0; i < stars.size(); ++i){
-                value_type vel=0;
-                value_type omega=0;
-                if(stars[i].position()[1] < -0.7){ //bottom
-                   vel=0;
-                   omega=1;
-                }
-                else{
-                  if(stars[i].position()[1] >= 0.25){ //mask
-                    //if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
-                       vel=0;
-                       omega=1;
+              if(DEBUG) std::cout << "center position: " << center.position() << std::endl;
 
-                  //  }
-                  } else{
-                      vel=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                      omega=0.0;
+              value_type vel=0;
+              value_type omega=0;
+
+              //lambda term
+              for(size_t i = 0; i < stars.size(); ++i){
+
+
+                if(0){//averaged averages
+                  //pure 2D hack
+                  vec<index_type,D> offset = stars[i].get_center_offset();
+                  value_type offset_norm = NormL2(offset);
+                  if(DEBUG) std::cout << "Offset = " << offset;
+                  if( (std::abs(offset[0]) > 1) || (std::abs(offset[1]) > 1) ){
+                    if(DEBUG)  std::cout << " - ignored\n";
+                    continue;
+                  }
+
+
+
+                  std::vector<vec<index_type,D>> neighbor_off;
+                  index_type mean_patch_order = 1;
+
+                  int num_points = std::pow(2*mean_patch_order + 1, D);
+                  for( int idx = 0; idx < num_points; ++idx){
+                    vec<index_type,D> tmp(offset);
+                    for (int d = 0; d < D; ++d){
+                      tmp[d] += index_type( (int) (idx / std::pow(2*mean_patch_order + 1,d) ) % (2 * mean_patch_order + 1) - mean_patch_order );
+                    }
+                    neighbor_off.push_back(tmp);
+                  }
+
+                  for(size_t n_idx = 0; n_idx < neighbor_off.size(); ++n_idx){
+                      index_type index = n.indexByOffset(neighbor_off[n_idx]);
+
+                      assert((size_t)index <  stars.size());
+
+                      value_type mat = topMaterial(stars[index].position());
+                      if(1==mat){
+                        vel+=0;
+                      }else {
+                        vel+=my::math::fourRateInterpolation<value_type>(stars[index].normal_vector(), direction100, direction010, r100, r110, r111, r311);
+                      }
+                  }
+                  vel /= neighbor_off.size();
+
+                  value_type mat_center = topMaterial(stars[i].position());
+
+                  if(1==mat_center){
+                      omega=1.0 / std::sqrt(offset_norm+1);
+                  }else{
+                      omega = 0;
+                  }
+                }
+
+
+                if(1){//Gaussian
+                  vec<index_type,D> offset = stars[i].get_center_offset();
+                  if(DEBUG) std::cout << "Offset = " << offset;
+
+                  value_type s = 4.0;
+
+                  value_type mat_center = topMaterial(stars[i].position());
+
+                  if(1==mat_center){
+                      value_type nom = 0;
+
+                      for(int u = 0; u < D; ++u){
+                        nom += offset[u] *offset[u];
+                      }
+
+                      vel = 0;
+                      omega=1.0 * std::exp(-nom / s);
+                  }else{
+                      omega = 0;
+                      vel = my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                   }
                 }
 
                 vecs_mean += vel;
                 vecs.push_back(vel);
                 omegas.push_back(omega);
+                if(DEBUG) std::cout << ", position = " << stars[i].position() << ", vel = " << vel << ", omega = " << omega << std::endl;
               }
               vecs_mean /= vecs.size();
 
               for(size_t i = 0; i < vecs.size(); ++i){
                 lambda += omegas[i]*math::pow2(vecs[i] - vecs_mean);
               }
-              lambda = math::abs(nu * std::sqrt(lambda) / vecs_mean);
+              lambda = math::abs(nu * std::sqrt(lambda / vecs.size()) / ( vecs_mean) );
 
-
-             // std::cout << "center position: " << center.position() << std::endl;
-             // for(size_t i=0; i < vecs.size(); ++i){
-             //   std::cout << "position = " << stars[i].position() << ", vel = " << vecs[i] << ", omega = " << omegas[i] << std::endl;
-             // }
-             // std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
+              if(DEBUG) std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
 
 
               for(size_t i = 0; i < stars.size(); ++i){
                 vec<value_type,D> alpha;
 
-                bool is_mask=false;
-
-                if(stars[i].position()[1] >= 0.25){ //mask
-                    //if( (stars[i].position()[0] < 1.25) || (stars[i].position()[0] > 1.75) ){
-                    is_mask=true;
-                }
+                value_type mat_center = topMaterial(stars[i].position());
 
                 //vec<value_type,D> normalvector = stars[i].normal_vector();
                 //value_type vp = my::math::fourRateInterpolation<value_type>(normalvector, direction100, direction010, r100, r110, r111, r311);
@@ -897,7 +966,7 @@ namespace lvlset {
 
                   //Monti term
                   value_type monti = 0;
-                  if(false == is_mask){
+                  if(1 != mat_center){
                     for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
                          int idx = (k + 1) % D;
                           monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
@@ -907,7 +976,7 @@ namespace lvlset {
 
                   //Toifl Quell term
                   value_type toifl=0;
-                  if(false == is_mask){
+                  if(1 != mat_center){
                     for(int j= 0; j < D - 1; ++j ){
                        int idx = (k + 1) % D;
                        toifl += stars[i].gradient(idx) * dv[idx];
@@ -918,22 +987,9 @@ namespace lvlset {
 
                   //Osher (constant V) term
                   value_type osher=0;
-                  if(false == is_mask){
+                  if(1 != mat_center){
                     //osher=velocities(it.active_pt_id(), material) * stars[i].normal_vector()[k];
-
-                    //dirty hack IV
-                    if(stars[i].position()[1] < -0.7){ //bottom
-                       osher=0;
-                    }
-                    else{
-                      if(stars[i].position()[1] >= 0.25){ //mask
-                        if( (stars[i].position()[0] <= 1.25) || (stars[i].position()[0] >= 1.75) ){
-                           osher=0;
-                        }
-                      } else{
-                          osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                      }
-                    }
+                      osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                   }
 
                 //  if(0==k) lambda=0;
@@ -962,7 +1018,7 @@ namespace lvlset {
 
                   dissipation += maxal[d] * center.gradient_diff(d);
               }
-            //  std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
+              if(DEBUG) std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
               if(DEBUG) std::cout << "D = " << dissipation << std::endl;
 
             }
