@@ -15,6 +15,7 @@
 #include <vtkTableBasedClipDataSet.h>
 #include <vtkDataSetTriangleFilter.h>
 #include <vtkAppendFilter.h>
+#include <vtkProbeFilter.h>
 #include "vector.hpp"
 
 // TODO remove
@@ -160,7 +161,7 @@ namespace lvlset{
       }
 
       // Use vtkClipDataSet to slice the grid
-      vtkSmartPointer<vtkTableBasedClipDataSet> clipper = //TODO change to vtkTableBasedClipDataSet
+      vtkSmartPointer<vtkTableBasedClipDataSet> clipper =
         vtkSmartPointer<vtkTableBasedClipDataSet>::New();
       clipper->SetInputData(rgrid);
       clipper->InsideOutOn();
@@ -171,13 +172,44 @@ namespace lvlset{
       triangleFilter->SetInputConnection(clipper->GetOutputPort());
       triangleFilter->Update();
 
-      // transform grid to polydata
-      // vtkSmartPointer<vtkGeometryFilter> geometryFilter =
-      //   vtkSmartPointer<vtkGeometryFilter>::New();
-      // geometryFilter->SetInputConnection(clipper->GetOutputPort());
-      // geometryFilter->Update();
+      if(debugOutput){
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
+          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        owriter->SetFileName(("tetras_" + std::to_string(counter) + ".vtu").c_str());
+        owriter->SetInputData(triangleFilter->GetOutput());
+        owriter->Write();
+      }
 
       materialMeshes.push_back(triangleFilter->GetOutput());
+
+
+      if(it!=LevelSets.rbegin()){
+        if(debugOutput) std::cout << "Starting bool of element " << counter-1 << std::endl;
+
+
+        // probe filter to set implicit values on bigger material
+        vtkSmartPointer<vtkProbeFilter> probeFilter = vtkSmartPointer<vtkProbeFilter>::New();
+        probeFilter->SetInputData(materialMeshes.rbegin()[1]);  // second to last element
+        probeFilter->SetSourceData(rgrid);
+        probeFilter->CategoricalDataOn();
+        probeFilter->Update();
+
+        if(debugOutput){
+          vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
+            vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+          owriter->SetFileName(("probed_" + std::to_string(counter) + ".vtu").c_str());
+          owriter->SetInputData(probeFilter->GetOutput());
+          owriter->Write();
+        }
+
+        // Use vtkClipDataSet to slice the grid
+        vtkSmartPointer<vtkTableBasedClipDataSet> insideClipper =
+          vtkSmartPointer<vtkTableBasedClipDataSet>::New();
+        insideClipper->SetInputConnection(probeFilter->GetOutputPort());
+        insideClipper->Update();
+
+        materialMeshes.rbegin()[1] = insideClipper->GetOutput();
+      }
 
       // if(it!=LevelSets.rbegin()){
       //   // now subtract second to last material with the current one
