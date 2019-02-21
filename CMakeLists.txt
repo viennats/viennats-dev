@@ -24,7 +24,7 @@ OPTION(VIENNATS_STATIC_BUILD "" OFF)
 
 # Default compile options
 #################
-SET(CMAKE_CXX_FLAGS "-Wall -pedantic")
+SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
@@ -86,6 +86,20 @@ ELSE(HDF5_FOUND)
  message(STATUS "Missing HDF5 library: ViennaTS will be built without TDR file support")
 ENDIF(HDF5_FOUND)
 ENDIF(NOT VIENNATS_STATIC_BUILD)
+
+# VTK
+find_package(VTK REQUIRED HINTS "/home/klemenschits/Code/libraries/VTK")
+#
+message(${VTK_USE_FILE})
+IF(VTK_FOUND)
+message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
+#include_directories(${VTK_INCLUDE_DIRS})
+include(${VTK_USE_FILE})
+#link_directories(${VTK_LIBRARY_DIRS})
+ELSE(VTK_FOUND)
+message(STATUS "VTK not found.")
+ENDIF(VTK_FOUND)
+
 
 # Subdirectories
 ################

@@ -18,6 +18,7 @@
 #include <vector>
 #include "vector.hpp"
 #include "math.hpp"
+#include <cmath>
 
 
 namespace lvlset {
@@ -367,6 +368,24 @@ namespace lvlset {
             }
         }
 
+        template<class V>
+        vec<coord_type, D> global_indices_2_global_coordinates(const V& v) const {
+          vec<coord_type, D> tmp;
+          for(unsigned i=0; i<D; ++i) tmp[i] = global_index_2_global_coordinate(i, v[i]);
+          return tmp;
+        }
+
+        index_type global_coordinate_2_global_index(int dir, coord_type c) const {
+            return index_type( round(c / GridTraits.grid_delta()) );
+        }
+
+        template<class V>
+        vec<index_type, D> global_coordinates_2_global_indices(const V& v) const {
+          vec<index_type, D> tmp;
+          for(unsigned i=0; i<D; ++i) tmp[i] = global_coordinate_2_global_index(i, v[i]);
+          return tmp;
+        }
+
         coord_type local_coordinate_2_local_index(int dir, coord_type c, index_type a, index_type b) const {            //TODO global/local coordinates
             //this function transforms the real coordinate c into
             //the coordinate in respect to the indices of the rectilinear grid
@@ -521,6 +540,15 @@ namespace lvlset {
             }
             --v[dim];
             return v;
+        }
+
+        // determine whether index is on border of simulation domain
+        template<class V>
+        bool is_border_point(V v) const {
+          for(unsigned i=0; i<D; ++i){
+            if(v[i] <= Min_[i] || v[i] >= Max_[i]) return true;
+          }
+          return false;
         }
 
     };
