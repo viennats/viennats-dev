@@ -720,12 +720,11 @@ namespace lvlset {
         //TODO at: hard coded just for testing
         vec<value_type,3> direction100{0,1,0};
         vec<value_type,3> direction010{1,0,-1};
-        const value_type r100=0.0166;
-        const value_type r110=0.0309;
-        const value_type r111=0.00012;
-        const value_type r311=0.030;
 
-
+        const value_type r100=0.0166;//0.010;//0.005;//0.0166;
+        const value_type r110=0.0309;//0.015;//0.005;//0.0309;
+        const value_type r111=0.00012;//0.0001;//0.00033;//0.00012;
+        const value_type r311=0.030;//0.015;//0.003;//0.030;
         bool initialized;
 
     public:
