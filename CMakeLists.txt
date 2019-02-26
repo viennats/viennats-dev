@@ -90,7 +90,7 @@ ENDIF(NOT VIENNATS_STATIC_BUILD)
 # VTK
 find_package(VTK REQUIRED HINTS "/home/klemenschits/Code/libraries/VTK")
 #
-message(${VTK_USE_FILE})
+#message(${VTK_USE_FILE})
 IF(VTK_FOUND)
 message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
 #include_directories(${VTK_INCLUDE_DIRS})

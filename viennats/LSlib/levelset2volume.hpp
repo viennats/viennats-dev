@@ -9,6 +9,7 @@
 #include <vtkPointData.h>
 #include <vtkXMLRectilinearGridWriter.h>
 #include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkXMLStructuredGridWriter.h>
 #include <vtkPolyData.h>
 #include <vtkGeometryFilter.h>
 #include <vtkBooleanOperationPolyDataFilter.h>
@@ -16,6 +17,8 @@
 #include <vtkDataSetTriangleFilter.h>
 #include <vtkAppendFilter.h>
 #include <vtkProbeFilter.h>
+#include <vtkTransform.h>
+#include <vtkTransformFilter.h>
 #include "vector.hpp"
 
 // TODO remove
@@ -186,12 +189,33 @@ namespace lvlset{
       if(it!=LevelSets.rbegin()){
         if(debugOutput) std::cout << "Starting bool of element " << counter-1 << std::endl;
 
+        // adjust grid for numerical stability
+
+        vtkSmartPointer<vtkTransform> transform = vtkSmartPointer<vtkTransform>::New();
+        double offset = 1e-8;
+        transform->Translate(offset, offset, 0);
+        transform->Scale(1+ offset/(gridMax[0]-gridMin[0]), 1+ offset/(gridMax[1]-gridMin[1]), 0);
+        // transform->Update();
+
+        vtkSmartPointer<vtkTransformFilter> transformFilter = vtkSmartPointer<vtkTransformFilter>::New();
+        transformFilter->SetInputData(rgrid);
+        transformFilter->SetTransform(transform);
+        transformFilter->Update();
+
+        if(debugOutput){
+          vtkSmartPointer<vtkXMLStructuredGridWriter> owriter =
+            vtkSmartPointer<vtkXMLStructuredGridWriter>::New();
+          owriter->SetFileName(("shifted_" + std::to_string(counter) + ".vtr").c_str());
+          owriter->SetInputConnection(transformFilter->GetOutputPort());
+          owriter->Write();
+        }
 
         // probe filter to set implicit values on bigger material
         vtkSmartPointer<vtkProbeFilter> probeFilter = vtkSmartPointer<vtkProbeFilter>::New();
         probeFilter->SetInputData(materialMeshes.rbegin()[1]);  // second to last element
         probeFilter->SetSourceData(rgrid);
         probeFilter->CategoricalDataOn();
+        //probeFilter->ComputeToleranceOn();
         probeFilter->Update();
 
         if(debugOutput){
