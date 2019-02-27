@@ -237,7 +237,7 @@ namespace lvlset {
 
       vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-      owriter->SetFileName("output.vtu");
+      owriter->SetFileName("volume_mesh.vtu");
       owriter->SetInputData(volumeMesh);
       owriter->Write();
     }
