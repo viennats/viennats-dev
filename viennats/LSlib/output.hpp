@@ -224,20 +224,20 @@ namespace lvlset {
         write_explicit_surface_opendx(l, filename, DefaultDataType(), eps);
     }
 
-    template <class LevelSetsType, class OutputInfoType>
-    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const OutputInfoType& outputInfo, double eps=0.) {
-      write_explicit_volume_vtk(LevelSets, outputInfo, DefaultDataType(), eps);
+    template <class LevelSetsType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, double eps=0.) {
+      write_explicit_volume_vtk(LevelSets, fileName, DefaultDataType(), eps);
     }
 
-    template <class LevelSetsType, class OutputInfoType, class DataType>
-    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const OutputInfoType& outputInfo, const DataType& Data, double eps=0.) {
+    template <class LevelSetsType, class DataType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, const DataType& Data, double eps=0.) {
 
       vtkSmartPointer<vtkUnstructuredGrid> volumeMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
       extract_volume(LevelSets, volumeMesh);
 
       vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-      owriter->SetFileName("volume_mesh.vtu");
+      owriter->SetFileName(fileName.c_str());
       owriter->SetInputData(volumeMesh);
       owriter->Write();
     }
