@@ -163,6 +163,10 @@ namespace lvlset {
             return b;
         }
 
+        index_type grid_extent(int dim) const{
+          return Ext_[dim];
+        }
+
         index_type min_grid_index(int dim) const {
             return Min_[dim];
         }
@@ -226,22 +230,6 @@ namespace lvlset {
         inline const vec <index_type,D>& min_point_index() const {
             return MinGridPointCoord_;
         }
-
-        /*template <class V> inline unsigned int is_at_boundary(const V& v) const {
-            //this function returns an integer
-            //the (2*dimensions) most left bits contain the information
-            //which faces of the domain bounding box contain the index-vector "v"
-            unsigned int result=0;
-            for (int i=2*D-1;i>=0;i--) {
-                result= (result << 1);
-                if (i<D) {
-                    if (v[i]==min_grid_index(i)) result|=1u;
-                } else {
-                    if ((v[i-D])==max_grid_index(i-D)) result|=1u;
-                }
-            }
-            return result;
-        }*/
 
         template <class V> inline bool is_at_infinity(const V& v) const {
             //this function returns if one of the indices of
@@ -551,6 +539,15 @@ namespace lvlset {
           return false;
         }
 
+        // determine whether point is outside of domain in direction other than infinite boundary
+        template<class V>
+        bool is_outside_domain(V v) const{
+          for(unsigned i=0; i<D; ++i){
+            if(BoundaryConditions_[i]==INFINITE_BOUNDARY) continue;
+            if(v[i]<Min_[i] || v[i]>Max_[i]) return true;
+          }
+          return false;
+        }
     };
 
     template <class GridTraitsType> const typename grid_type<GridTraitsType>::index_type
