@@ -31,9 +31,9 @@
 
 namespace lvlset{
 
-  // This function takes a levelset and converts it into a vtkRectilinearGrid
+  // This function takes a levelset and converts it to a vtkRectilinearGrid
   // The full domain contains values, which are capped at numLayers * gridDelta
-  // the offset just increases the size of the grid so it is mapped correctly to the mesh
+  // gridExtraPoints layers of point are added to the domain according to boundary conditions
   template<int gridExtraPoints=0, class LevelSetType>
   vtkSmartPointer<vtkRectilinearGrid> LS2RectiLinearGrid(const LevelSetType& LevelSet, const double LSOffset=0., int infiniteMinimum=std::numeric_limits<int>::max()){
     typedef typename LevelSetType::grid_type2 GridType;
@@ -76,8 +76,6 @@ namespace lvlset{
       }
     }
 
-    std::cout << "Making grid of size: " << coords[0]->GetNumberOfTuples() << ", " << coords[1]->GetNumberOfTuples() << ", " << coords[2]->GetNumberOfTuples() << std::endl;
-
 
     vtkSmartPointer<vtkRectilinearGrid> rgrid =
       vtkSmartPointer<vtkRectilinearGrid>::New();
@@ -89,17 +87,13 @@ namespace lvlset{
     rgrid->SetYCoordinates(coords[1]);
     rgrid->SetZCoordinates(coords[2]);
 
-    std::cout << "Filling grid with " << rgrid->GetNumberOfPoints() << " points" << std::endl;
-
 
     // now iterate over grid and fill with LS values
     // initialise iterator over levelset and pointId to start at gridMin
     vtkIdType pointId=0;
     bool fixBorderPoints = (gridExtraPoints!=0);
 
-    // std::cout << "Starting at indices: " << LevelSet.grid().global_coordinates_2_global_indices(rgrid->GetPoint(pointId)) << std::endl;
-
-    typename LevelSetType::const_iterator_runs it_l(LevelSet);//, LevelSet.grid().global_coordinates_2_global_indices(rgrid->GetPoint(pointId)));
+    typename LevelSetType::const_iterator_runs it_l(LevelSet);
 
     // Make array to store signed distance function
     // Create an array to hold distance information
@@ -107,8 +101,6 @@ namespace lvlset{
       vtkSmartPointer<vtkFloatArray>::New();
     signedDistances->SetNumberOfComponents(1);
     signedDistances->SetName("SignedDistances");
-
-    std::cout << "Starting filling" << std::endl;
 
     //iterate until both ends have been reached
     while( (pointId < rgrid->GetNumberOfPoints()) ){
@@ -121,35 +113,20 @@ namespace lvlset{
       typename LevelSetType::value_type LSValue;
 
       // if indices are outside of domain mark point with max value type
-      // if(gridExtraPoints!=0){
-        if(LevelSet.grid().is_outside_domain(indices)){
-          fixBorderPoints=true;
-          signedDistances->InsertNextValue(signedDistances->GetDataTypeValueMax());
-        }else{
-          // if inside domain just write the correct value
-          LSValue = (it_l.is_finished())?(LevelSetType::POS_VALUE):it_l.value()+LSOffset;
-          if(LSValue == LevelSetType::POS_VALUE){
-            LSValue = numLayers;
-          }else if(LSValue == LevelSetType::NEG_VALUE){
-            LSValue = - numLayers;
-          }
-
-          signedDistances->InsertNextValue(LSValue * gridDelta);
+      if(LevelSet.grid().is_outside_domain(indices)){
+        fixBorderPoints=true;
+        signedDistances->InsertNextValue(signedDistances->GetDataTypeValueMax());
+      }else{
+        // if inside domain just write the correct value
+        LSValue = (it_l.is_finished())?(LevelSetType::POS_VALUE):it_l.value()+LSOffset;
+        if(LSValue == LevelSetType::POS_VALUE){
+          LSValue = numLayers;
+        }else if(LSValue == LevelSetType::NEG_VALUE){
+          LSValue = - numLayers;
         }
-      // }else{
-      //   // if inside domain just write the correct value
-      //   LSValue = (it_l.is_finished())?(LevelSetType::POS_VALUE):it_l.value()+LSOffset;
-      //   if(LSValue == LevelSetType::POS_VALUE){
-      //     LSValue = numLayers;
-      //   }else if(LSValue == LevelSetType::NEG_VALUE){
-      //     LSValue = - numLayers;
-      //   }
-      //
-      //   signedDistances->InsertNextValue(LSValue * gridDelta);
-      // }
 
-      std::cout << "Comparing: " << it_l.end_indices() << " -- " << indices << std::endl;
-      std::cout << "pointId: " << pointId << " / " << rgrid->GetNumberOfPoints() <<  "; " << it_l.is_finished() << std::endl;
+        signedDistances->InsertNextValue(LSValue * gridDelta);
+      }
 
       // move iterator if point was visited
       if(it_l.is_finished()){ // when iterator is done just fill all the remaining points
@@ -163,15 +140,9 @@ namespace lvlset{
         }
         // now move iterator with pointId to get to next point
         switch(compare(it_l.end_indices(), indices)) {
-            // case -1:
-            //     std::cout << "ERROR: Only moving iterator. This should not happen." << std::endl;
-            //     it_l.next();
-            //     break;
             case 0:
-                // std::cout << "moving iterator" << std::endl;
                 it_l.next();
             default:
-                // std::cout << "moving pointId" << std::endl;
                 ++pointId;
         }
       }
@@ -179,7 +150,7 @@ namespace lvlset{
 
     // now need to go through again to fix border points, this is done by mapping existing points onto the points outside of the domain according to the correct boundary conditions
     if(fixBorderPoints){
-      std::cout << "Fixing boundary grid points" << std::endl;
+      // std::cout << "Fixing boundary grid points" << std::endl;
       pointId = 0;
       while( (pointId < rgrid->GetNumberOfPoints()) ){
         if(signedDistances->GetValue(pointId) == signedDistances->GetDataTypeValueMax()){
@@ -193,15 +164,11 @@ namespace lvlset{
           // now find Id of point we need to take value from
           int originalPointId=0;
           for(int i=D-1; i>=0; --i){
-            // std::cout << "orig. " << i << ": " << originalPointId << std::endl;
             originalPointId *= coords[i]->GetNumberOfTuples(); // extent in direction
             originalPointId += localIndices[i]-indices[i];
           }
           originalPointId+=pointId;
 
-          // std::cout << "Current Point: " << pointId << ", OriginalPoint: " << originalPointId << std::endl;
-          // std::cout << "Current: " << indices << ", original: " << localIndices << std::endl;
-          // std::cout << "Difference" << (localIndices-indices) << std::endl;
           // now put value of mapped point in global point
           signedDistances->SetValue(pointId, signedDistances->GetValue(originalPointId));
         }
@@ -226,8 +193,6 @@ namespace lvlset{
   // Explicit boolean operations are then used to create the final layers in a single mesh
   template<class LevelSetsType>
   void extract_volume(const LevelSetsType& LevelSets, vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
-    // set debug option
-    constexpr bool debugOutput=true;
 
     typedef typename LevelSetsType::value_type::grid_type2 GridType;
     static const int D=GridType::dimensions;
@@ -235,14 +200,9 @@ namespace lvlset{
     // number of levels required to output
     constexpr int numLayers = 2;
 
-    // const double gridDelta = LevelSets.begin()->grid().grid_delta();
-
     // store volume for each material
     std::vector< vtkSmartPointer<vtkUnstructuredGrid> > materialMeshes;
 
-    unsigned counter = 1; // TODO remove
-
-    std::cout << "Finding minimum" << std::endl;
 
     int totalMinimum = std::numeric_limits<int>::max();
     for(auto it=LevelSets.begin(); it!=LevelSets.end(); ++it){
@@ -254,64 +214,32 @@ namespace lvlset{
     }
 
 
-    std::cout << "Writing original grid" << std::endl;
     // create volume mesh for largest LS
     // Use vtkClipDataSet to slice the grid
     vtkSmartPointer<vtkTableBasedClipDataSet> clipper =
       vtkSmartPointer<vtkTableBasedClipDataSet>::New();
     clipper->SetInputData(LS2RectiLinearGrid(*(LevelSets.rbegin()), 0, totalMinimum));  // last LS
     clipper->InsideOutOn();
-
-
-    if(debugOutput){
-      vtkSmartPointer<vtkXMLRectilinearGridWriter> gwriter =
-        vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
-      gwriter->SetFileName(("Debug/grid" + std::to_string(0) + ".vtr").c_str());
-      gwriter->SetInputData(clipper->GetInput());
-      gwriter->Write();
-    }
-
     clipper->Update();
+
+
     materialMeshes.push_back(clipper->GetOutput());
 
     // now cut large volume mesh with all the smaller ones
     for(typename LevelSetsType::const_reverse_iterator it=++LevelSets.rbegin(); it!=LevelSets.rend(); ++it){
       if(it->num_active_pts() == 0) continue; //ignore empty levelsets
 
-      std::cout << "Cutting levelset " << counter << std::endl;
-
       assert(it->number_of_layers()>=numLayers);  // check if enough information
 
-      std::cout << "Making grid" << std::endl;
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-      //rgrid = LS2RectiLinearGrid<1>(*it, -1e-5);  // number of extra grid points outside and LSOffset
       rgrid = LS2RectiLinearGrid<1>(*it, -1e-5);  // number of extra grid points outside and LSOffset
 
-      if(debugOutput){
-        vtkSmartPointer<vtkXMLRectilinearGridWriter> gwriter =
-          vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
-        gwriter->SetFileName(("Debug/grid" + std::to_string(counter) + ".vtr").c_str());
-        gwriter->SetInputData(rgrid);
-        gwriter->Write();
-      }
-
-      std::cout << "Probe data into mesh" << std::endl;
       // now transfer implicit values to mesh points
       vtkSmartPointer<vtkProbeFilter> probeFilter = vtkSmartPointer<vtkProbeFilter>::New();
       probeFilter->SetInputData(*(materialMeshes.rbegin()));  // last element
       probeFilter->SetSourceData(rgrid);
       probeFilter->Update();
-
-      if(debugOutput){
-        vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
-          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-        owriter->SetFileName(("Debug/probed_" + std::to_string(counter) + ".vtu").c_str());
-        owriter->SetInputData(probeFilter->GetOutput());
-        owriter->Write();
-      }
-
-      std::cout << "Clipping mesh" << std::endl;
 
       // now clip the mesh and save the clipped as the 1st layer and use the inverse for the next layer clipping
       // Use vtkTabelBasedClipDataSet to slice the grid
@@ -319,43 +247,18 @@ namespace lvlset{
         vtkSmartPointer<vtkTableBasedClipDataSet>::New();
       insideClipper->SetInputConnection(probeFilter->GetOutputPort());
       insideClipper->GenerateClippedOutputOn();
-      // insideClipper->UseValueAsOffsetOff();
-      // insideClipper->SetValue(1.5 * gridDelta);
       insideClipper->Update();
 
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
-
-      if(debugOutput){
-        vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
-          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-        owriter->SetFileName(("Debug/layer_" + std::to_string(counter) + ".vtu").c_str());
-        owriter->SetInputData(insideClipper->GetOutput());
-        owriter->Write();
-
-        owriter->SetFileName(("Debug/clipped_away_" + std::to_string(counter) + ".vtu").c_str());
-        owriter->SetInputData(insideClipper->GetClippedOutput());
-        owriter->Write();
-      }
-
-
-      // TODO remove; increment counter
-      ++counter;
     }
 
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
-    //appendFilter->MergePointsOn();
+    appendFilter->MergePointsOn();
 
-    std::cout << "Setting material numbers and append" << std::endl;
-    for(unsigned i=0; i<materialMeshes.size(); ++i){ // TODO change to use reverse iterator
-      if(debugOutput){
-        vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
-          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-        owriter->SetFileName(("Debug/material_" + std::to_string(i) + ".vtu").c_str());
-        owriter->SetInputData(materialMeshes[materialMeshes.size()-1-i]);
-        owriter->Write();
-      }
+
+    for(unsigned i=0; i<materialMeshes.size(); ++i){
 
       // write material number in mesh
       vtkSmartPointer<vtkIntArray> materialNumberArray = vtkSmartPointer<vtkIntArray>::New();
@@ -379,8 +282,6 @@ namespace lvlset{
     }
 
     appendFilter->Update();
-
-    std::cout << "Triangulating volume mesh" << std::endl;
 
     // change all 3D cells into tetras and all 2D cells to triangles
     vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
