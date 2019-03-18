@@ -544,6 +544,7 @@ namespace lvlset {
         bool is_outside_domain(V v) const{
           for(unsigned i=0; i<D; ++i){
             if(BoundaryConditions_[i]==INFINITE_BOUNDARY) continue;
+            if(BoundaryConditions_[i]==PERIODIC_BOUNDARY && v[i]==Max_[i]) return true; 
             if(v[i]<Min_[i] || v[i]>Max_[i]) return true;
           }
           return false;

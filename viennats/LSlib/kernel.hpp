@@ -3159,6 +3159,7 @@ namespace lvlset {
             go_to_indices(v);
         }
 
+        // TODO: it would make more sense if the call to next returned a bool whether it was possible to move or not. currently calling next on a finished iterator results in a segfault because r_level==D in end_run_abs_coords[r_level] in go_next_B, it would make more sense to check is_finished first, do nothing if it is and return false
         void next() {
             l.next(*this);
         }
