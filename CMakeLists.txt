@@ -8,7 +8,7 @@
 PROJECT(ViennaLS)
 
 set(VERSION_MAJOR 2)
-set(VERSION_MINOR 0)
+set(VERSION_MINOR 1)
 set(VERSION_PATCH 0)
 set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
@@ -88,14 +88,16 @@ ENDIF(HDF5_FOUND)
 ENDIF(NOT VIENNATS_STATIC_BUILD)
 
 # VTK
-find_package(VTK REQUIRED HINTS "/home/klemenschits/Code/libraries/VTK")
-#
-#message(${VTK_USE_FILE})
+# VTK_DIR needs to point to the VTK installation and to VTK/lib/cmake/vtk-{vtk-version}
+set(VTK_DIR $ENV{VTK_DIR})
+find_package(VTK REQUIRED)
+
 IF(VTK_FOUND)
 message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
-#include_directories(${VTK_INCLUDE_DIRS})
 include(${VTK_USE_FILE})
-#link_directories(${VTK_LIBRARY_DIRS})
+#only link necessary VTK libraries in order for static linking to work (-lGL fails)
+set(VTK_LIBRARIES vtksys;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkIOXML)
+message(STATUS "VTK Libraries: ${VTK_LIBRARIES}")
 ELSE(VTK_FOUND)
 message(STATUS "VTK not found.")
 ENDIF(VTK_FOUND)
@@ -103,10 +105,20 @@ ENDIF(VTK_FOUND)
 
 # Subdirectories
 ################
-add_subdirectory(src)
+#add_subdirectory(src)
 
 # Add visibility of headers
 # Necessary for Qt-Creator usage.
 ################
 file( GLOB_RECURSE MAKE_HEADERS_VISIBLE_SRC *.hpp *.h)
 add_custom_target( MAKE_HEADERS_VISIBLE SOURCES ${MAKE_HEADERS_VISIBLE_SRC} )
+
+
+# add executable and link
+ADD_EXECUTABLE(viennats-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} src/viennats.cpp)
+
+IF(VIENNATS_STATIC_BUILD)
+ TARGET_LINK_LIBRARIES(viennats-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} ${LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES} "-static")
+ELSE()
+ TARGET_LINK_LIBRARIES(viennats-${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH} ${LIBRARIES} ${Boost_LIBRARIES} ${VTK_LIBRARIES})
+ENDIF(VIENNATS_STATIC_BUILD)
