@@ -48,7 +48,7 @@ namespace lvlset{
     // get extent of rectilinear grid needed
     double gridDelta = LevelSet.grid().grid_delta();
 
-    vtkSmartPointer<vtkFloatArray> coords[D];
+    vtkSmartPointer<vtkFloatArray> coords[3]; // needs to be 3 because vtk only knows 3D
     int gridMin=0, gridMax=0;
 
 
@@ -74,6 +74,12 @@ namespace lvlset{
           coords[i]->InsertNextValue(x * gridDelta);
         }
       }
+    }
+
+    // if we work in 2D, just add 1 grid point at origin
+    if(D==2){
+      coords[2] = vtkSmartPointer<vtkFloatArray>::New();
+      coords[2]->InsertNextValue(0);
     }
 
 
