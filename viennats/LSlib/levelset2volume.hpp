@@ -22,7 +22,7 @@ namespace lvlset{
 
   // This function takes a levelset and converts it to a vtkRectilinearGrid
   // The full domain contains values, which are capped at numLayers * gridDelta
-  // gridExtraPoints layers of point are added to the domain according to boundary conditions
+  // gridExtraPoints layers of grid points are added to the domain according to boundary conditions
   template<int gridExtraPoints=0, class LevelSetType>
   vtkSmartPointer<vtkRectilinearGrid> LS2RectiLinearGrid(const LevelSetType& LevelSet, const double LSOffset=0., int infiniteMinimum=std::numeric_limits<int>::max()){
     typedef typename LevelSetType::grid_type2 GridType;
@@ -91,13 +91,12 @@ namespace lvlset{
     typename LevelSetType::const_iterator_runs it_l(LevelSet);
 
     // Make array to store signed distance function
-    // Create an array to hold distance information
     vtkSmartPointer<vtkFloatArray> signedDistances =
       vtkSmartPointer<vtkFloatArray>::New();
     signedDistances->SetNumberOfComponents(1);
     signedDistances->SetName("SignedDistances");
 
-    //iterate until both ends have been reached
+    //iterate until all grid points have a signed distance value
     while( (pointId < rgrid->GetNumberOfPoints()) ){
       double p[3];
       rgrid->GetPoint(pointId, p);
@@ -145,15 +144,16 @@ namespace lvlset{
 
     // now need to go through again to fix border points, this is done by mapping existing points onto the points outside of the domain according to the correct boundary conditions
     if(fixBorderPoints){
-      // std::cout << "Fixing boundary grid points" << std::endl;
       pointId = 0;
       while( (pointId < rgrid->GetNumberOfPoints()) ){
         if(signedDistances->GetValue(pointId) == signedDistances->GetDataTypeValueMax()){
           double p[3];
           rgrid->GetPoint(pointId, p);
+
           // create index vector
           vec<typename LevelSetType::index_type, D> indices(LevelSet.grid().global_coordinates_2_global_indices(p));
 
+          // vector for mapped point inside domain
           vec<typename LevelSetType::index_type,D> localIndices = LevelSet.grid().global_indices_2_local_indices(indices);
 
           // now find Id of point we need to take value from
@@ -183,9 +183,10 @@ namespace lvlset{
 
 
 
-  // This function creates a vtkRectilinearGrid and fills it with the level set values
-  // Then it uses ClipDataSetWithPolyData to create tetra meshes for all wrapped materials
-  // Explicit boolean operations are then used to create the final layers in a single mesh
+  // This function takes the biggest/top levelset and creates a mesh of it
+  // since the top levelset wraps all lower ones, all levelsets below it are used to cut this mesh
+  // explicitly. When all the cuts are made, material numbers are assigned and the tetra meshes written
+  // to one single file
   template<class LevelSetsType>
   void extract_volume(const LevelSetsType& LevelSets, vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
 
