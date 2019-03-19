@@ -18,7 +18,6 @@
 #include <fstream>
 #include <cstdint>
 #include <vtkXMLUnstructuredGridWriter.h>
-#include <vtkXMLPolyDataWriter.h>
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
 #include "levelset2volume.hpp"
