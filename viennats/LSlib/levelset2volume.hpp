@@ -9,24 +9,13 @@
 #include <vtkIntArray.h>
 #include <vtkCellData.h>
 #include <vtkPointData.h>
-#include <vtkXMLRectilinearGridWriter.h>
-#include <vtkXMLUnstructuredGridWriter.h>
-#include <vtkXMLStructuredGridWriter.h>
-#include <vtkPolyData.h>
-#include <vtkGeometryFilter.h>
-#include <vtkBooleanOperationPolyDataFilter.h>
 #include <vtkTableBasedClipDataSet.h>
 #include <vtkDataSetTriangleFilter.h>
 #include <vtkAppendFilter.h>
 #include <vtkProbeFilter.h>
-#include <vtkTransform.h>
-#include <vtkTransformFilter.h>
-
 
 #include "vector.hpp"
 
-// TODO remove
-#include <vtkXMLPolyDataWriter.h>
 
 
 namespace lvlset{
