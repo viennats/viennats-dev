@@ -1699,62 +1699,12 @@ namespace proc {
             oss << " (time = " << RelativeTime << ")...";
             msg::print_start(oss.str());
           }
-          //make box around whole simulation domain
-          typename LevelSetsType::value_type boundaryBox(LevelSets.begin()->grid());
 
-          //Determine corners of box
-          lvlset::vec<int, D> start(std::numeric_limits<int>::max()), end(std::numeric_limits<int>::min());
-          for(int i=0; i<D; ++i){
-            for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-              if(it->num_active_pts() == 0) continue; //ignore empty levelsets
-              if(boundaryBox.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
-                start[i] = std::min(start[i], it->get_min_runbreak(i));
-                end[i] = std::max(end[i], it->get_max_runbreak(i));
-              }else{
-                start[i] = std::min(start[i], boundaryBox.grid().min_grid_index(i));
-                end[i] = std::max(end[i], boundaryBox.grid().max_grid_index(i));
-              }
-            }
-          }
-
-          //make a box around simulation domain to create border
-          lvlset::make_box(boundaryBox, start, end);
-
-          int counter=0;
-          for(typename LevelSetsType::iterator it=LevelSets.begin(); it!=LevelSets.end(); ++it){
-            typename LevelSetsType::value_type LS(*it);
-
-            if(Parameter.output_volume_extract_single_materials){
-              LS.invert(); // invert LS for xor
-              for(typename LevelSetsType::iterator dummy_it=LevelSets.begin(); dummy_it!=it; ++dummy_it){
-                LS.min(*dummy_it);
-              }
-              LS.invert();  //invert back for real output
-            }
-
-
-            LS.max(boundaryBox);    // Logic AND(intersect) boundary with levelset
-            LS.prune();          //remove unnecessary points
-
-            //print surface
+          {
             std::ostringstream oss;
-            oss << Parameter.output_path << "Volume" << output_info.file_name <<"_" << counter << "_" << output_info.output_counter;
-            if(Parameter.print_dx){
-              oss << ".dx";
-              write_explicit_surface_opendx(LS,oss.str());
-            }
-            if(Parameter.print_vtk){
-              oss << ".vtk";
-              write_explicit_surface_vtk(LS,oss.str());
-            }
-            if(Parameter.print_lvst){
-              oss << ".lvst";
-              LS.export_levelset(oss.str(), Parameter.bits_per_distance);
-            }
+            oss << Parameter.output_path<< "Volume_" << output_info.output_counter << ".vtu";
 
-            //lvlset::write_explicit_surface_vtk(LS, oss.str());
-
-            ++counter;
+            lvlset::write_explicit_volume_vtk(LevelSets, oss.str());
           }
 
           output_info.output_counter++;

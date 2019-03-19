@@ -18,6 +18,7 @@
 #include <vector>
 #include "vector.hpp"
 #include "math.hpp"
+#include <cmath>
 
 
 namespace lvlset {
@@ -162,6 +163,10 @@ namespace lvlset {
             return b;
         }
 
+        index_type grid_extent(int dim) const{
+          return Ext_[dim];
+        }
+
         index_type min_grid_index(int dim) const {
             return Min_[dim];
         }
@@ -225,22 +230,6 @@ namespace lvlset {
         inline const vec <index_type,D>& min_point_index() const {
             return MinGridPointCoord_;
         }
-
-        /*template <class V> inline unsigned int is_at_boundary(const V& v) const {
-            //this function returns an integer
-            //the (2*dimensions) most left bits contain the information
-            //which faces of the domain bounding box contain the index-vector "v"
-            unsigned int result=0;
-            for (int i=2*D-1;i>=0;i--) {
-                result= (result << 1);
-                if (i<D) {
-                    if (v[i]==min_grid_index(i)) result|=1u;
-                } else {
-                    if ((v[i-D])==max_grid_index(i-D)) result|=1u;
-                }
-            }
-            return result;
-        }*/
 
         template <class V> inline bool is_at_infinity(const V& v) const {
             //this function returns if one of the indices of
@@ -365,6 +354,24 @@ namespace lvlset {
             } else {
                 return grid_position_of_global_index(dir,  static_cast<index_type>(lc));
             }
+        }
+
+        template<class V>
+        vec<coord_type, D> global_indices_2_global_coordinates(const V& v) const {
+          vec<coord_type, D> tmp;
+          for(unsigned i=0; i<D; ++i) tmp[i] = global_index_2_global_coordinate(i, v[i]);
+          return tmp;
+        }
+
+        index_type global_coordinate_2_global_index(int dir, coord_type c) const {
+            return index_type( round(c / GridTraits.grid_delta()) );
+        }
+
+        template<class V>
+        vec<index_type, D> global_coordinates_2_global_indices(const V& v) const {
+          vec<index_type, D> tmp;
+          for(unsigned i=0; i<D; ++i) tmp[i] = global_coordinate_2_global_index(i, v[i]);
+          return tmp;
         }
 
         coord_type local_coordinate_2_local_index(int dir, coord_type c, index_type a, index_type b) const {            //TODO global/local coordinates
@@ -523,6 +530,25 @@ namespace lvlset {
             return v;
         }
 
+        // determine whether index is on border of simulation domain
+        template<class V>
+        bool is_border_point(V v) const {
+          for(unsigned i=0; i<D; ++i){
+            if(v[i] <= Min_[i] || v[i] >= Max_[i]) return true;
+          }
+          return false;
+        }
+
+        // determine whether point is outside of domain in direction other than infinite boundary
+        template<class V>
+        bool is_outside_domain(V v) const{
+          for(unsigned i=0; i<D; ++i){
+            if(BoundaryConditions_[i]==INFINITE_BOUNDARY) continue;
+            if(BoundaryConditions_[i]==PERIODIC_BOUNDARY && v[i]==Max_[i]) return true; 
+            if(v[i]<Min_[i] || v[i]>Max_[i]) return true;
+          }
+          return false;
+        }
     };
 
     template <class GridTraitsType> const typename grid_type<GridTraitsType>::index_type

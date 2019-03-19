@@ -1,4 +1,4 @@
-build
+build*
 .*.swp
 *~
 *output
@@ -15,5 +15,5 @@ TCAD.sh
 /docs/*odt
 /docs/*odt#
 .clang_complete
-.build_tools.cson
+.build-tools.cson
 .vscode

@@ -17,8 +17,10 @@
 #include <vector>
 #include <fstream>
 #include <cstdint>
+#include <vtkXMLUnstructuredGridWriter.h>
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
+#include "levelset2volume.hpp"
 #include "../message.h"
 
 //Options for levelset output
@@ -219,6 +221,24 @@ namespace lvlset {
     template <class GridTraitsType, class LevelSetTraitsType>
     void write_explicit_surface_opendx(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, typename LevelSetTraitsType::value_type eps=0.) {
         write_explicit_surface_opendx(l, filename, DefaultDataType(), eps);
+    }
+
+    template <class LevelSetsType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, double eps=0.) {
+      write_explicit_volume_vtk(LevelSets, fileName, DefaultDataType(), eps);
+    }
+
+    template <class LevelSetsType, class DataType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, const DataType& Data, double eps=0.) {
+
+      vtkSmartPointer<vtkUnstructuredGrid> volumeMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
+      extract_volume(LevelSets, volumeMesh);
+
+      vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+      owriter->SetFileName(fileName.c_str());
+      owriter->SetInputData(volumeMesh);
+      owriter->Write();
     }
 
     template <class GridTraitsType, class LevelSetTraitsType, class DataType>
