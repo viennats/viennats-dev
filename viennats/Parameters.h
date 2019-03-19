@@ -820,14 +820,19 @@ struct ReportError {
                 }
             }
 
-            //make sure they are in correct order and is unique
-            std::sort(pIter->output_times.begin(),pIter->output_times.end());
-            std::vector<double>::iterator it=std::unique(pIter->output_times.begin(),pIter->output_times.end());
-            pIter->output_times.resize(it-pIter->output_times.begin());
-
+            // sort volume output and add it to surface output, so that a surface is output each time a volume is output. this is required for the advection to stop at each volume output. It is also necessary for a downsampling of the volume being output
             // Sort Volume Output
             std::sort(pIter->output_volume.begin(), pIter->output_volume.end());
-            it=std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
+            std::vector<double>::iterator it = std::unique(pIter->output_volume.begin(), pIter->output_volume.end());
             pIter->output_volume.resize(it-pIter->output_volume.begin());
+            // add volume output times to surface output times
+            pIter->output_times.insert(pIter->output_times.end(), pIter->output_volume.begin(), pIter->output_volume.end());
+
+            //make sure they are in correct order and is unique
+            std::sort(pIter->output_times.begin(),pIter->output_times.end());
+            it = std::unique(pIter->output_times.begin(), pIter->output_times.end());
+            pIter->output_times.resize(it-pIter->output_times.begin());
+
+
         }
     }
