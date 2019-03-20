@@ -11,7 +11,8 @@ System requirements
 
 * C++ compiler
 * OpenMP
-* Boost C++ Libraries
+* Boost C++ Libraries ([boost.org](https://www.boost.org/))
+* VTK C++ Libraries ([vtk.org](https://vtk.org/))
 * HDF5 (optional - required for TDR file support)
 
 Currently supported operating systems
@@ -45,6 +46,7 @@ CMake Options
 
 <pre>
 CMAKE_BUILD_TYPE   = Debug, (Release) # Turn off/on optimizations (default: Release, i.e., optimized mode)
+VIENNATS_STATIC_BUILD = ON/OFF # build ViennaTS without dynamically linked libraries (VTK must be built statically when this is ON)
 </pre>
 
 Authors and Contact
