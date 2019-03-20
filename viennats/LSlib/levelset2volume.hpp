@@ -23,8 +23,13 @@ namespace lvlset{
   // This function takes a levelset and converts it to a vtkRectilinearGrid
   // The full domain contains values, which are capped at numLayers * gridDelta
   // gridExtraPoints layers of grid points are added to the domain according to boundary conditions
-  template<int gridExtraPoints=0, class LevelSetType>
-  vtkSmartPointer<vtkRectilinearGrid> LS2RectiLinearGrid(const LevelSetType& LevelSet, const double LSOffset=0., int infiniteMinimum=std::numeric_limits<int>::max()){
+  template<bool removeBottom=false, int gridExtraPoints=0, class LevelSetType>
+  vtkSmartPointer<vtkRectilinearGrid> LS2RectiLinearGrid(const LevelSetType& LevelSet,
+      const double LSOffset=0.,
+      int infiniteMinimum=std::numeric_limits<int>::max(),
+      int infiniteMaximum=-std::numeric_limits<int>::max()){
+
+
     typedef typename LevelSetType::grid_type2 GridType;
     static const int D=GridType::dimensions;
 
@@ -39,6 +44,7 @@ namespace lvlset{
 
     vtkSmartPointer<vtkFloatArray> coords[3]; // needs to be 3 because vtk only knows 3D
     int gridMin=0, gridMax=0;
+    int openJumpDirection=-1;  // direction above the open boundary direction
 
 
     // fill grid with offset depending on orientation
@@ -48,11 +54,13 @@ namespace lvlset{
       if(LevelSet.grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
         // add one to gridMin and gridMax for numerical stability
         gridMin = std::min(LevelSet.get_min_runbreak(i), infiniteMinimum)-1;  // choose the smaller number so that for first levelset the overall minimum can be chosen
-        gridMax = LevelSet.get_max_runbreak(i)+1;
+        gridMax = std::max(LevelSet.get_max_runbreak(i), infiniteMaximum)+1;
 
         for(int x=gridMin; x <= gridMax; ++x){
           coords[i]->InsertNextValue(x * gridDelta);
         }
+
+        openJumpDirection=i+1;
 
       }else{
         gridMin = LevelSet.grid().min_grid_index(i)-gridExtraPoints;
@@ -83,12 +91,19 @@ namespace lvlset{
     rgrid->SetZCoordinates(coords[2]);
 
 
+
+
     // now iterate over grid and fill with LS values
     // initialise iterator over levelset and pointId to start at gridMin
     vtkIdType pointId=0;
     bool fixBorderPoints = (gridExtraPoints!=0);
 
     typename LevelSetType::const_iterator_runs it_l(LevelSet);
+    // need to save the current position one dimension above open boundary direction,
+    // so we can register a jump in the open boundary direction when it occurs, so we
+    // can fix the LS value as follows: if remove_bottom==true, we need to flip the sign
+    // otherwise the sign stays the same
+    int currentOpenIndex = it_l.end_indices()[(openJumpDirection<D)?openJumpDirection:0];
 
     // Make array to store signed distance function
     vtkSmartPointer<vtkFloatArray> signedDistances =
@@ -117,6 +132,13 @@ namespace lvlset{
           LSValue = numLayers;
         }else if(LSValue == LevelSetType::NEG_VALUE){
           LSValue = - numLayers;
+        }
+
+        if(removeBottom){
+          if(currentOpenIndex!=indices[openJumpDirection]){
+            LSValue = -LSValue;
+            currentOpenIndex=indices[openJumpDirection];
+          }
         }
 
         signedDistances->InsertNextValue(LSValue * gridDelta);
@@ -187,7 +209,7 @@ namespace lvlset{
   // since the top levelset wraps all lower ones, all levelsets below it are used to cut this mesh
   // explicitly. When all the cuts are made, material numbers are assigned and the tetra meshes written
   // to one single file
-  template<class LevelSetsType>
+  template<bool removeBottom, class LevelSetsType>
   void extract_volume(const LevelSetsType& LevelSets, vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
 
     typedef typename LevelSetsType::value_type::grid_type2 GridType;
@@ -195,16 +217,19 @@ namespace lvlset{
 
     // number of levels required to output
     constexpr int numLayers = 2;
+    assert(LevelSets.rbegin()->number_of_layers()>=numLayers);  // check if enough information
 
     // store volume for each material
     std::vector< vtkSmartPointer<vtkUnstructuredGrid> > materialMeshes;
 
 
     int totalMinimum = std::numeric_limits<int>::max();
+    int totalMaximum = -std::numeric_limits<int>::max();
     for(auto it=LevelSets.begin(); it!=LevelSets.end(); ++it){
       for(unsigned i=0; i<D; ++i){
         if(it->grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
           totalMinimum = std::min(totalMinimum, it->get_min_runbreak(i));
+          totalMaximum = std::max(totalMaximum, it->get_max_runbreak(i));
         }
       }
     }
@@ -214,7 +239,7 @@ namespace lvlset{
     // Use vtkClipDataSet to slice the grid
     vtkSmartPointer<vtkTableBasedClipDataSet> clipper =
       vtkSmartPointer<vtkTableBasedClipDataSet>::New();
-    clipper->SetInputData(LS2RectiLinearGrid(*(LevelSets.rbegin()), 0, totalMinimum));  // last LS
+    clipper->SetInputData(LS2RectiLinearGrid<removeBottom>(*(LevelSets.rbegin()), 0, totalMinimum, totalMaximum));  // last LS
     clipper->InsideOutOn();
     clipper->Update();
 
@@ -229,7 +254,7 @@ namespace lvlset{
 
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-      rgrid = LS2RectiLinearGrid<1>(*it, -1e-5);  // number of extra grid points outside and LSOffset
+      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-5);  // number of extra grid points outside and LSOffset
 
       // now transfer implicit values to mesh points
       vtkSmartPointer<vtkProbeFilter> probeFilter = vtkSmartPointer<vtkProbeFilter>::New();
