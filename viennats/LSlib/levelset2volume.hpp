@@ -16,6 +16,11 @@
 
 #include "vector.hpp"
 
+//#define DEBUGOUTPUT
+#ifdef DEBUGOUTPUT
+  #include <vtkXMLRectilinearGridWriter.h>
+  #include <vtkXMLUnstructuredGridWriter.h>
+#endif
 
 
 namespace lvlset{
@@ -135,9 +140,12 @@ namespace lvlset{
         }
 
         if(removeBottom){
+          // if we jump from one end of the domain to the other and are not already in the new run, we need to fix the sign of the run
           if(currentOpenIndex!=indices[openJumpDirection]){
-            LSValue = -LSValue;
             currentOpenIndex=indices[openJumpDirection];
+            if(indices>=it_l.end_indices()){
+              LSValue = -LSValue;
+            }
           }
         }
 
@@ -243,8 +251,11 @@ namespace lvlset{
     clipper->InsideOutOn();
     clipper->Update();
 
-
     materialMeshes.push_back(clipper->GetOutput());
+
+    #ifdef DEBUGOUTPUT
+    unsigned counter=1;
+    #endif
 
     // now cut large volume mesh with all the smaller ones
     for(typename LevelSetsType::const_reverse_iterator it=++LevelSets.rbegin(); it!=LevelSets.rend(); ++it){
@@ -254,13 +265,35 @@ namespace lvlset{
 
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-5);  // number of extra grid points outside and LSOffset
+      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-5, totalMinimum, totalMaximum);  // number of extra grid points outside and LSOffset
+
+      #ifdef DEBUGOUTPUT
+      {
+        vtkSmartPointer<vtkXMLRectilinearGridWriter> gwriter =
+          vtkSmartPointer<vtkXMLRectilinearGridWriter>::New();
+        gwriter->SetFileName(("./grid_" + std::to_string(counter) + ".vtr").c_str());
+        gwriter->SetInputData(rgrid);
+        gwriter->Write();
+        std::cout << "Wrote grid " << counter << std::endl;
+      }
+      #endif
 
       // now transfer implicit values to mesh points
       vtkSmartPointer<vtkProbeFilter> probeFilter = vtkSmartPointer<vtkProbeFilter>::New();
       probeFilter->SetInputData(*(materialMeshes.rbegin()));  // last element
       probeFilter->SetSourceData(rgrid);
       probeFilter->Update();
+
+      #ifdef DEBUGOUTPUT
+      {
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> gwriter =
+          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        gwriter->SetFileName(("./probed_" + std::to_string(counter) + ".vtu").c_str());
+        gwriter->SetInputData(probeFilter->GetOutput());
+        gwriter->Write();
+          std::cout << "Wrote unstructured grid " << counter << std::endl;
+      }
+      #endif
 
       // now clip the mesh and save the clipped as the 1st layer and use the inverse for the next layer clipping
       // Use vtkTabelBasedClipDataSet to slice the grid
@@ -272,6 +305,10 @@ namespace lvlset{
 
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
+
+      #ifdef DEBUGOUTPUT
+          ++counter;
+      #endif
     }
 
     vtkSmartPointer<vtkAppendFilter> appendFilter =
