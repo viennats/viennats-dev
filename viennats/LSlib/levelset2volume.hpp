@@ -12,7 +12,9 @@
 #include <vtkTableBasedClipDataSet.h>
 #include <vtkDataSetTriangleFilter.h>
 #include <vtkAppendFilter.h>
+#include <vtkAppendPolyData.h>
 #include <vtkProbeFilter.h>
+#include <vtkGeometryFilter.h>
 
 #include "vector.hpp"
 
@@ -218,7 +220,9 @@ namespace lvlset{
   // explicitly. When all the cuts are made, material numbers are assigned and the tetra meshes written
   // to one single file
   template<bool removeBottom, class LevelSetsType>
-  void extract_volume(const LevelSetsType& LevelSets, vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
+  void extract_volume(const LevelSetsType& LevelSets,
+      vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh,
+      vtkSmartPointer<vtkPolyData>& hullMesh){
 
     typedef typename LevelSetsType::value_type::grid_type2 GridType;
     static const int D=GridType::dimensions;
@@ -315,6 +319,9 @@ namespace lvlset{
       vtkSmartPointer<vtkAppendFilter>::New();
     appendFilter->MergePointsOn();
 
+    vtkSmartPointer<vtkAppendPolyData> hullAppendFilter =
+      vtkSmartPointer<vtkAppendPolyData>::New();
+
 
     for(unsigned i=0; i<materialMeshes.size(); ++i){
 
@@ -330,13 +337,22 @@ namespace lvlset{
       // delete all cell data, so it is not in ouput
       // TODO this includes signed distance information which could be conserved for debugging
       // also includes wheter a cell was vaild for cutting by the grid
-      vtkSmartPointer<vtkPointData> pointData = materialMeshes[i]->GetPointData();
+      vtkSmartPointer<vtkPointData> pointData = materialMeshes[materialMeshes.size()-1-i]->GetPointData();
       const int numberOfArrays = pointData->GetNumberOfArrays();
       for(int j=0; j<numberOfArrays; ++j){
         pointData->RemoveArray(0); // remove first array until none are left
       }
 
-      appendFilter->AddInputData(materialMeshes[i]);
+      // if hull mesh should be exported, create hull for each layer and put them together
+      if(hullMesh.GetPointer() != 0){
+        vtkSmartPointer<vtkGeometryFilter> geoFilter = vtkSmartPointer<vtkGeometryFilter>::New();
+        geoFilter->SetInputData(materialMeshes[materialMeshes.size()-1-i]);
+        geoFilter->Update();
+        hullAppendFilter->AddInputData(geoFilter->GetOutput());
+      }
+
+
+      appendFilter->AddInputData(materialMeshes[materialMeshes.size()-1-i]);
     }
 
     appendFilter->Update();
@@ -348,7 +364,23 @@ namespace lvlset{
     triangleFilter->Update();
 
     volumeMesh = triangleFilter->GetOutput();
+
+    // Now make hull mesh if necessary
+    if(hullMesh.GetPointer() != 0){
+      hullAppendFilter->Update();
+      hullMesh = hullAppendFilter->GetOutput();
+    }
   }
+
+
+  // overload to be able to pass 0 initialised smart pointer for hull mesh
+  template<bool removeBottom, class LevelSetsType>
+  void extract_volume(const LevelSetsType& LevelSets,
+      vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
+    vtkSmartPointer<vtkPolyData> dummyHull = vtkSmartPointer<vtkPolyData>::New();
+    extract_volume<removeBottom>(LevelSets, volumeMesh, dummyHull);
+  }
+
 }
 
 #endif

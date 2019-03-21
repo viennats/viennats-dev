@@ -1700,12 +1700,7 @@ namespace proc {
             msg::print_start(oss.str());
           }
 
-          {
-            std::ostringstream oss;
-            oss << Parameter.output_path<< "Volume_" << output_info.output_counter << ".vtu";
-
-            lvlset::write_explicit_volume_vtk(LevelSets, oss.str(), Parameter);
-          }
+          lvlset::write_explicit_volume_vtk(LevelSets, output_info.output_counter, Parameter);
 
           output_info.output_counter++;
           msg::print_done();
