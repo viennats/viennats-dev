@@ -17,7 +17,10 @@
 #include <vector>
 #include <fstream>
 #include <cstdint>
+
 #include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkXMLPolyDataWriter.h>
+
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
 #include "levelset2volume.hpp"
@@ -223,31 +226,49 @@ namespace lvlset {
         write_explicit_surface_opendx(l, filename, DefaultDataType(), eps);
     }
 
-    template <class LevelSetsType, class ParameterType>
-    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, ParameterType& p, double eps=0.) {
-      write_explicit_volume_vtk(LevelSets, fileName, p, DefaultDataType(), eps);
+    template <class LevelSetsType, class CounterType, class ParameterType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const CounterType counter, ParameterType& p, double eps=0.) {
+      write_explicit_volume_vtk(LevelSets, counter, p, DefaultDataType(), eps);
     }
 
-    template <class LevelSetsType, class ParameterType, class DataType>
-    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const std::string& fileName, ParameterType& p, const DataType& Data, double eps=0.) {
+    template <class LevelSetsType, class CounterType, class ParameterType, class DataType>
+    void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const CounterType counter, ParameterType& p, const DataType& Data, double eps=0.) {
       static const int D=LevelSetsType::value_type::grid_type2::dimensions;
 
       vtkSmartPointer<vtkUnstructuredGrid> volumeMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
+      vtkSmartPointer<vtkPolyData> hullMesh = vtkSmartPointer<vtkPolyData>::New();
 
       // depending on the open boundary, volume output needs to be treated differently if the bottom is removed
       if(p.remove_bottom &&
        (p.open_boundary<(D-1))){
-        extract_volume<true>(LevelSets, volumeMesh);
+        if(p.print_volume_hull) extract_volume<true>(LevelSets, volumeMesh, hullMesh);
+        else extract_volume<true>(LevelSets, volumeMesh);
       }else{
-        extract_volume<false>(LevelSets, volumeMesh);
+        if(p.print_volume_hull) extract_volume<false>(LevelSets, volumeMesh, hullMesh);
+        else extract_volume<false>(LevelSets, volumeMesh);
+      }
+
+      if(p.print_volume_tetra){
+        std::ostringstream oss;
+        oss << p.output_path << "Volume_" << counter << ".vtu";
+
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
+          vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        owriter->SetFileName(oss.str().c_str());
+        owriter->SetInputData(volumeMesh);
+        owriter->Write();
       }
 
 
-      vtkSmartPointer<vtkXMLUnstructuredGridWriter> owriter =
-        vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
-      owriter->SetFileName(fileName.c_str());
-      owriter->SetInputData(volumeMesh);
-      owriter->Write();
+      if(p.print_volume_hull){
+        std::ostringstream oss;
+        oss << p.output_path << "Hull_" << counter << ".vtp";
+
+        vtkSmartPointer<vtkXMLPolyDataWriter> pwriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+        pwriter->SetFileName(oss.str().c_str());
+        pwriter->SetInputData(hullMesh);
+        pwriter->Write();
+      }
     }
 
     template <class GridTraitsType, class LevelSetTraitsType, class DataType>
