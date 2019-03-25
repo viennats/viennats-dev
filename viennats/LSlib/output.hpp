@@ -563,7 +563,7 @@ namespace lvlset {
 
 
 
-          //tmp /= Norm2(itA.gradient());
+          tmp /= Norm2(itA.gradient());
 
           normals.push_back(tmp);
 

@@ -703,6 +703,7 @@ namespace lvlset {
     template <class LevelSetType, class VelocityType, int order>
     class StencilLocalLaxFriedrichsScalar {
 
+    private:
         //std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_points;
         std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
         const LevelSetType & LS;
@@ -727,7 +728,17 @@ namespace lvlset {
         const value_type r311=0.030;//0.015;//0.003;//0.030;
         bool initialized;
 
+        vec<value_type,3> final_alphas;
+        vec<value_type,3> dx_all;
+
+
     public:
+        const vec<value_type,3>& getFinalAlphas() const{
+          return final_alphas;
+        }
+        const vec<value_type,3>& getDx() const{
+          return dx_all;
+        }
 
         static void prepare_surface_levelset(LevelSetType& l) {
             assert(order > 4);                   //the user in the level-set-traits-class
@@ -760,13 +771,20 @@ namespace lvlset {
         }
 
 
-        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {}
+        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {
+          for(int i = 0; i < 3; ++i){
+            final_alphas[i] = 0;
+            dx_all[i] = 0;
+          }
+        }
 
 
         template <class IteratorType>
         value_type operator()(const IteratorType& it, unsigned int material) {
 
           assert(it.is_active());
+
+
 
           value_type v = velocities(it.active_pt_id(), material);
         //  value_type v=1.0;
@@ -776,7 +794,7 @@ namespace lvlset {
           }
           else{
 
-            const int D=LevelSetType::dimensions;
+            const int D = LevelSetType::dimensions;
 
             const bool DEBUG = false;
 
@@ -784,6 +802,11 @@ namespace lvlset {
 
             std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(LevelSetType::differentiation_scheme::FIRST_ORDER);
             typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
+
+            vec<value_type,D> dxs = center.getDx();
+            for(int u = 0; u < D; ++u){
+              dx_all[u] = dxs[u];
+            }
 
             if(DEBUG){
               for(auto star : stars){
@@ -805,9 +828,9 @@ namespace lvlset {
 
 
             //dirty hack I
-            if(center.position()[1] < -0.7){ //bottom
-              return 0;
-            }/*
+          //  if(center.position()[1] < -0.7){ //bottom
+          //    return 0;
+          /*
             //dirty hack II: explicity set hamiltonian within mask to zero
             if(center.position()[1] >= 0.25){ //mask
               if( (center.position()[0] <= 1.25) || (center.position()[0] >= 1.75) ){
@@ -841,6 +864,7 @@ namespace lvlset {
               value_type omega=0;
 
               //lambda term
+              if(0){
               for(size_t i = 0; i < stars.size(); ++i){
 
 
@@ -926,6 +950,7 @@ namespace lvlset {
                 lambda += omegas[i]*math::pow2(vecs[i] - vecs_mean);
               }
               lambda = math::abs(nu * std::sqrt(lambda / vecs.size()) / ( vecs_mean) );
+            }
 
               if(DEBUG) std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
 
@@ -933,7 +958,7 @@ namespace lvlset {
               for(size_t i = 0; i < stars.size(); ++i){
                 vec<value_type,D> alpha;
 
-                value_type mat_center = topMaterial(stars[i].position());
+                //value_type mat_center = topMaterial(stars[i].position());
 
                 //vec<value_type,D> normalvector = stars[i].normal_vector();
                 //value_type vp = my::math::fourRateInterpolation<value_type>(normalvector, direction100, direction010, r100, r110, r111, r311);
@@ -965,7 +990,7 @@ namespace lvlset {
 
                   //Monti term
                   value_type monti = 0;
-                  if(1 != mat_center){
+                  if(1){
                     for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
                          int idx = (k + 1) % D;
                           monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
@@ -975,7 +1000,7 @@ namespace lvlset {
 
                   //Toifl Quell term
                   value_type toifl=0;
-                  if(1 != mat_center){
+                  if(1 ){
                     for(int j= 0; j < D - 1; ++j ){
                        int idx = (k + 1) % D;
                        toifl += stars[i].gradient(idx) * dv[idx];
@@ -986,7 +1011,7 @@ namespace lvlset {
 
                   //Osher (constant V) term
                   value_type osher=0;
-                  if(1 != mat_center){
+                  if(1){
                     //osher=velocities(it.active_pt_id(), material) * stars[i].normal_vector()[k];
                       osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                   }
@@ -1008,6 +1033,7 @@ namespace lvlset {
               vec<value_type,D>  maxal;
               for(int d=0; d < D; ++d)
               {
+                  maxal[d] = 0;
                   std::vector<value_type> alpha_comp;
 
                   for(size_t i = 0 ; i < stars.size() ; ++i){
@@ -1015,12 +1041,15 @@ namespace lvlset {
                   }
                   maxal[d] = *std::max_element(alpha_comp.begin(),alpha_comp.end());
 
+                  final_alphas[d] = maxal[d];
+
                   dissipation += maxal[d] * center.gradient_diff(d);
               }
               if(DEBUG) std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
               if(DEBUG) std::cout << "D = " << dissipation << std::endl;
 
             }
+
 
             if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
             return hamiltonian - dissipation;

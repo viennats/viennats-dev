@@ -4108,6 +4108,14 @@ namespace lvlset {
           return l.Grid.grid_position_of_local_index(dir,indices(dir));
         }
 
+        const vec<value_type,D> getDx() const {
+          vec<value_type,D> dx_all;
+          for (int i=0;i<D;++i){
+            dx_all[i] = l.Grid.grid_position_of_global_index(i,indices(i)+1)-l.Grid.grid_position_of_local_index(i,indices(i));
+          }
+          return dx_all;
+        }
+
         // (d phi / d x)^+ .. right sided derivative
         // NOTE we assume uniform grid here
         value_type inline phi_x_p(int dir) const {
