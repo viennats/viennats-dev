@@ -32,6 +32,8 @@ namespace model {
 
         bool wrap;
 
+        bool removeLS;
+
         int lvlset;
 
     public:
@@ -63,6 +65,10 @@ namespace model {
             return wrap;
         }
 
+        const bool remove_levelset() const{
+          return removeLS;
+        }
+
         BooleanOps(const std::string & Parameters):lvl(0),inv(false),wrap(false),lvlset(-1)  {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
@@ -70,6 +76,8 @@ namespace model {
             remove=true;
             surf=false;
             lvlset=-1;
+            removeLS=false;
+            lvl=0;
 
             bool b = parse(
                     Parameters.begin(),
@@ -81,7 +89,8 @@ namespace model {
                             (str_p("surface_geometry")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(surf)]) >> ';') |
                             (str_p("remove_bottom")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(remove)]) >> ';') |
                             (str_p("wrap_lower_surface") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(wrap)]) >> ';') |
-                            (str_p("levelset") >> '=' >> int_p[assign_a(lvlset)] >> ';')
+                            (str_p("levelset") >> '=' >> int_p[assign_a(lvlset)] >> ';') |
+                            (str_p("remove_levelset") >> '=' >> ((str_p("true") | str_p("false"))[assign_bool(removeLS)]) >> ';')
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 

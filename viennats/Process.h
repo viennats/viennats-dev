@@ -522,6 +522,14 @@ namespace proc {
             Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
+        // manually set min and max to match original simulation
+        for(unsigned i=0; i<D; ++i){
+          if(LevelSets.back().grid().boundary_conditions(i) != lvlset::INFINITE_BOUNDARY){
+            mask_geometry.Min[i] = LevelSets.back().grid().min_grid_index(i)*Parameter.grid_delta;
+            mask_geometry.Max[i] = LevelSets.back().grid().max_grid_index(i)*Parameter.grid_delta;
+          }
+        }
+
         //      mask_geometry.Read(Model.file_name(), Parameter.input_scale, Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 
         typedef std::list<geometry::surface<D> > SurfacesType;
@@ -592,8 +600,6 @@ namespace proc {
                 const ProcessParameterType& ProcessParameter,
                 OutputInfoType & output_info
         ) {
-
-      if (Model.level()==0) return;
 
         typedef typename LevelSetsType::value_type LevelSetType;
         const int D=LevelSetType::dimensions;
@@ -667,34 +673,42 @@ namespace proc {
             while (ls_it!=LevelSets.end()) {
                 ls_it->min(*boolop_ls);
                 ls_it->prune();
-        ls_it->segment();
+                ls_it->segment();
                 ++ls_it;
             }
 
       if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();    //Invert again so that the original levelset is not changed
-        } else {                        //Model.level()<0
+    } else if(Model.level()<0){
 
-            if (Model.invert()) boolop_ls->invert();
+      if (Model.invert()) boolop_ls->invert();
 
-            int j=0;
-            typename LevelSetsType::iterator ls_it_old  =   LevelSets.begin();
-            typename LevelSetsType::iterator ls_it      =   LevelSets.begin();
+      int j=0;
+      typename LevelSetsType::iterator ls_it_old  =   LevelSets.begin();
+      typename LevelSetsType::iterator ls_it      =   LevelSets.begin();
 
-            for (;j<static_cast<int>(LevelSets.size())+Model.level();++j) {
-                ls_it_old=ls_it;
-                ++ls_it;
-            }
+      for (;j<static_cast<int>(LevelSets.size())+Model.level();++j) {
+        ls_it_old=ls_it;
+        ++ls_it;
+      }
       if(!Model.wrap_surface()) j=0;
 
-            while (ls_it!=LevelSets.end()) {
-                ls_it->max(*boolop_ls);
-                if (j>0) ls_it->min(*ls_it_old);
-                ls_it->prune();
+      while (ls_it!=LevelSets.end()) {
+        ls_it->max(*boolop_ls);
+        if (j>0) ls_it->min(*ls_it_old);
+        ls_it->prune();
         ls_it->segment();
-                ++ls_it;
-            }
+        ++ls_it;
+      }
       if (Model.invert() && Model.levelset()>=0) boolop_ls->invert();    //Invert again so that the original levelset is not changed
-        }
+    }
+
+    // remove levelset used for booling if specified
+    if(Model.levelset()>=0 && Model.remove_levelset()){
+      auto it=LevelSets.begin();
+      for(int i=0; i<Model.levelset(); ++i) ++it;
+      LevelSets.erase(it);
+    }
+
     //Write one output if there is any output time or there is final output
     if(!(!ProcessParameter.output_times.empty() || ProcessParameter.final_output)) return;
 
