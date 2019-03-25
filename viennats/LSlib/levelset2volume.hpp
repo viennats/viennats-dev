@@ -11,6 +11,7 @@
 #include <vtkPointData.h>
 #include <vtkTableBasedClipDataSet.h>
 #include <vtkDataSetTriangleFilter.h>
+#include <vtkTriangleFilter.h>
 #include <vtkAppendFilter.h>
 #include <vtkAppendPolyData.h>
 #include <vtkProbeFilter.h>
@@ -355,20 +356,29 @@ namespace lvlset{
       appendFilter->AddInputData(materialMeshes[materialMeshes.size()-1-i]);
     }
 
-    appendFilter->Update();
+    // do not need tetrahedral volume mesh if we do not print volume
+    if(volumeMesh.GetPointer() != 0){
+      appendFilter->Update();
 
-    // change all 3D cells into tetras and all 2D cells to triangles
-    vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
-      vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-    triangleFilter->SetInputConnection(appendFilter->GetOutputPort());
-    triangleFilter->Update();
+      // change all 3D cells into tetras and all 2D cells to triangles
+      vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
+        vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+      triangleFilter->SetInputConnection(appendFilter->GetOutputPort());
+      triangleFilter->Update();
 
-    volumeMesh = triangleFilter->GetOutput();
+      volumeMesh = triangleFilter->GetOutput();
+    }
+
 
     // Now make hull mesh if necessary
     if(hullMesh.GetPointer() != 0){
       hullAppendFilter->Update();
-      hullMesh = hullAppendFilter->GetOutput();
+
+      vtkSmartPointer<vtkTriangleFilter> hullTriangleFilter = vtkSmartPointer<vtkTriangleFilter>::New();
+      hullTriangleFilter->SetInputConnection(hullAppendFilter->GetOutputPort());
+      hullTriangleFilter->Update();
+
+      hullMesh = hullTriangleFilter->GetOutput();
     }
   }
 
@@ -377,7 +387,7 @@ namespace lvlset{
   template<bool removeBottom, class LevelSetsType>
   void extract_volume(const LevelSetsType& LevelSets,
       vtkSmartPointer<vtkUnstructuredGrid>& volumeMesh){
-    vtkSmartPointer<vtkPolyData> dummyHull = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkPolyData> dummyHull;
     extract_volume<removeBottom>(LevelSets, volumeMesh, dummyHull);
   }
 

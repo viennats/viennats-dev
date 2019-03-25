@@ -235,17 +235,22 @@ namespace lvlset {
     void write_explicit_volume_vtk(const LevelSetsType& LevelSets, const CounterType counter, ParameterType& p, const DataType& Data, double eps=0.) {
       static const int D=LevelSetsType::value_type::grid_type2::dimensions;
 
-      vtkSmartPointer<vtkUnstructuredGrid> volumeMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
-      vtkSmartPointer<vtkPolyData> hullMesh = vtkSmartPointer<vtkPolyData>::New();
+      vtkSmartPointer<vtkUnstructuredGrid> volumeMesh;
+      vtkSmartPointer<vtkPolyData> hullMesh;
+
+      // check if any output should be done. if none, we do not need to extract the volume
+      if(!(p.print_volume_tetra || p.print_volume_hull)) return;
+
+      // if volumeMesh or hullMesh are not initialised, they will not be created in extract_volume
+      if(p.print_volume_tetra) volumeMesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
+      if(p.print_volume_hull) hullMesh = vtkSmartPointer<vtkPolyData>::New();
 
       // depending on the open boundary, volume output needs to be treated differently if the bottom is removed
       if(p.remove_bottom &&
        (p.open_boundary<(D-1))){
-        if(p.print_volume_hull) extract_volume<true>(LevelSets, volumeMesh, hullMesh);
-        else extract_volume<true>(LevelSets, volumeMesh);
+        extract_volume<true>(LevelSets, volumeMesh, hullMesh);
       }else{
-        if(p.print_volume_hull) extract_volume<false>(LevelSets, volumeMesh, hullMesh);
-        else extract_volume<false>(LevelSets, volumeMesh);
+        extract_volume<false>(LevelSets, volumeMesh, hullMesh);
       }
 
       if(p.print_volume_tetra){
