@@ -1120,6 +1120,7 @@ namespace geometry {
       for(typename std::list< surface<D> >::const_iterator it= surfaces.begin(); it!=surfaces.end(); ++it){
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
       }
 
       msg::print_done();
@@ -1220,6 +1221,7 @@ namespace geometry {
       for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
       }
 
       msg::print_done();

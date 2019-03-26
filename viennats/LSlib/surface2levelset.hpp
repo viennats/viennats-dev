@@ -19,6 +19,13 @@
 #include <algorithm>
 #include <bitset>
 
+#include <vtkSmartPointer.h>
+#include <vtkPoints.h>
+#include <vtkCellArray.h>
+#include <vtkFloatArray.h>
+#include <vtkPolyData.h>
+#include <vtkXMLPolyDataWriter.h>
+
 #include "vector.hpp"
 #include "kernel.hpp"
 #include "math.hpp"
@@ -361,6 +368,37 @@ namespace lvlset {
                 } while ((it_points!=points.end()) && (it_points->first==tmp));
             }
         }
+
+        constexpr bool debugOutput=false;
+
+        if(debugOutput){
+          // output original points to vtp for debug purposes
+          vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+          vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+          vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
+          vtkSmartPointer<vtkFloatArray> polyValues = vtkSmartPointer<vtkFloatArray>::New();
+
+
+          for(auto it=points2.begin(); it!=points2.end(); ++it){
+            double p[3];
+            for(unsigned i=0; i<D; ++i) p[i] = double(it->first[i]);
+            vtkIdType pointId = polyPoints->InsertNextPoint(p);
+            polyCells->InsertNextCell(1, &pointId);
+            polyValues->InsertNextValue(it->second);
+          }
+
+          polyData->SetPoints(polyPoints);
+          polyData->SetVerts(polyCells);
+          polyData->GetPointData()->SetScalars(polyValues);
+
+          vtkSmartPointer<vtkXMLPolyDataWriter> pwriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+          pwriter->SetFileName("import.vtp");
+          pwriter->SetInputData(polyData);
+          pwriter->Write();
+        }
+
+
+
 
         l.insert_points(points2);    //initialize level set function
 

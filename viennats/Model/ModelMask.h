@@ -47,7 +47,7 @@ namespace model {
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
-            remove=true;
+            remove=false;
             surf=false;
             ignore_other_mat = false;
 
