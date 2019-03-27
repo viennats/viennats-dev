@@ -3414,7 +3414,9 @@ namespace lvlset {
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::go_up_BA;
     public:
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::is_finished;
-        vec<index_type,D> offset; //TODO at:  public for testing
+        const vec<index_type,D> get_offset() const{
+          return offset;
+        }
     private:
 
         template <class I>
@@ -3435,7 +3437,7 @@ namespace lvlset {
         vec<index_type,D> start_run_rel_coords;
         vec<index_type,D> end_run_rel_coords;
         vec<index_type,D> rel_coords;
-        //TODO at: uncomment vec<index_type,D> offset;
+        vec<index_type,D> offset;
         std::bitset<D> move_inverse;
 
     protected:
@@ -4010,7 +4012,11 @@ namespace lvlset {
         }
     }
 
-
+    /*A star stencil is used for calculation of spatial derivatives.
+      The central point is given by a const_iterator_runs_offset.
+      First order difference or WENO schemes can be chosen when a star stencil is constructed.
+      Provides convenient methods such as gradient or normal vector.
+    */
     template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::star_stencil {
 
       const levelset<GridTraitsType, LevelSetTraitsType> &l;
@@ -4018,7 +4024,6 @@ namespace lvlset {
       std::vector<const_iterator_runs_offset> it_neighbors;
       vec<index_type,D> offset;
 
-      //TODO (priority): check order and dscheme !
       int order;
       differentiation_scheme dscheme;
 
@@ -4040,11 +4045,8 @@ namespace lvlset {
               order=1;
           }
 
-
           it_neighbors.reserve(2*D*order);
-
-
-          offset = it_mid.offset; //TODO change to proper get function
+          offset = it_mid.get_offset();
 
           for (int i = 0; i < 2*D; ++i){
               vec<index_type,D> tv(offset);
@@ -4066,7 +4068,7 @@ namespace lvlset {
           it_neighbors.reserve(2*D*order);
 
 
-          offset = it_mid.offset; //TODO change to proper get function
+          offset = it_mid.get_offset(); //TODO change to proper get function
 
           for (int i = 0; i < 2*D; ++i){
               vec<index_type,D> tv(offset);
@@ -4226,29 +4228,6 @@ namespace lvlset {
             return tmp;
         }
 
-
-        //TODO is gradient2() even useful???
-        // value_type gradient2(int dir) const {       //returns the derivation of the level set function in respect to the index for the given axis direction
-        //     const value_type phi_p=neighbor(dir,0).value();
-        //     const value_type phi_n=neighbor(dir+D,0).value();
-        //
-        //     return (phi_p-phi_n)/2.;
-        // }
-        //
-        // vec<value_type,D>  gradient2() const {
-        //     vec<value_type, D> tmp;
-        //     for (int i=0;i<D;++i) tmp[i]=gradient2(i);
-        //     return tmp;
-        // }
-
-         //returns 0.5*(phi_x^+ - phi_x^-), which is needed for Lax Friedrichs
-         //NOTE we assume uniform grid
-
-        //TODO this function may cause segmentation fault, if user constructs star_stencil with order < required order for the differentiation_scheme
-      //void set_differentiation_scheme(differentiation_scheme ds){
-      //    dscheme = ds;
-      //  }
-
         void print(std::ostream& out = std::cout) const {
           out << "Star stencil\nindices = " << indices()
               <<  ", center position = " << position()
@@ -4323,8 +4302,8 @@ namespace lvlset {
         }
 
         void print_point(size_t index, std::ostream& out = std::cout) const{
-          out << "Offset: " << it_stencil_points[index].offset <<
-                 ", start_indices(): " <<  it_stencil_points[index].start_indices() + it_stencil_points[index].offset <<
+          out << "Offset: " << it_stencil_points[index].get_offset() <<
+                 ", start_indices(): " <<  it_stencil_points[index].start_indices() + it_stencil_points[index].get_offset() <<
                  ", is_defined(): " << it_stencil_points[index].is_defined();
           if( it_stencil_points[index].is_defined()){
             out << ", phi=" << it_stencil_points[index].value() << std::endl;

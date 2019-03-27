@@ -712,20 +712,22 @@ namespace lvlset {
         typedef typename LevelSetType::value_type value_type;
         typedef typename LevelSetType::index_type index_type;
 
-        const double gamma;
+        const double gamma; //NOTE at the moment gamma (=) is not used
         const std::vector<unsigned int>& PointMaterials;
 
-        const int slf_order = 2;
-
+        const int slf_order = 1; //stencil order
 
         //TODO at: hard coded just for testing
-        vec<value_type,3> direction100{0,1,0};
-        vec<value_type,3> direction010{1,0,-1};
+        //NOTE AT The following 4 lines must remain in lines 722-723
+        vec<value_type,3> direction100{1,0,0};
+        vec<value_type,3> direction010{0,1,0};
 
-        const value_type r100=0.0166;//0.010;//0.005;//0.0166;
-        const value_type r110=0.0309;//0.015;//0.005;//0.0309;
-        const value_type r111=0.00012;//0.0001;//0.00033;//0.00012;
-        const value_type r311=0.030;//0.015;//0.003;//0.030;
+        //NOTE AT The following 4 lines must remain in lines 726-729
+        const value_type r100=0.0333333333333;
+        const value_type r110=0.0616666666667;
+        const value_type r111=0.000233333333333;
+        const value_type r311=0.06;
+
         bool initialized;
 
         vec<value_type,3> final_alphas;
@@ -745,31 +747,11 @@ namespace lvlset {
 
             //TODO sparse field expansion must depend on slf stencil order!
             l.expand(order*2+1);
-            //l.expand(21);
+          //  l.expand(13);
             // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
                                                         //which are necessary to calculate the derivatives are also defined
         }
-
-        template <class ValueType>
-        static ValueType topMaterial(vec<ValueType,2> position){
-          if(position[1] < -0.7){ //bottom
-             return 1;
-          }
-          else{
-            if(position[1] >= 0.25){ //mask
-              if( (position[0] < 1.25) || (position[0] > 1.75) ){
-                return 1;
-               }else{
-                 return 0;
-               }
-            //  }
-            } else{
-              return 0;
-            }
-          }
-        }
-
 
         StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {
           for(int i = 0; i < 3; ++i){
@@ -778,16 +760,13 @@ namespace lvlset {
           }
         }
 
-
         template <class IteratorType>
         value_type operator()(const IteratorType& it, unsigned int material) {
 
           assert(it.is_active());
 
-
-
           value_type v = velocities(it.active_pt_id(), material);
-        //  value_type v=1.0;
+
 
           if( v == value_type(0) ){
             return 0;
@@ -795,7 +774,6 @@ namespace lvlset {
           else{
 
             const int D = LevelSetType::dimensions;
-
             const bool DEBUG = false;
 
             typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
@@ -822,24 +800,7 @@ namespace lvlset {
             value_type dissipation=0.; //dissipation
 
             hamiltonian = NormL2(center.gradient()); //|grad(phi)|
-
-            //NOTE this is the most general way to calculate the hamilonian
             hamiltonian *= v; //V |grad(phi)|
-
-
-            //dirty hack I
-          //  if(center.position()[1] < -0.7){ //bottom
-          //    return 0;
-          /*
-            //dirty hack II: explicity set hamiltonian within mask to zero
-            if(center.position()[1] >= 0.25){ //mask
-              if( (center.position()[0] <= 1.25) || (center.position()[0] >= 1.75) ){
-                return 0;
-              }
-            }
-            hamiltonian *= my::math::fourRateInterpolation<value_type>(center.normal_vector(), direction100, direction010, r100, r110, r111, r311);
-          */
-
 
             if(DEBUG) std::cout <<"H = " << hamiltonian << std::endl;
 
@@ -848,125 +809,12 @@ namespace lvlset {
               std::vector< vec<value_type,D>> alphas;
               alphas.reserve(stars.size());
 
-              const value_type nu=gamma;
-              value_type lambda=0;
-
-
-              std::vector<value_type> vecs;
-              vecs.reserve(stars.size());
-              std::vector<value_type> omegas;
-              omegas.reserve(stars.size());
-              value_type vecs_mean=0;
-
-              if(DEBUG) std::cout << "center position: " << center.position() << std::endl;
-
-              value_type vel=0;
-              value_type omega=0;
-
-              //lambda term
-              if(0){
-              for(size_t i = 0; i < stars.size(); ++i){
-
-
-                if(0){//averaged averages
-                  //pure 2D hack
-                  vec<index_type,D> offset = stars[i].get_center_offset();
-                  value_type offset_norm = NormL2(offset);
-                  if(DEBUG) std::cout << "Offset = " << offset;
-                  if( (std::abs(offset[0]) > 1) || (std::abs(offset[1]) > 1) ){
-                    if(DEBUG)  std::cout << " - ignored\n";
-                    continue;
-                  }
-
-
-
-                  std::vector<vec<index_type,D>> neighbor_off;
-                  index_type mean_patch_order = 1;
-
-                  int num_points = std::pow(2*mean_patch_order + 1, D);
-                  for( int idx = 0; idx < num_points; ++idx){
-                    vec<index_type,D> tmp(offset);
-                    for (int d = 0; d < D; ++d){
-                      tmp[d] += index_type( (int) (idx / std::pow(2*mean_patch_order + 1,d) ) % (2 * mean_patch_order + 1) - mean_patch_order );
-                    }
-                    neighbor_off.push_back(tmp);
-                  }
-
-                  for(size_t n_idx = 0; n_idx < neighbor_off.size(); ++n_idx){
-                      index_type index = n.indexByOffset(neighbor_off[n_idx]);
-
-                      assert((size_t)index <  stars.size());
-
-                      value_type mat = topMaterial(stars[index].position());
-                      if(1==mat){
-                        vel+=0;
-                      }else {
-                        vel+=my::math::fourRateInterpolation<value_type>(stars[index].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                      }
-                  }
-                  vel /= neighbor_off.size();
-
-                  value_type mat_center = topMaterial(stars[i].position());
-
-                  if(1==mat_center){
-                      omega=1.0 / std::sqrt(offset_norm+1);
-                  }else{
-                      omega = 0;
-                  }
-                }
-
-
-                if(1){//Gaussian
-                  vec<index_type,D> offset = stars[i].get_center_offset();
-                  if(DEBUG) std::cout << "Offset = " << offset;
-
-                  value_type s = 4.0;
-
-                  value_type mat_center = topMaterial(stars[i].position());
-
-                  if(1==mat_center){
-                      value_type nom = 0;
-
-                      for(int u = 0; u < D; ++u){
-                        nom += offset[u] *offset[u];
-                      }
-
-                      vel = 0;
-                      omega=1.0 * std::exp(-nom / s);
-                  }else{
-                      omega = 0;
-                      vel = my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                  }
-                }
-
-                vecs_mean += vel;
-                vecs.push_back(vel);
-                omegas.push_back(omega);
-                if(DEBUG) std::cout << ", position = " << stars[i].position() << ", vel = " << vel << ", omega = " << omega << std::endl;
-              }
-              vecs_mean /= vecs.size();
-
-              for(size_t i = 0; i < vecs.size(); ++i){
-                lambda += omegas[i]*math::pow2(vecs[i] - vecs_mean);
-              }
-              lambda = math::abs(nu * std::sqrt(lambda / vecs.size()) / ( vecs_mean) );
-            }
-
-              if(DEBUG) std::cout << "vecs_mean = " << vecs_mean << ", lambda = " << lambda << std::endl;
-
 
               for(size_t i = 0; i < stars.size(); ++i){
                 vec<value_type,D> alpha;
 
-                //value_type mat_center = topMaterial(stars[i].position());
-
-                //vec<value_type,D> normalvector = stars[i].normal_vector();
-                //value_type vp = my::math::fourRateInterpolation<value_type>(normalvector, direction100, direction010, r100, r110, r111, r311);
-
                 vec<value_type,D> normal_p =  stars[i].normal_vector();
                 vec<value_type,D> normal_n =  normal_p;
-
-                //std::cout << "Normal = " << normal_p << ", position = " << stars[i].position() << ", index = " << stars[i].indices() << ", grad(0) = " << stars[i].gradient(0) << ", grad(1) = " << stars[i].gradient(1)<< std::endl;
 
                 vec<value_type,D> dv(value_type(0));
                 const value_type DN = 1e-4;
@@ -1000,14 +848,13 @@ namespace lvlset {
 
                   //Toifl Quell term
                   value_type toifl=0;
-                  if(1 ){
+                  if(1){
                     for(int j= 0; j < D - 1; ++j ){
                        int idx = (k + 1) % D;
                        toifl += stars[i].gradient(idx) * dv[idx];
                     }
                   toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
                   }
-
 
                   //Osher (constant V) term
                   value_type osher=0;
@@ -1016,20 +863,14 @@ namespace lvlset {
                       osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                   }
 
-                //  if(0==k) lambda=0;
-
                   //Total derivative is sum of terms given above
-                  alpha[k] = 1.0 * (std::fabs( (1.0 + lambda) * (monti + toifl) + osher)  );
+                  alpha[k] = std::fabs( monti + toifl + osher);
                 }
                 alphas.push_back(alpha);
               }
 
-            //  std::cout << "Position = " << center.position() << ", lambda= " << lambda << std::endl;
-            //  for(auto a : alphas)
-            //    std::cout << a << std::endl;
 
               //determine max alphas for every axis
-
               vec<value_type,D>  maxal;
               for(int d=0; d < D; ++d)
               {
@@ -1050,8 +891,8 @@ namespace lvlset {
 
             }
 
-
             if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
+
             return hamiltonian - dissipation;
           }
       }

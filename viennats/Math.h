@@ -796,13 +796,13 @@ namespace my {
         for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
         N.reverse_sort();
 
-        if(std::fabs(Norm(N)-1)>=1e-4){
-          std::cout << "direction1 00 = " << direction100 << ", norm = " << Norm(direction100) << std::endl;
+        /*if(std::fabs(Norm(N)-1)>=1e-4){
+          std::cout << "direction100 = " << direction100 << ", norm = " << Norm(direction100) << std::endl;
           std::cout << "direction010 = " << direction010 << ", norm = " << Norm(direction010) << std::endl;
           std::cout << "NormalVector = " << NormalVector << ", norm = " << Norm(NormalVector) << std::endl;
           std::cout << "N = " << N << ", norm = " << Norm(N) << std::endl;
         //  exit(0);
-        }
+      }  */
 
         assert(std::fabs(Norm(N)-1)<1e-4);
 

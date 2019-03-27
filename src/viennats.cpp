@@ -17,7 +17,7 @@
 //#define VERBOSE
 
 //Dimensions
-//#define DIMENSION_3
+#define DIMENSION_3
 #define DIMENSION_2
 
 //Processes
