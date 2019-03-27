@@ -2,10 +2,12 @@
 #define MODELSIMPLEDEPOSITION_H_
 
 #include <stack>
+#include <vector>
 #include "../Statistics.h"
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
 
+#include <iostream>
 
 namespace model {
 
@@ -13,8 +15,8 @@ namespace model {
 	class SimpleDeposition {
 
 		double TotalFlux;
-		double StickingProbability;
-		double Yield;
+		std::vector<double> StickingProbabilities;
+		std::vector<double> Yields;
 		double end_probability;
 		double StartAngleDistribution;
 		double ReemittedAngleDistribution;
@@ -25,7 +27,7 @@ namespace model {
 
         static const bool OutputFluxes=false;
 		static const bool SpatiallyEqualDistributedFlux=true;
-		static const bool ReemissionIsMaterialDependent=false;
+		static const bool ReemissionIsMaterialDependent=true;
 		static const bool CalculateConnectivities=false;
 		static const bool CalculateVisibilities=false;
 		static const bool CalculateNormalVectors=false;
@@ -54,17 +56,29 @@ namespace model {
                     *(
                             (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("flux")  >> '='  >> real_p[assign_a(TotalFlux)]  >> ';') |
-                            (str_p("sticking_probability")  >> '='  >> real_p[assign_a(StickingProbability)]  >> ';') |
+                            (str_p("sticking_probabilities")  >> '='  >>  '{' >> (real_p[push_back_a(StickingProbabilities)] % ',') >> '}'  >> ';') |
                             (str_p("start_angle_distribution")  >> '='  >> real_p[assign_a(StartAngleDistribution)]  >> ';') |
                             (str_p("reemitted_angle_distribution")  >> '='  >> real_p[assign_a(ReemittedAngleDistribution)]  >> ';') |
                             (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
-                            (str_p("yield")  >> '='  >> real_p[assign_a(Yield)]  >> ';') |
+                            (str_p("yields") >> '='  >>  '{' >> (real_p[push_back_a(Yields)] % ',') >> '}'  >> ';') |
                             (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
 
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
+
+			//Check if sticking is between 0 and 1
+			for (auto sticking : StickingProbabilities) {
+				if (sticking < 0.0) {
+					msg::print_warning("Negative sticking probability changed to zero");
+					sticking=0.0;
+				}
+				else if (sticking > 1.0) {
+					msg::print_warning("Sticking probability too high, changed to one");
+					sticking=1.0;
+				}
+			}
 /*
 
              end_probability=0.01;
@@ -88,7 +102,8 @@ namespace model {
             const double *Coverages,
             const double *Rates,
             int Material, bool Connected, bool Visible) const {
-
+			
+			double Yield=(Material < static_cast<int>(Yields.size()))?Yields[Material]:0; 
 		    Velocity=Rates[0]*Yield;
 		}
 
@@ -131,6 +146,7 @@ namespace model {
 //                            double dot // dot product between the incoming particle direction and the normal vector
                             ) const {
 
+			double StickingProbability = (Material < static_cast<int>(StickingProbabilities.size()))?StickingProbabilities[Material]:1.0; 
 			double new_probability=p.Probability*(1.-StickingProbability);
 			if (new_probability>=end_probability) {
 				particle_stack.push(p);
