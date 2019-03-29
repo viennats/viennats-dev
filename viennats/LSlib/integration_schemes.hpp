@@ -719,14 +719,14 @@ namespace lvlset {
 
         //TODO at: hard coded just for testing
         //NOTE AT The following 4 lines must remain in lines 722-723
-        vec<value_type,3> direction100{1,0,0};
-        vec<value_type,3> direction010{0,1,0};
+        vec<value_type,3> direction100{-1,1,0};
+        vec<value_type,3> direction010{-1,-1,0};
 
         //NOTE AT The following 4 lines must remain in lines 726-729
-        const value_type r100=0.0333333333333;
-        const value_type r110=0.0616666666667;
-        const value_type r111=0.000233333333333;
-        const value_type r311=0.06;
+        const value_type r100=0.0166666666667;
+        const value_type r110=0.0309166666667;
+        const value_type r111=0.000121666666667;
+        const value_type r311=0.0300166666667;
 
         bool initialized;
 
@@ -746,7 +746,7 @@ namespace lvlset {
             assert(order > 4);                   //the user in the level-set-traits-class
 
             //TODO sparse field expansion must depend on slf stencil order!
-            l.expand(order*2+1);
+            l.expand(order*2+5);
           //  l.expand(13);
             // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
@@ -840,7 +840,7 @@ namespace lvlset {
                   value_type monti = 0;
                   if(1){
                     for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
-                         int idx = (k + 1) % D;
+                         int idx = (k + 1 + j) % D;
                           monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
                     }
                     monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
@@ -850,7 +850,7 @@ namespace lvlset {
                   value_type toifl=0;
                   if(1){
                     for(int j= 0; j < D - 1; ++j ){
-                       int idx = (k + 1) % D;
+                       int idx = (k + 1 + j) % D;
                        toifl += stars[i].gradient(idx) * dv[idx];
                     }
                   toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
@@ -859,7 +859,7 @@ namespace lvlset {
                   //Osher (constant V) term
                   value_type osher=0;
                   if(1){
-                    //osher=velocities(it.active_pt_id(), material) * stars[i].normal_vector()[k];
+
                       osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                   }
 
@@ -887,7 +887,9 @@ namespace lvlset {
                   dissipation += maxal[d] * center.gradient_diff(d);
               }
               if(DEBUG) std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
-              if(DEBUG) std::cout << "D = " << dissipation << std::endl;
+              if (DEBUG) std::cout << "D = " << dissipation << std::endl;
+
+                if(DEBUG) std::cout << "diff = " << center.gradient_diff() << "\n";
 
             }
 

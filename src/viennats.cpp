@@ -43,7 +43,7 @@
 
 //LS Processes
 //#define PROCESS_PLANARIZATION
-//#define PROCESS_MASK
+#define PROCESS_MASK
 //#define PROCESS_BOOLEANOPS
 
 //Flux calculation

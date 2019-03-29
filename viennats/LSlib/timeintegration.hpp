@@ -853,6 +853,8 @@ namespace lvlset {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
 
                 if(1){
+                  const double alpha_maxCFL = 1.0;
+
                   //second time step test, based on alphas
                   vec<value_type,3> alphas = scheme.getFinalAlphas();
                   vec<value_type,3> dxs = scheme.getDx();
@@ -864,7 +866,7 @@ namespace lvlset {
                     }
                   }
 
-                  MaxTimeStep = 1.0 / MaxTimeStep;
+                  MaxTimeStep = alpha_maxCFL / MaxTimeStep;
 
                   if (MaxTimeStep<MaxTimeStep2){
                     std::cout << "HJ: Reduced time step from " << MaxTimeStep2;

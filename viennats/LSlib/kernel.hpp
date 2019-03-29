@@ -4238,7 +4238,15 @@ namespace lvlset {
 
 
     //NOTE Sparse field is assumed to be properly expanded (with respect to given stencil order in constructor)
-    //This requirement is not checked here
+    //TODO This requirement is not checked at the moment
+    /*
+    Construct the stencil for stencil local Lax-Friedrichs Flux ('neighbor stencil')
+     e.g., stencil of order 1 around central point X in 2D
+     O O O
+     O X O
+     O O O
+
+    */
     template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::neighbor_stencil {
 
     private:
