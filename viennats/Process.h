@@ -527,6 +527,7 @@ namespace proc {
         }
 
       if (!Model.fill_up()) LevelSets.pop_back();
+      else LevelSets.back().set_levelset_id(); // we introduced new material, so it needs an ID
 
       //TODO output and time
 

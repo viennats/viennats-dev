@@ -286,6 +286,45 @@ namespace lvlset {
       }
     }
 
+    template <class GridTraitsType, class LevelSetTraitsType>
+    void write_explicit_levelset(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename){
+      const int D=GridTraitsType::dimensions;
+
+      vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+      vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+      vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
+      vtkSmartPointer<vtkFloatArray> polyValues = vtkSmartPointer<vtkFloatArray>::New();
+
+      polyValues->SetNumberOfComponents(1);
+      polyValues->SetName("LSValues");
+
+      // start iterator over LS
+      typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs it_l(l);
+      double gridDelta = l.grid().grid_delta();
+
+      while(!it_l.is_finished()){
+        if(!it_l.is_active()){
+          it_l.next();
+          continue;
+        }
+        double p[3];
+        for(unsigned i=0; i<D; ++i) p[i] = gridDelta*it_l.start_indices(i);
+        vtkIdType pointId = polyPoints->InsertNextPoint(p);
+        polyCells->InsertNextCell(1, &pointId); // insert vertex for visualisation
+        polyValues->InsertNextValue(it_l.value());
+        it_l.next();
+      }
+
+      polyData->SetPoints(polyPoints);
+      polyData->SetVerts(polyCells);
+      polyData->GetPointData()->SetScalars(polyValues);
+
+      vtkSmartPointer<vtkXMLPolyDataWriter> pWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+      pWriter->SetFileName(filename.c_str());
+      pWriter->SetInputData(polyData);
+      pWriter->Write();
+    }
+
     template <class GridTraitsType, class LevelSetTraitsType, class DataType>
     void write_explicit_surface_vtp(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, const DataType& Data, typename LevelSetTraitsType::value_type eps=0.) {
 

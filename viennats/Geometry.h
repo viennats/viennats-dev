@@ -22,6 +22,14 @@ License:         MIT (X11), see file LICENSE in the base directory
 #include "message.h"
 #include <stdexcept>
 
+#include <vtkIdList.h>
+#include <vtkSmartPointer.h>
+#include <vtkDataArray.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPolyData.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkXMLPolyDataReader.h>
+
 #ifdef USE_HDF5
 #include "HDF.h"
 #endif
@@ -582,6 +590,66 @@ namespace geometry {
 
     }
 
+    void ReadVTU(const std::string& FileName,
+      double scale,//=1.,
+      std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+      std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+      bool change_input_parity,//=false,
+      std::vector<double> shift//=std::vector<double>()
+    ){
+
+      vtkSmartPointer<vtkXMLUnstructuredGridReader> greader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+      greader->SetFileName(FileName.c_str());
+      greader->Update();
+
+      vtkSmartPointer<vtkUnstructuredGrid> ugrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+      ugrid = greader->GetOutput();
+
+      // get all points
+      Nodes.resize(ugrid->GetNumberOfPoints());
+      for(unsigned i=0; i<Nodes.size(); ++i){
+        double p[3];
+        ugrid->GetPoint(i, p);
+        for(unsigned j=0; j<D; ++j){
+          Nodes[i][j]=p[InputTransformationDirections[j]];
+          if(shift.size()>j) Nodes[i][j]+=shift[j];//Assign desired shift
+          if(InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+          Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+        }
+      }
+
+      // get all cells
+      Elements.resize(ugrid->GetNumberOfCells());
+      for(unsigned i=0; i<Elements.size(); ++i){
+        vtkIdList* pointList = vtkIdList::New();
+        ugrid->GetCellPoints(i, pointList);
+        lvlset::vec<unsigned int, D+1> elem;
+
+        for(unsigned j=0; j<D+1; ++j){
+          elem[j]=pointList->GetId(j);
+        }
+        Elements[i] = elem;
+      }
+
+      // get materials
+      vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+      cellData = ugrid->GetCellData();
+
+      int arrayIndex;
+      vtkDataArray* matArray = cellData->GetArray("Material", arrayIndex);
+      Materials.reserve(Elements.size()); // must be the same number
+      if(arrayIndex>=0){  // if array exists
+        for(unsigned i=0; i<matArray->GetNumberOfTuples(); ++i){
+          Materials.push_back(matArray->GetTuple1(i));
+        }
+      }else{  // if no material specified, use the same for all elements
+        for(unsigned i=0; i<matArray->GetNumberOfValues(); ++i){
+          Materials.push_back(1);
+        }
+      }
+    }
+
+
     void Read(std::string  const& FileName,
       double              scale,//=1.,
       std::vector<int>    InputTransformationDirections,//=std::vector<int>(),
@@ -621,6 +689,8 @@ namespace geometry {
         ReadDX(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
       } else if (GeometryFile.find(".vtk") == (GeometryFile.size()-4)) {
         ReadVTK(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+      } else if(GeometryFile.find(".vtu") == (GeometryFile.size()-4)){
+        ReadVTU(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
       } else {
         #ifdef USE_HDF5
         msg::print_error("This software accepts only STR, TDR, GRD, DX and VTK geometry files!");
@@ -894,6 +964,60 @@ namespace geometry {
       f.close();
     }
 
+    void ReadVTP(  std::string FileName,
+      double scale,
+      std::vector<int> InputTransformationDirections,
+      std::vector<bool> InputTransformationSigns,
+      bool change_input_parity,
+      std::vector<double> shift
+    ) {
+      // Prepare transformation properties
+      while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());
+      while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
+
+      if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
+      for (int i=0;i<D;++i) {
+        if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
+      }
+
+      // READ FROM VTP FILE
+      vtkSmartPointer<vtkXMLPolyDataReader> pReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+      pReader->SetFileName(FileName.c_str());
+      pReader->Update();
+
+      vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+      polyData = pReader->GetOutput();
+
+
+      // read points(Nodes)
+      Nodes.resize(polyData->GetNumberOfPoints());
+      for (unsigned i=0;i<Nodes.size();i++) {
+        double coords[3];
+        polyData->GetPoint(i, coords);
+
+        for (int j=0;j<D;j++) {
+          Nodes[i][j]=coords[InputTransformationDirections[j]];
+          int shift_size=shift.size();
+          if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
+          if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+          Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+        }
+      }
+
+      //read cells (Elements)
+      Elements.reserve(polyData->GetNumberOfPolys());
+      vtkCellArray* cellArray = polyData->GetPolys();
+      cellArray->InitTraversal();
+      vtkIdList* pointList = vtkIdList::New();
+      while(cellArray->GetNextCell(pointList)){
+        lvlset::vec<unsigned int, D> elem;
+        for(unsigned j=0; j<D; ++j){
+          elem[j]=pointList->GetId(j);
+        }
+        Elements.push_back(elem);
+      }
+    }
+
     void CalculateExtensions() {
       assert(!Elements.empty());
       Min=Nodes[Elements[0][0]];
@@ -967,10 +1091,37 @@ namespace geometry {
           if ((it!=Triangles.end()) && (it->first==tmp)) {
             if (lvlset::Orientation(pts)) {
               if (report_import_errors) assert(it->second.second==max_mat+1);
+              // {
+              //   if(it->second.second!=max_mat+1){
+              //     std::ostringstream oss;
+              //     oss << "Coinciding triangles with same orientation at points: ";
+              //     for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
+              //     oss << "\b\b" << std::endl;
+              //     msg::print_warning(oss.str());
+              //     abort();
+              //   }
+              // }
               it->second.second=Geometry.Materials[i];
+              //if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
+              //else if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
+
             } else {
               if (report_import_errors) assert(it->second.first==max_mat+1);
+              // {
+              //   if(it->second.first!=max_mat+1){
+              //     std::ostringstream oss;
+              //     oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
+              //     for(unsigned a=0; a<D+1; ++a) oss << Geometry.Elements[i][a] << ", ";
+              //     oss << std::endl << " at coordinates:" << std::endl;
+              //     for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
+              //     oss << std::endl;
+              //     msg::print_warning(oss.str());
+              //     abort();
+              //   }
+              // }
               it->second.first=Geometry.Materials[i];
+              //if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
+              // else if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
             }
 
             if (it->second.first==it->second.second) Triangles.erase(it);
@@ -1077,8 +1228,16 @@ namespace geometry {
       for(unsigned i=0; i<p.geometry_files.size(); ++i){
         surfaces.push_back(surface<D>());
         msg::print_start("Read surface input file " + p.geometry_files[i] + "...");
-        surfaces.back().ReadVTK(p.geometry_files[i], p.input_scale, p.input_transformation,
-                  p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        if(p.geometry_files[i].find(".vtk") == (p.geometry_files[i].size()-4)){
+          surfaces.back().ReadVTK(p.geometry_files[i], p.input_scale, p.input_transformation,
+                    p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        }else if(p.geometry_files[i].find(".vtp") == (p.geometry_files[i].size()-4)){
+          surfaces.back().ReadVTP(p.geometry_files[i], p.input_scale, p.input_transformation,
+                    p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        }else{
+          msg::print_error("Unknown filetype of " + p.geometry_files[i]);
+        }
+
 
         for (int h = 0; h < D; ++h) {
           grid_min[h] = std::min(grid_min[h],int(std::ceil(surfaces.back().Min[h] / p.grid_delta - p.snap_to_boundary_eps)));

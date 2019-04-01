@@ -318,7 +318,6 @@ namespace lvlset{
 
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
-    appendFilter->MergePointsOn();
 
     vtkSmartPointer<vtkAppendPolyData> hullAppendFilter =
       vtkSmartPointer<vtkAppendPolyData>::New();
