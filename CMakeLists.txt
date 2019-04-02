@@ -24,8 +24,8 @@ OPTION(VIENNATS_STATIC_BUILD "" OFF)
 
 # Default compile options
 #################
-SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5")
-#SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5 -Wl,-rpath=/home/klemenschits/Code/libraries/VTK-8.2.0/lib")
+# disable-new-dtags is necessary for ld > 2.27
+SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5  -Wl,--disable-new-dtags")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
@@ -90,7 +90,6 @@ ENDIF(NOT VIENNATS_STATIC_BUILD)
 
 # VTK
 # VTK_DIR needs to point to the VTK installation and to VTK/lib/cmake/vtk-{vtk-version}
-#set(VTK_DIR /home/klemenschits/Code/libraries/VTK-8.2.0/lib/cmake/vtk-8.2)
 set(VTK_DIR $ENV{VTK_DIR})
 find_package(VTK REQUIRED)
 
@@ -108,7 +107,6 @@ ELSE(VTK_FOUND)
 message(STATUS "VTK not found.")
 ENDIF(VTK_FOUND)
 
-#SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Subdirectories
 ################

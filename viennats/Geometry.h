@@ -1059,7 +1059,7 @@ namespace geometry {
       MaterialsType& discreteMaterials){
     for(auto it=materials.begin(); it!=materials.end(); ++it){
       // if material is not yet in discreteMaterials
-      if(std::find(discreteMaterials.begin(), discreteMaterials.end(), *it)!=discreteMaterials.end()){
+      if(std::find(discreteMaterials.begin(), discreteMaterials.end(), *it)==discreteMaterials.end()){
         discreteMaterials.push_back(*it);
       }
     }
@@ -1275,6 +1275,7 @@ namespace geometry {
       for(auto materialIt=materialNumbers.begin(); materialIt!=materialNumbers.end(); ++materialIt){
         // for each material we need a new surface
         Surfaces.push_back(typename SurfacesType::value_type());
+        typename SurfacesType::value_type searchSurface;
         // get position in element vector based on material
         // upper_bound returns iterator to first element greater than current material
         // therefor elemIterator is essentially our .end() element
@@ -1303,12 +1304,14 @@ namespace geometry {
 
           element.sort();
           // if triangle already exists, check if there already is a degenerate one
-          auto degenerateIt = std::find(Surfaces.back().Elements.begin(), Surfaces.back().Elements.end(), element);
-          if(degenerateIt != Surfaces.back().Elements.end()){ //degenerate found
-            Surfaces.back().Elements.erase(degenerateIt); // remove element
+          auto degenerateIt = std::find(searchSurface.Elements.begin(), searchSurface.Elements.end(), element);
+          if(degenerateIt != searchSurface.Elements.end()){ //degenerate found
+            searchSurface.Elements.erase(degenerateIt); // remove element
+            Surfaces.back().Elements.erase(Surfaces.back().Elements.begin()+std::distance(searchSurface.Elements.begin(), degenerateIt)); // remove actual element
             continue; // ignore current element as well
           }else{
-            Surfaces.back().Elements.push_back(element); // push element if it does not exist yet
+            searchSurface.Elements.push_back(element); // push element if it does not exist yet
+            Surfaces.back().Elements.push_back(elemIt->first); // push element in actual surfaces
           }
         }
 
@@ -1327,13 +1330,6 @@ namespace geometry {
             Surfaces.back().Elements[k][h]=NodeReplacements[origin_node];
           }
         }
-      }
-
-      // debug output TODO remove
-      unsigned counter=0;
-      for(auto it=Surfaces.begin(); it!=Surfaces.end(); ++it){
-        it->WriteVTK("surface_" + std::to_string(counter) + ".vtk");
-        ++counter;
       }
     }
 
@@ -1511,12 +1507,19 @@ namespace geometry {
       msg::print_done();
     }
 
+
+
+
+
+    /// This function takes a hull mesh, as output by ViennaTS and separates it into different
+    /// surfaces for each material, applying explicit wrapping, thus conserving thin layers.
+    /// The respective layers are then converted to level sets
     template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
     void import_levelsets_from_hull(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
                                       ParameterType& p, std::list<LevelSetType>& LevelSets)
     {
 
-      //!Read hull surfaces from geometry file
+      // Read hull surfaces from geometry file
       surface<D> geometry;
       std::list< surface<D> > surfaces;
 
@@ -1551,7 +1554,57 @@ namespace geometry {
       TransformHullToSurfaces(geometry, surfaces, remove_flags, p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
 
 
+      // EXTRACT GRID AND READ SURFACES INTO LEVELSETS
+      int grid_min[D]={ };
+      int grid_max[D]={ };
 
+      for (int h = 0; h < D; ++h) {
+        grid_min[h] = std::ceil(geometry.Min[h] / p.grid_delta - p.snap_to_boundary_eps);
+        grid_max[h] = std::floor(geometry.Max[h] / p.grid_delta + p.snap_to_boundary_eps);
+      }
+    #ifdef VERBOSE
+      std::cout << "min = " << (geometry.Min) << "   " << "max = " << (g.Max) << std::endl;
+      std::cout << "min = " << (geometry.Min / p.grid_delta) << "   " << "max = " << (g.Max / p.grid_delta) << std::endl;
+    #endif
+      msg::print_done();
+
+
+      // Determine boundary conditions for level set domain
+      lvlset::boundary_type bnc[D];
+      for (int hh = 0; hh < D; ++hh) {
+        if (p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY &&
+            p.boundary_conditions[hh].max == bnc::PERIODIC_BOUNDARY) {
+              bnc[hh] = lvlset::PERIODIC_BOUNDARY;
+        } else if(p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY &&
+                  p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::NEG_INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::POS_INFINITE_BOUNDARY;
+        } else {
+              bnc[hh] = lvlset::SYMMETRIC_BOUNDARY;
+        }
+      }
+
+      //Set the level set GridProperties
+      GridProperties = GridTraitsType(grid_min, grid_max, bnc, p.grid_delta);
+      //Generate the grid with the GridProperties
+      grid = lvlset::grid_type<GridTraitsType>(GridProperties);
+
+      msg::print_start("Distance transformation...");
+
+      // Initialize each level set with "lvlset::init(...)"
+      unsigned counter=0;
+      for (typename std::list< surface<D> >::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
+        LevelSets.push_back(LevelSetType(grid));
+        it->WriteVTK("surface_" + std::to_string(counter) + ".vtk");
+        lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
+        ++counter;
+      }
+
+      msg::print_done();
     }
 
   }//Namespace geometry END
