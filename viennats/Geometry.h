@@ -798,6 +798,7 @@ namespace geometry {
 
     std::vector<lvlset::vec<double, D> > Nodes;
     std::vector<lvlset::vec<unsigned int, D> > Elements;
+    std::vector<int> Materials;
 
     static constexpr int dimension=D;
 
@@ -1016,6 +1017,26 @@ namespace geometry {
         }
         Elements.push_back(elem);
       }
+
+      // get materials
+      vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+      cellData = polyData->GetCellData();
+
+      int arrayIndex;
+      vtkDataArray* matArray = cellData->GetArray("Material", arrayIndex);
+      Materials.reserve(Elements.size()); // must be the same number
+      if(arrayIndex>=0){  // if array exists
+        for(unsigned i=0; i<matArray->GetNumberOfTuples(); ++i){
+          Materials.push_back(matArray->GetTuple1(i));
+        }
+      }else{  // if no material specified, use the same for all elements
+        for(unsigned i=0; i<matArray->GetNumberOfValues(); ++i){
+          Materials.push_back(1);
+        }
+      }
+
+
+      CalculateExtensions();
     }
 
     void CalculateExtensions() {
@@ -1031,6 +1052,19 @@ namespace geometry {
       }
     }
   };
+
+
+  template<class MaterialsType> void GetMaterialNumbers(
+      const MaterialsType& materials,
+      MaterialsType& discreteMaterials){
+    for(auto it=materials.begin(); it!=materials.end(); ++it){
+      // if material is not yet in discreteMaterials
+      if(std::find(discreteMaterials.begin(), discreteMaterials.end(), *it)!=discreteMaterials.end()){
+        discreteMaterials.push_back(*it);
+      }
+    }
+    std::sort(discreteMaterials.begin(), discreteMaterials.end());
+  }
 
 
   template <int D, class SurfacesType> void TransformGeometryToSurfaces(
@@ -1090,35 +1124,35 @@ namespace geometry {
           typename triangle_map::iterator it=Triangles.lower_bound(tmp);
           if ((it!=Triangles.end()) && (it->first==tmp)) {
             if (lvlset::Orientation(pts)) {
-              if (report_import_errors) assert(it->second.second==max_mat+1);
-              // {
-              //   if(it->second.second!=max_mat+1){
-              //     std::ostringstream oss;
-              //     oss << "Coinciding triangles with same orientation at points: ";
-              //     for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
-              //     oss << "\b\b" << std::endl;
-              //     msg::print_warning(oss.str());
-              //     abort();
-              //   }
-              // }
+              if (report_import_errors) //assert(it->second.second==max_mat+1);
+              {
+                if(it->second.second!=max_mat+1){
+                  std::ostringstream oss;
+                  oss << "Coinciding triangles with same orientation at points: ";
+                  for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
+                  oss << "\b\b" << std::endl;
+                  msg::print_warning(oss.str());
+                  abort();
+                }
+              }
               it->second.second=Geometry.Materials[i];
               //if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
               //else if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
 
             } else {
-              if (report_import_errors) assert(it->second.first==max_mat+1);
-              // {
-              //   if(it->second.first!=max_mat+1){
-              //     std::ostringstream oss;
-              //     oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
-              //     for(unsigned a=0; a<D+1; ++a) oss << Geometry.Elements[i][a] << ", ";
-              //     oss << std::endl << " at coordinates:" << std::endl;
-              //     for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
-              //     oss << std::endl;
-              //     msg::print_warning(oss.str());
-              //     abort();
-              //   }
-              // }
+              if (report_import_errors) //assert(it->second.first==max_mat+1);
+              {
+                if(it->second.first!=max_mat+1){
+                  std::ostringstream oss;
+                  oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
+                  for(unsigned a=0; a<D+1; ++a) oss << Geometry.Elements[i][a] << ", ";
+                  oss << std::endl << " at coordinates:" << std::endl;
+                  for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
+                  oss << std::endl;
+                  msg::print_warning(oss.str());
+                  abort();
+                }
+              }
               it->second.first=Geometry.Materials[i];
               //if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
               // else if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
@@ -1210,6 +1244,97 @@ namespace geometry {
       //     }
       //   }
       // }
+    }
+
+
+    template<int D, class SurfacesType> void TransformHullToSurfaces(
+        const surface<D>& Geometry,
+        SurfacesType &Surfaces,
+        std::bitset<2*D> remove_flags,
+        double eps,
+        bool report_import_errors){
+
+      // get the unique material numbers for explicit booling
+      std::vector<int> materialNumbers;
+      GetMaterialNumbers(Geometry.Materials, materialNumbers);
+
+      // sort all elements based on materials, so they are in ascending order
+      typedef std::pair< lvlset::vec<unsigned int, D>, int> materialElementType;
+      std::vector<materialElementType> materialElements;
+
+      materialElements.reserve(Geometry.Elements.size());
+      for(unsigned i=0; i<Geometry.Elements.size(); ++i){
+        materialElements.push_back(std::make_pair(Geometry.Elements[i], Geometry.Materials[i]));
+      }
+
+      // elements will now be sorted based on material number
+      std::sort(materialElements.begin(), materialElements.end(), [](const materialElementType& i, const materialElementType& j) { return i.second < j.second; });
+
+
+      // cycle through all available materials and use all triangles of lower materials as well
+      for(auto materialIt=materialNumbers.begin(); materialIt!=materialNumbers.end(); ++materialIt){
+        // for each material we need a new surface
+        Surfaces.push_back(typename SurfacesType::value_type());
+        // get position in element vector based on material
+        // upper_bound returns iterator to first element greater than current material
+        // therefor elemIterator is essentially our .end() element
+        auto elemEnd = std::upper_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const int& i, const materialElementType& j) { return i < j.second; });
+
+        // go through all elements and remove duplicates and boundary elements
+        for(auto elemIt=materialElements.begin(); elemIt!=elemEnd; ++elemIt){
+          lvlset::vec<unsigned, D> element;
+          for(unsigned i=0; i<D; ++i) element[i]=(elemIt->first)[i];
+
+          std::bitset<2*D> flags;
+          flags.set();
+          //if triangle at border skip
+          for (int k=0;k<D;k++) {
+            for (int l=0;l<D;l++) {
+              if (Geometry.Nodes[element[k]][l]<Geometry.Max[l]-eps) {
+                flags.reset(l+D);
+              }
+              if (Geometry.Nodes[element[k]][l]>Geometry.Min[l]+eps) {
+                flags.reset(l);
+              }
+            }
+          }
+          flags &=remove_flags;
+          if (flags.any()) continue;
+
+          element.sort();
+          // if triangle already exists, check if there already is a degenerate one
+          auto degenerateIt = std::find(Surfaces.back().Elements.begin(), Surfaces.back().Elements.end(), element);
+          if(degenerateIt != Surfaces.back().Elements.end()){ //degenerate found
+            Surfaces.back().Elements.erase(degenerateIt); // remove element
+            continue; // ignore current element as well
+          }else{
+            Surfaces.back().Elements.push_back(element); // push element if it does not exist yet
+          }
+        }
+
+        // Take only the required nodes for the new surface
+        const unsigned undefinedNode=std::numeric_limits<unsigned int>::max();
+        std::vector<unsigned> NodeReplacements(Geometry.Nodes.size(),undefinedNode);
+        unsigned NodeCounter=0;
+        // go over all elements and replace their node ids with the new ones
+        for (unsigned k=0;k<Surfaces.back().Elements.size();++k) {
+          for (int h=0;h<D;h++) {
+            unsigned origin_node=Surfaces.back().Elements[k][h];
+            if (NodeReplacements[origin_node]==undefinedNode) {
+              NodeReplacements[origin_node]=NodeCounter++;
+              Surfaces.back().Nodes.push_back(Geometry.Nodes[origin_node]);
+            }
+            Surfaces.back().Elements[k][h]=NodeReplacements[origin_node];
+          }
+        }
+      }
+
+      // debug output TODO remove
+      unsigned counter=0;
+      for(auto it=Surfaces.begin(); it!=Surfaces.end(); ++it){
+        it->WriteVTK("surface_" + std::to_string(counter) + ".vtk");
+        ++counter;
+      }
     }
 
     //Reads in surfaces and transforms it to a levelset
@@ -1384,6 +1509,49 @@ namespace geometry {
       }
 
       msg::print_done();
+    }
+
+    template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
+    void import_levelsets_from_hull(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
+                                      ParameterType& p, std::list<LevelSetType>& LevelSets)
+    {
+
+      //!Read hull surfaces from geometry file
+      surface<D> geometry;
+      std::list< surface<D> > surfaces;
+
+      std::cout << "Read geometry input file " << p.geometry_files[0];
+      msg::print_start("...");
+
+      // read surface
+      geometry.ReadVTP(p.geometry_files[0], p.input_scale, p.input_transformation,
+                p.input_transformation_signs, p.change_input_parity, p.input_shift);
+
+
+      // get information on which triangles should be removed
+      std::bitset<2 * D> remove_flags;
+      for (int i = 0; i < D; ++i) {
+        if (p.boundary_conditions[i].min == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i);
+        } else if (i == p.open_boundary && !p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i);
+        }
+        if (p.boundary_conditions[i].max == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i + D);
+        } else if (i == p.open_boundary && p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i + D);
+        }
+      }
+
+      // now get surfaces from hull mesh
+      TransformHullToSurfaces(geometry, surfaces, remove_flags, p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
+
+
+
     }
 
   }//Namespace geometry END

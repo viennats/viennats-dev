@@ -289,7 +289,11 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     if(p.surface_geometry){
       geometry::import_levelsets_from_surface<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
     } else {
-      geometry::import_levelsets_from_volume<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
+      if(p.geometry_files[0].find(".vtp") != std::string::npos){
+        geometry::import_levelsets_from_hull<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
+      }else{
+        geometry::import_levelsets_from_volume<D, GridTraitsType<D>, ParameterType2, LevelSetType>(GridProperties, grid, p, LevelSets);
+      }
     }
   }
 
