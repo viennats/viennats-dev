@@ -16,6 +16,7 @@
 #include <vtkAppendPolyData.h>
 #include <vtkProbeFilter.h>
 #include <vtkGeometryFilter.h>
+#include <vtkIncrementalOctreePointLocator.h>
 
 #include "vector.hpp"
 
@@ -210,9 +211,95 @@ namespace lvlset{
     return rgrid;
   }
 
+  /// This function removes duplicate cells and fills a vector with the new point ids
+  void removeDuplicatePoints(vtkSmartPointer<vtkUnstructuredGrid>& ugrid, const double tolerance){
 
+    vtkSmartPointer<vtkUnstructuredGrid> newGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkIncrementalOctreePointLocator> ptInserter = vtkSmartPointer<vtkIncrementalOctreePointLocator>::New();
+    ptInserter->SetTolerance(tolerance);
 
+    vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
 
+    // get bounds
+    double gridBounds[6];
+    ugrid->GetBounds(gridBounds);
+
+    // start point insertion from original points
+    std::vector<vtkIdType> newPointIds;
+    newPointIds.reserve(ugrid->GetNumberOfPoints());
+    ptInserter->InitPointInsertion(newPoints, gridBounds);
+
+    // make new point list
+    for(vtkIdType pointId=0; pointId<ugrid->GetNumberOfPoints(); ++pointId){
+      vtkIdType globalPtId = 0;
+      ptInserter->InsertUniquePoint(ugrid->GetPoint(pointId), globalPtId);
+      newPointIds.push_back(globalPtId);
+    }
+
+    // now set the new points to the unstructured grid
+    newGrid->SetPoints(newPoints);
+
+    // go through all cells and change point ids to match the new ids
+    for(vtkIdType cellId=0; cellId<ugrid->GetNumberOfCells(); ++cellId){
+      vtkIdList* cellPoints = vtkIdList::New();
+      ugrid->GetCellPoints(cellId, cellPoints);
+      for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
+        cellPoints->SetId(pointId, newPointIds[cellPoints->GetId(pointId)]);
+      }
+      // in 2D, insert a triangle, in 3D a tetra
+      newGrid->InsertNextCell((cellPoints->GetNumberOfIds()==3)?5:10, cellPoints);
+    }
+
+    // conserve all point and cell data
+    newGrid->GetPointData()->ShallowCopy(ugrid->GetPointData());
+    newGrid->GetCellData()->ShallowCopy(ugrid->GetCellData());
+
+    // set ugrid to the newly created grid
+    ugrid = newGrid;
+  }
+
+  /// This function removes all cells which contain a point more than once
+  void removeDegenerateCells(vtkSmartPointer<vtkUnstructuredGrid>& ugrid){
+
+    vtkSmartPointer<vtkUnstructuredGrid> newGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    // need to copy material numbers
+    vtkSmartPointer<vtkIntArray> materialNumberArray = vtkSmartPointer<vtkIntArray>::New();
+    materialNumberArray->SetNumberOfComponents(1);
+    materialNumberArray->SetName("Material");
+
+    // see if material is defined
+    int arrayIndex;
+    vtkDataArray* matArray = ugrid->GetCellData()->GetArray("Material", arrayIndex);
+    const int& materialArrayIndex = arrayIndex;
+
+    // go through all cells and delete those with duplicate entries
+    for(vtkIdType cellId=0; cellId<ugrid->GetNumberOfCells(); ++cellId){
+      vtkIdList* cellPoints = vtkIdList::New();
+      ugrid->GetCellPoints(cellId, cellPoints);
+      bool isDuplicate=false;
+      for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
+        for(vtkIdType nextId=pointId+1; nextId<cellPoints->GetNumberOfIds(); ++nextId){
+          // if they are the same, remove the cell
+          if(cellPoints->GetId(pointId) == cellPoints->GetId(nextId)) isDuplicate=true;
+        }
+      }
+      if(!isDuplicate){
+        // in 2D, insert a triangle, in 3D a tetra
+        newGrid->InsertNextCell((cellPoints->GetNumberOfIds()==3)?5:10, cellPoints);
+        // if material was defined before, use it now
+        if(materialArrayIndex>=0) materialNumberArray->InsertNextValue(matArray->GetTuple1(cellId));
+      }
+    }
+
+    // just take the old points and point data
+    newGrid->SetPoints(ugrid->GetPoints());
+    newGrid->GetPointData()->ShallowCopy(ugrid->GetPointData());
+    // set material cell data
+    newGrid->GetCellData()->SetScalars(materialNumberArray);
+
+    ugrid = newGrid;
+  }
 
 
 
@@ -367,7 +454,17 @@ namespace lvlset{
       triangleFilter->SetInputConnection(appendFilter->GetOutputPort());
       triangleFilter->Update();
 
+      // remove degenerate points and remove cells which collapse to zero volume then
+      //volumeMesh = appendFilter->GetOutput();
       volumeMesh = triangleFilter->GetOutput();
+      std::cout << "Before duplicate removal: " << std::endl;
+      std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
+      std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+      removeDuplicatePoints(volumeMesh, 1e-3*LevelSets.front().grid().grid_delta());
+      removeDegenerateCells(volumeMesh);
+      std::cout << "After duplicate removal: " << std::endl;
+      std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
+      std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
     }
 
 
@@ -380,6 +477,8 @@ namespace lvlset{
       hullTriangleFilter->Update();
 
       hullMesh = hullTriangleFilter->GetOutput();
+      // removeDuplicatePoints(hullMesh, 1e-3*LevelSets.front().grid().grid_delta());
+      // removeDegenerateCells(hullMesh);
     }
   }
 
