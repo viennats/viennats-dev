@@ -643,7 +643,7 @@ namespace geometry {
           Materials.push_back(matArray->GetTuple1(i));
         }
       }else{  // if no material specified, use the same for all elements
-        for(unsigned i=0; i<matArray->GetNumberOfValues(); ++i){
+        for(unsigned i=0; i<Elements.size(); ++i){
           Materials.push_back(1);
         }
       }
@@ -1073,11 +1073,13 @@ namespace geometry {
     std::bitset<2*D> remove_flags,
     double eps,
     bool report_import_errors) {
-
+      // get the unique material numbers for explicit booling
+      std::vector<int> materialInts;
+      GetMaterialNumbers(Geometry.Materials, materialInts);
+      std::vector<unsigned> materialNumbers(materialInts.begin(), materialInts.end());
 
       //determine maximum number of materials
-      unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
-      if (report_import_errors) assert(max_mat>=1);
+      unsigned max_mat = materialNumbers.back();
 
 
       typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;
@@ -1128,39 +1130,42 @@ namespace geometry {
               {
                 if(it->second.second!=max_mat+1){
                   std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: ";
-                  for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
-                  oss << "\b\b" << std::endl;
-                  msg::print_warning(oss.str());
-                  abort();
+                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
+                  msg::print_error(oss.str());
                 }
               }
               it->second.second=Geometry.Materials[i];
               //if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
               //else if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
 
+
+
             } else {
               if (report_import_errors) //assert(it->second.first==max_mat+1);
               {
                 if(it->second.first!=max_mat+1){
+                  // std::ostringstream oss;
+                  // oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
+                  // oss << tmp << ", " << Geometry.Elements[i][(j+D)%(D+1)] << " with " << it->second.first << ", " << it->second.second << std::endl;
+                  // oss << "Triangle " << std::distance(Triangles.begin(), it) << ": " << it->first << " with materials: " << it->second.first << ", " << it->second.second << std::endl;
+                  // oss << std::endl << " at coordinates:" << std::endl;
+                  // for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
                   std::ostringstream oss;
-                  oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
-                  for(unsigned a=0; a<D+1; ++a) oss << Geometry.Elements[i][a] << ", ";
-                  oss << std::endl << " at coordinates:" << std::endl;
-                  for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
-                  oss << std::endl;
-                  msg::print_warning(oss.str());
-                  abort();
+                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
+                  msg::print_error(oss.str());
+                  msg::print_error(oss.str());
                 }
               }
               it->second.first=Geometry.Materials[i];
               //if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
               // else if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
+
             }
 
             if (it->second.first==it->second.second) Triangles.erase(it);
 
           } else {
+            // std::cout << "Adding triangle " << i << " at: " << tmp << ", " << Geometry.Elements[i][(j+D)%(D+1)] << ", dir: " << lvlset::Orientation(pts) << std::endl;
             if (lvlset::Orientation(pts)) {
               Triangles.insert(it,std::make_pair(tmp,std::make_pair(max_mat+1,Geometry.Materials[i])));
             } else {
@@ -1171,23 +1176,22 @@ namespace geometry {
       }
 
 
-      Surfaces.resize(max_mat);
+      Surfaces.resize(materialNumbers.size());
 
       //for all materials/for each surface
       typename SurfacesType::iterator srf_it=Surfaces.begin();
-      for (unsigned int m=0;m<max_mat;++m) {
-
+      for (auto matIt=materialNumbers.begin(); matIt!=materialNumbers.end(); ++matIt) {
         for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-          if ((m>=it->second.first-1) && (m<it->second.second-1)) {
+          // std::cout << "Triangle with " << it->second.first << " and " << it->second.second << std::endl;
+          if (((*matIt)>=it->second.first) && ((*matIt)<it->second.second)) {
             srf_it->Elements.push_back(it->first);
-          } else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
+          } else if (((*matIt)>=it->second.second) && ((*matIt)<it->second.first)) {
             srf_it->Elements.push_back(it->first);
             std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
           }
         }
 
         //replace Nodes of Geometry by Nodes of individual surface
-
         const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
         std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
         unsigned int NodeCounter=0;
@@ -1204,46 +1208,9 @@ namespace geometry {
             srf_it->Elements[k][h]=NodeReplacements[origin_node];
           }
         }
+        //srf_it->WriteVTK("surface_" + std::to_string(*matIt) + ".vtk");  // TODO remove
         ++srf_it;
       }
-
-      // srf_it IS NOW ON THE LAST ELEMENT SO IT IS USED TO ASSIGN THE BORDER DO NOT ADD CODE BETWEEN THIS AND MATERIAL LOOP
-      // Make boundary surface to be used for volume exports
-      // const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
-      // std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
-      // unsigned int NodeCounter=0;
-      // std::cout << Geometry.Elements.size() << std::endl;
-      //
-      // for(unsigned int i=0; i<Geometry.Elements.size(); ++i){  //iterate through all elements(tetrahedrons)
-      //
-      //   for(unsigned int j=0; j<D+1; ++j){
-      //     bool bordernode=false;
-      //     std::vector<unsigned int> elems;
-      //     std::vector<lvlset::vec<double,D> > nodes;
-      //     for(int k=0; k<D; ++k){
-      //       elems.push_back(Geometry.Elements[i][(j+k)%(D+1)]);
-      //       nodes.push_back(Geometry.Nodes[elems[k]]);
-      //     }
-      //
-      //     for(int a=0; a<D; ++a){
-      //       double average=0;
-      //       for(int k=0; k<D; ++k) average += nodes[k][a];
-      //       if((average/D) >= Geometry.Max[a]-eps) bordernode=remove_flags[a+D];
-      //       else if((average/D) <= Geometry.Min[a]+eps) bordernode=remove_flags[a];
-      //     }
-      //     if(bordernode){
-      //       for(int k=0; k<D; ++k){
-      //         unsigned int origin_node=elems[k];
-      //         if(NodeReplacements[origin_node] == undefined_node){
-      //           NodeReplacements[origin_node] = NodeCounter++;
-      //           srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
-      //         }
-      //         elems[k] = NodeReplacements[origin_node];
-      //       }
-      //       srf_it->Elements.push_back(lvlset::vec<unsigned int, D>(&elems[0]));
-      //     }
-      //   }
-      // }
     }
 
 
@@ -1595,13 +1562,10 @@ namespace geometry {
       msg::print_start("Distance transformation...");
 
       // Initialize each level set with "lvlset::init(...)"
-      unsigned counter=0;
       for (typename std::list< surface<D> >::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
         LevelSets.push_back(LevelSetType(grid));
-        it->WriteVTK("surface_" + std::to_string(counter) + ".vtk");
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
         LevelSets.back().set_levelset_id();
-        ++counter;
       }
 
       msg::print_done();
