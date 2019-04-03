@@ -258,9 +258,9 @@ namespace lvlset{
 
     materialMeshes.push_back(clipper->GetOutput());
 
-    #ifdef DEBUGOUTPUT
+    // #ifdef DEBUGOUTPUT
     unsigned counter=1;
-    #endif
+    // #endif
 
     // now cut large volume mesh with all the smaller ones
     for(typename LevelSetsType::const_reverse_iterator it=++LevelSets.rbegin(); it!=LevelSets.rend(); ++it){
@@ -270,7 +270,7 @@ namespace lvlset{
 
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-5, totalMinimum, totalMaximum);  // number of extra grid points outside and LSOffset
+      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-4*counter, totalMinimum, totalMaximum);  // number of extra grid points outside and LSOffset
 
       #ifdef DEBUGOUTPUT
       {
@@ -311,19 +311,19 @@ namespace lvlset{
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
 
-      #ifdef DEBUGOUTPUT
-          ++counter;
-      #endif
+      // #ifdef DEBUGOUTPUT
+      ++counter;
+      // #endif
     }
 
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
-    appendFilter->MergePointsOn();
 
     vtkSmartPointer<vtkAppendPolyData> hullAppendFilter =
       vtkSmartPointer<vtkAppendPolyData>::New();
 
 
+    auto LevelSetIterator = LevelSets.begin();
     for(unsigned i=0; i<materialMeshes.size(); ++i){
 
       // write material number in mesh
@@ -331,7 +331,7 @@ namespace lvlset{
       materialNumberArray->SetNumberOfComponents(1);
       materialNumberArray->SetName("Material");
       for(unsigned j=0; j<materialMeshes[materialMeshes.size()-1-i]->GetNumberOfCells(); ++j){
-        materialNumberArray->InsertNextValue(i+1);
+        materialNumberArray->InsertNextValue(LevelSetIterator->get_levelset_id());
       }
       materialMeshes[materialMeshes.size()-1-i]->GetCellData()->SetScalars(materialNumberArray);
 
@@ -352,8 +352,9 @@ namespace lvlset{
         hullAppendFilter->AddInputData(geoFilter->GetOutput());
       }
 
-
       appendFilter->AddInputData(materialMeshes[materialMeshes.size()-1-i]);
+
+      ++LevelSetIterator;
     }
 
     // do not need tetrahedral volume mesh if we do not print volume

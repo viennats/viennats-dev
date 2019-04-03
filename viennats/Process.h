@@ -43,6 +43,7 @@ namespace proc {
 
       for (int i=0;i<num_layers;++i) {
             LS.push_back(LS.back());
+            LS.back().set_levelset_id();
         }
 
       for (int i=0;i>num_layers;--i) {
@@ -383,6 +384,42 @@ namespace proc {
                 return (1+ModelType::CoverageStorageSize+ModelType::RatesStorageSize+1);
             }
 
+            template<class PT_ID_TYPE>
+            double get_series_data_double(PT_ID_TYPE active_pt_id, int series) const {
+              if (series==0) {
+                double v=0.;
+                unsigned int mat=0;
+                bool connected=true;
+                bool visible=true;
+
+                if (Materials.size()>0) mat= Materials[active_pt_id];
+                if (Connectivities.size()>0) connected=Connectivities[active_pt_id];
+                if (Visibilities.size()>0) visible=Visibilities[active_pt_id];
+
+                Model.CalculateVelocity(
+                  v,
+                  calc::Make3DVector<Dimensions>(NormalVector+active_pt_id*Dimensions),
+                  Coverages+active_pt_id*Model.CoverageStorageSize,
+                  Rates+active_pt_id*Model.RatesStorageSize,
+                  mat,
+                  connected,
+                  visible
+                );
+
+                return v;
+              } else if (series<=ModelType::CoverageStorageSize) {
+                return Coverages[active_pt_id*ModelType::CoverageStorageSize+series-1];
+
+              } else if (series<=ModelType::CoverageStorageSize+ModelType::RatesStorageSize) {
+                return Rates[active_pt_id*ModelType::RatesStorageSize+series-ModelType::CoverageStorageSize-1];
+              } else {
+                unsigned int mat=0;
+                if (Materials.size()>0) mat= Materials[active_pt_id];
+                return mat;
+              }
+              return 0.;
+            }
+
             template <class PT_ID_TYPE>
             std::string get_series_data(PT_ID_TYPE active_pt_id, int series) const {
 
@@ -490,6 +527,7 @@ namespace proc {
         }
 
       if (!Model.fill_up()) LevelSets.pop_back();
+      else LevelSets.back().set_levelset_id(); // we introduced new material, so it needs an ID
 
       //TODO output and time
 
@@ -586,6 +624,7 @@ namespace proc {
 
       // now put the mask as the lowest levelset
       LevelSets.push_front(mask_ls);
+      LevelSets.front().set_levelset_id();
 
 
         //TODO output and time
@@ -1688,6 +1727,18 @@ namespace proc {
                         } else {
                             write_explicit_surface_vtk(*it,oss.str(), Data);
                         }
+                    }
+                    if(Parameter.print_vtp){
+                      std::ostringstream oss;
+                      oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".vtp";
+#ifdef VERBOSE
+                      msg::print_message("print vtp");
+#endif
+                      if (i!=LevelSets.size()-1) {
+                          write_explicit_surface_vtp(*it,oss.str());
+                      } else {
+                          write_explicit_surface_vtp(*it,oss.str(), Data);
+                      }
                     }
                     if (Parameter.print_lvst) {
                         std::ostringstream oss;

@@ -26,6 +26,18 @@
 #include "boundaries.h"
 #include "Partition/Partition.h"
 
+/*
+
+TO ADD NEW PARAMETER TO THIS PARSER:
+- Declare new variable in Parameters struct
+- Add variable to BOOST_FUSION_ADAPT_STRUCT
+- Declare new rule at the end of par_grammar
+- Define the rule in par_grammar constructor
+- Add new rule to "definition" rule in par_grammar constructor
+- if it is a required parameter: add variable to validate() in Parameters struct
+
+*/
+
 
 namespace proc{
         enum FiniteDifferenceSchemeType {ENGQUIST_OSHER_1ST_ORDER, ENGQUIST_OSHER_2ND_ORDER, LAX_FRIEDRICHS_1ST_ORDER, LAX_FRIEDRICHS_2ND_ORDER};
@@ -272,6 +284,7 @@ struct ReportError {
             int bits_per_distance;
             bool output_volume_extract_single_materials;
             bool print_vtk;
+            bool print_vtp;
             bool print_dx;
             bool print_lvst;
             bool print_volume_tetra;
@@ -350,6 +363,7 @@ struct ReportError {
         (int, bits_per_distance)
         (bool, output_volume_extract_single_materials)
         (bool, print_vtk)
+        (bool, print_vtp)
         (bool, print_dx)
         (bool, print_lvst)
         (bool, print_volume_tetra)
@@ -485,6 +499,7 @@ struct ReportError {
                 bits_per_distance %= lit("bits_per_distance") > '=' > lexeme[int_] > ';';
                 output_volume_extract_single_materials %= lit("output_volume_extract_single_materials") > '=' > boolean > ';';
                 print_vtk %= lit("print_vtk") > '=' > boolean > ';';
+                print_vtp %= lit("print_vtp") > '=' > boolean > ';';
                 print_dx %= lit("print_dx") > '=' > boolean > ';';
                 print_lvst %= lit("print_lvst") > '=' > boolean > ';';
                 print_volume_tetra %= lit("print_volume_tetra") > '=' > boolean > ';';
@@ -551,7 +566,7 @@ struct ReportError {
                 cfl_condition ^ input_scale ^ grid_delta ^ input_transformation ^
                 input_shift ^ default_disc_orientation ^ ignore_materials ^
                 change_input_parity ^ random_seed ^ num_dimensions ^ omp_threads ^ domain_extension ^
-                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ output_volume_extract_single_materials ^ print_vtk ^ print_dx ^ print_lvst ^
+                receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ output_volume_extract_single_materials ^ print_vtk ^ print_vtp ^ print_dx ^ print_lvst ^
                 print_volume_tetra ^ print_volume_hull ^ print_velocities ^ print_coverages ^
                 print_rates ^ print_materials ^
                 print_statistics ^ max_extended_starting_position ^ open_boundary ^
@@ -597,6 +612,7 @@ struct ReportError {
                 change_input_parity,
                 output_volume_extract_single_materials,
                 print_vtk,
+                print_vtp,
                 print_dx,
                 print_lvst,
                 print_volume_hull,
@@ -661,6 +677,7 @@ struct ReportError {
         bits_per_distance=8;
         output_volume_extract_single_materials=true;
         print_vtk=false;
+        print_vtp=false;
         print_dx=false;
         print_lvst=true;
         print_volume_tetra=true;
