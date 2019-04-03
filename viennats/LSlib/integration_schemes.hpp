@@ -719,14 +719,14 @@ namespace lvlset {
 
         //TODO at: hard coded just for testing
         //NOTE AT The following 4 lines must remain in lines 722-723
-        vec<value_type,3> direction100{-1,1,0};
-        vec<value_type,3> direction010{-1,-1,0};
+        vec<value_type,3> direction100{0,1,0};
+        vec<value_type,3> direction010{1,0,-1};
 
         //NOTE AT The following 4 lines must remain in lines 726-729
-        const value_type r100=0.0166666666667;
-        const value_type r110=0.0309166666667;
-        const value_type r111=0.000121666666667;
-        const value_type r311=0.0300166666667;
+        const value_type r100=-0.0166666666667;
+        const value_type r110=-0.0309166666667;
+        const value_type r111=-0.000121666666667;
+        const value_type r311=-0.0300166666667;
 
         bool initialized;
 
@@ -746,7 +746,7 @@ namespace lvlset {
             assert(order > 4);                   //the user in the level-set-traits-class
 
             //TODO sparse field expansion must depend on slf stencil order!
-            l.expand(order*2+5);
+            l.expand(order*2+1);
           //  l.expand(13);
             // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
                                                         //the level set values of the neighbor grid points,
@@ -814,6 +814,13 @@ namespace lvlset {
                 vec<value_type,D> alpha;
 
                 vec<value_type,D> normal_p =  stars[i].normal_vector();
+
+  	            //Check for corrupted normal
+    				    if( (math::abs(normal_p[0]) < 1e-6) && (math::abs(normal_p[1]) < 1e-6) && (math::abs(normal_p[2]) < 1e-6) ){
+  			             alphas.push_back(vec<value_type,D>(0.0));
+                     continue;
+    				    }
+
                 vec<value_type,D> normal_n =  normal_p;
 
                 vec<value_type,D> dv(value_type(0));
@@ -821,51 +828,52 @@ namespace lvlset {
 
                 for(int k=0; k < D; ++k){
 
-                  normal_p[k] -= DN; //p=previous
-                  normal_n[k] += DN; //n==next
+                    normal_p[k] -= DN; //p=previous
+                    normal_n[k] += DN; //n==next
 
-                  value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
-                  value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
-                  //central difference
-                  dv[k] = (vn - vp) / (2.0 * DN);
+                    value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
+                    value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
+                    //central difference
+                    dv[k] = (vn - vp) / (2.0 * DN);
 
-                  normal_p[k] += DN;
-                  normal_n[k] -= DN;
-                }
+                    normal_p[k] += DN;
+                    normal_n[k] -= DN;
+                  }
 
-                //determine \partial H / \partial phi_l
-                for (int k = 0 ; k < D; ++k) { //iterate over dimensions
+                  //determine \partial H / \partial phi_l
+                  for (int k = 0 ; k < D; ++k) { //iterate over dimensions
 
-                  //Monti term
-                  value_type monti = 0;
-                  if(1){
-                    for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
+                    //Monti term
+                    value_type monti = 0;
+                    if(1){
+                      for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
+                           int idx = (k + 1 + j) % D;
+                            monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
+                      }
+                      monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+                    }
+
+                    //Toifl Quell term
+                    value_type toifl=0;
+                    if(1){
+                      for(int j= 0; j < D - 1; ++j ){
                          int idx = (k + 1 + j) % D;
-                          monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
+                         toifl += stars[i].gradient(idx) * dv[idx];
+                      }
+                    toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
                     }
-                    monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
-                  }
 
-                  //Toifl Quell term
-                  value_type toifl=0;
-                  if(1){
-                    for(int j= 0; j < D - 1; ++j ){
-                       int idx = (k + 1 + j) % D;
-                       toifl += stars[i].gradient(idx) * dv[idx];
+                    //Osher (constant V) term
+                    value_type osher=0;
+                    if(1){
+
+                        osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                     }
-                  toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
-                  }
-
-                  //Osher (constant V) term
-                  value_type osher=0;
-                  if(1){
-
-                      osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                  }
 
                   //Total derivative is sum of terms given above
                   alpha[k] = std::fabs( monti + toifl + osher);
                 }
+
                 alphas.push_back(alpha);
               }
 

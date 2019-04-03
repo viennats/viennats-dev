@@ -853,7 +853,7 @@ namespace lvlset {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
 
                 if(1){
-                  const double alpha_maxCFL = 1.0;
+                  const double alpha_maxCFL = 0.1;
 
                   //second time step test, based on alphas
                   vec<value_type,3> alphas = scheme.getFinalAlphas();

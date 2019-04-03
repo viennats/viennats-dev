@@ -4213,9 +4213,15 @@ namespace lvlset {
             vec<value_type, D> tmp;
             for (int i=0;i<D;++i) tmp[i]=gradient(i);
 
-            tmp /= NormL2(tmp);
+	          value_type norm2 = NormL2(tmp);
 
-            return tmp;
+      			if(math::abs(norm2) < 1e-6){
+      				tmp[0]=0; tmp[1]=0; tmp[2]=0;
+            }
+      			else{
+      				tmp /= NormL2(tmp);
+      		 	}
+      			return tmp;
         }
 
         value_type gradient_diff(int dir) const {
@@ -4267,12 +4273,14 @@ namespace lvlset {
 
           int num_stencil_points = std::pow(2*stencil_order + 1, D); //for neighborhood including diagonal neighbors
 
+          //int num_stencil_points = 2*order*D + 1;
+
           offsets.reserve(num_stencil_points);
           it_stencil_points.reserve(num_stencil_points);
 
           //prepare offset vectors for iteration over all SLF stencils,
           //they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
-          for( int i = 0; i < num_stencil_points; ++i){
+         for( int i = 0; i < num_stencil_points; ++i){
             vec<index_type,D> tmp;
             for (int d = 0; d < D; ++d){
               tmp[d] = index_type( (int) (i / std::pow(2*stencil_order + 1,d) ) % (2 * stencil_order + 1) - stencil_order );
@@ -4293,6 +4301,24 @@ namespace lvlset {
             if(true == is_center)
               center_index=i;
           }
+
+        /*
+          int i=0;
+          for ( i = 0; i < 2*D; ++i){
+              vec<index_type,D> tmp(index_type(0));
+              for (int j = 0; j < order; ++j) {
+                  if (i<D) tmp[i]++; else tmp[i-D]--;
+                  offsets.push_back(tmp);
+                  it_stencil_points.push_back(const_iterator_runs_offset(l,tmp, it_mid.start_indices()));
+              }
+
+                 
+          }
+         vec<index_type,D> tmp(index_type(0));
+         offsets.push_back(tmp);
+         it_stencil_points.push_back(const_iterator_runs_offset(l,tmp, it_mid.start_indices()));
+         center_index=i;*/
+
         }
 
         std::vector<const_iterator_runs_offset>& get_stencil_points(){
