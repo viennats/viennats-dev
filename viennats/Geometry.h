@@ -1030,7 +1030,7 @@ namespace geometry {
           Materials.push_back(matArray->GetTuple1(i));
         }
       }else{  // if no material specified, use the same for all elements
-        for(unsigned i=0; i<matArray->GetNumberOfValues(); ++i){
+        for(unsigned i=0; i<Elements.size(); ++i){
           Materials.push_back(1);
         }
       }
