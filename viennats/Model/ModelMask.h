@@ -10,6 +10,7 @@
 
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
+#include "../parser_actors.h"
 #include <string>
 
 namespace model {
