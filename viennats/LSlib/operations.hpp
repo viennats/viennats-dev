@@ -36,7 +36,7 @@ namespace lvlset {
 
             typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
 
-            LevelSetType tmp(lA.grid().grid_traits());
+            LevelSetType tmp(lA.grid()); //at removed.grid_traits
 
             tmp.initialize();
 
@@ -63,6 +63,9 @@ namespace lvlset {
                     default:
                         itB.next();
                 }
+
+                pos=std::max(itA.start_indices(),itB.start_indices()); //at
+
             }
 
             tmp.finalize(std::min(lA.number_of_layers(), lB.number_of_layers()));
@@ -153,6 +156,9 @@ namespace lvlset {
         //this function returns the minimum of two level set functions
         return MinMax(lA, lB, min_wrapper());
     }
+
+
+
 
     /*template <class GridTraitsType, class LevelSetTraitsType>
     void max2(levelset<GridTraitsType, LevelSetTraitsType>& lA, const levelset<GridTraitsType, LevelSetTraitsType>& lB) {

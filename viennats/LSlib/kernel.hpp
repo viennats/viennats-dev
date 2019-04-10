@@ -4312,7 +4312,7 @@ namespace lvlset {
                   it_stencil_points.push_back(const_iterator_runs_offset(l,tmp, it_mid.start_indices()));
               }
 
-                 
+
           }
          vec<index_type,D> tmp(index_type(0));
          offsets.push_back(tmp);

@@ -719,14 +719,14 @@ namespace lvlset {
 
         //TODO at: hard coded just for testing
         //NOTE AT The following 4 lines must remain in lines 722-723
-        vec<value_type,3> direction100{0,1,0};
-        vec<value_type,3> direction010{1,0,-1};
+        vec<value_type,3> direction100{0.707106781187,0.707106781187,0};
+        vec<value_type,3> direction010{-0.707106781187,0.707106781187,0};
 
         //NOTE AT The following 4 lines must remain in lines 726-729
-        const value_type r100=-0.0166666666667;
-        const value_type r110=-0.0309166666667;
-        const value_type r111=-0.000121666666667;
-        const value_type r311=-0.0300166666667;
+        const value_type r100=0.0166666666667;
+        const value_type r110=0.0309166666667;
+        const value_type r111=0.000121666666667;
+        const value_type r311=0.0300166666667;
 
         bool initialized;
 

@@ -525,6 +525,14 @@ namespace proc {
             Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
         }
 
+        // manually set min and max to match original simulation
+       for(unsigned i=0; i<D; ++i){
+         if(LevelSets.back().grid().boundary_conditions(i) != lvlset::INFINITE_BOUNDARY){
+           mask_geometry.Min[i] = LevelSets.back().grid().min_grid_index(i)*Parameter.grid_delta;
+           mask_geometry.Max[i] = LevelSets.back().grid().max_grid_index(i)*Parameter.grid_delta;
+         }
+       }
+
         //      mask_geometry.Read(Model.file_name(), Parameter.input_scale, Parameter.input_transformation, Parameter.input_transformation_signs, Parameter.change_input_parity, Parameter.material_mapping, Parameter.input_shift, Parameter.ignore_materials);
 
         typedef std::list<geometry::surface<D> > SurfacesType;
@@ -1423,6 +1431,27 @@ namespace proc {
 #endif
 
 
+    //AT prepare top layer for depo
+    //TODO more general
+    //NOTE AT following line has to be remain in line 1437
+    bool is_selective_depo = false;
+    if(is_selective_depo){
+      auto it_maskLayer=LevelSets.end();
+      --it_maskLayer;
+      --it_maskLayer;
+
+      auto it_topLayer = LevelSets.end();
+      --it_topLayer;
+
+      typename LevelSetsType::value_type tmp = lvlset::min(lvlset::invert(*it_topLayer),*it_maskLayer);
+
+      it_topLayer->swap(tmp);
+
+    
+
+  }
+
+
     while(true) {
 
         double TimeTotalExclOutput=-my::time::GetTime();
@@ -1733,7 +1762,7 @@ namespace proc {
                     std::ostringstream oss;
                     oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_implicit.vtk";
                     //TODO new parameter for levelset output to vtk (implicit, no surface mesh)
-                    it->export_levelset_vtk(oss.str());
+                   // it->export_levelset_vtk(oss.str());
                     it++;
                 }
 
@@ -1917,8 +1946,10 @@ namespace proc {
                 }
                 else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
 
+ 
+
                     VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
-                    DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)
+                    //DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)
 
                     const int rk_order = 1; //Runge Kutta (RK) order, Euler == RK 1st order
                     //NOTE 3rd order does not work at the moment
@@ -1997,6 +2028,7 @@ namespace proc {
                       }
 
                     }
+
 
                     TimeTimeIntegration+=my::time::GetTime();
 

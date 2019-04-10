@@ -717,6 +717,8 @@ namespace lvlset {
         assert(std::numeric_limits<value_type>::has_infinity);
 
 
+
+
         LevelSetType & LevelSet=ptr::deref(LevelSets.back());         //top level set
 
         typename LevelSetType::points_type seg=LevelSet.get_new_segmentation();
@@ -752,6 +754,8 @@ namespace lvlset {
             //iterators which iterate simultaneously over level sets
             std::vector<typename LevelSetType::const_iterator_runs> ITs;
             for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it){
+
+
               ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it)));
             }
 
@@ -853,7 +857,7 @@ namespace lvlset {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
 
                 if(1){
-                  const double alpha_maxCFL = 0.1;
+                  const double alpha_maxCFL = 1.0;
 
                   //second time step test, based on alphas
                   vec<value_type,3> alphas = scheme.getFinalAlphas();
@@ -887,6 +891,8 @@ namespace lvlset {
                 assert(new_lvlset.num_active_pts()==LevelSet.num_active_pts());
                 assert(new_lvlset.num_pts()==new_lvlset.num_active_pts());
                 LevelSet.swap(new_lvlset);
+
+
             }
 
             /*
@@ -912,7 +918,7 @@ namespace lvlset {
                 }
 
 
-                //NOTE AT now timestep is define, can be compared with SLF dt
+                //NOTE AT now timestep is defined, can be compared with SLF dt
 
 
                 // now deduct the velocity times the time step we take
@@ -1086,6 +1092,8 @@ namespace lvlset {
 
         tmp+=my::time::GetTime();
         std::cout << " " << tmp;*/
+      
+       
 
         //tmp=-my::time::GetTime();
         TimeType time_step=time_integrate_active_grid_points2(           //determine maximum possible time step
@@ -1094,7 +1102,9 @@ namespace lvlset {
                                                 Velocities,
                                                 integration_scheme,
                                                 MaxTimeStep);
-        //tmp+=my::time::GetTime();
+
+
+            //tmp+=my::time::GetTime();
         //std::cout << " " << tmp;
 
         /*tmp=-my::time::GetTime();
@@ -1116,6 +1126,9 @@ namespace lvlset {
             ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor
             ptr::deref(*it).segment();
         }
+
+       
+
         //tmp+=my::time::GetTime();
         //std::cout << " " << tmp << std::endl;
 
