@@ -1006,8 +1006,15 @@ namespace geometry {
       }
 
       //read cells (Elements)
-      Elements.reserve(polyData->GetNumberOfPolys());
-      vtkCellArray* cellArray = polyData->GetPolys();
+      vtkCellArray* cellArray;
+      if(D==3){
+        Elements.reserve(polyData->GetNumberOfPolys());
+        cellArray = polyData->GetPolys();
+      }else{
+        Elements.reserve(polyData->GetNumberOfLines());
+        cellArray = polyData->GetLines();
+      }
+
       cellArray->InitTraversal();
       vtkIdList* pointList = vtkIdList::New();
       while(cellArray->GetNextCell(pointList)){

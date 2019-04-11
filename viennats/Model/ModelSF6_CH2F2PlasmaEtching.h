@@ -60,6 +60,7 @@ namespace model {
 		double Flux_ev;
 
 		int AddLayer;
+		double length_scale; // scale of simulation in metres
 
 
 	public:
@@ -99,6 +100,7 @@ namespace model {
 			using namespace boost::spirit::classic;
 
 			double Accuracy;
+			length_scale=0.1;
 
 			bool b = parse(
 				p->ModelParameters.begin(),
@@ -111,7 +113,8 @@ namespace model {
 					(str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';') |
 					(str_p("min_ion_energy")  >> '='  >>real_p[assign_a(min_ion_energy)]  >> ';') |
 					(str_p("temperature")  >> '='  >>real_p[assign_a(temperature)]  >> ';') |
-					(str_p("delta_ion_energy")  >> '='  >>real_p[assign_a(delta_ion_energy)]  >> ';')
+					(str_p("delta_ion_energy")  >> '='  >>real_p[assign_a(delta_ion_energy)]  >> ';') |
+					(str_p("length_scale")  >> '='  >>real_p[assign_a(length_scale)]  >> ';')
 				),
 				space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
@@ -122,6 +125,8 @@ namespace model {
 				NumberOfParticleClusters[0]=(FluxIon>0.)?num_particles:0;
 				NumberOfParticleClusters[1]=(FluxP>0.)?num_particles:0;
 				NumberOfParticleClusters[2]=(FluxE>0.)?num_particles:0;
+
+				length_scale=0.1/length_scale; // model is calibrated to tens of nanometres
 
 				//		    temperature=300;
 				Flux_ev=0.0027*FluxE*std::exp(-0.168/(kB*temperature));
@@ -135,14 +140,14 @@ namespace model {
 
 				if (Coverages[1]>1) {	//Deposition
 					if (Material<=AddLayer) {	//Si
-						Velocity = 5e-3*(DR_p - ER_p); 	//m/s
+						Velocity = 5e-3*length_scale*(DR_p - ER_p); 	//m/s
 						//std::cout << Velocity << std::endl;
 					} else {
 						Velocity=0;
 					}
 				} else { 			//Etching
 					if (Material<=AddLayer) {	//Si
-						Velocity = -1e-1*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;	//m/s
+						Velocity = -1e-1*length_scale*(Rates[1]*Coverages[2]+Rates[0]*(1.-Coverages[2])+Rates[6]*Coverages[2])/rho_polySi;	//m/s
 						//std::cout << "Etch: " << Velocity << std::endl;
 					} else {
 						Velocity = 0;

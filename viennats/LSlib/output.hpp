@@ -337,7 +337,7 @@ namespace lvlset {
       // fill pointlist with points from geometry
       vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
       for (unsigned int i=0;i<s.Nodes.size();i++) {
-          polyPoints->InsertNextPoint(s.Nodes[i][0], s.Nodes[i][1], s.Nodes[i][2]);
+          polyPoints->InsertNextPoint(s.Nodes[i][0], s.Nodes[i][1], (D==2)?0:s.Nodes[i][2]);
       }
 
       vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
@@ -351,7 +351,11 @@ namespace lvlset {
 
       vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
       polyData->SetPoints(polyPoints);
-      polyData->SetPolys(polyCells);
+      if(D==3){
+        polyData->SetPolys(polyCells);
+      }else{
+        polyData->SetLines(polyCells);
+      }
 
       // for each data series create point data
       for (int k=0;k<Data.number_of_series();++k) {
