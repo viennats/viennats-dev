@@ -246,8 +246,8 @@ namespace lvlset{
       for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
         cellPoints->SetId(pointId, newPointIds[cellPoints->GetId(pointId)]);
       }
-      // in 2D, insert a triangle, in 3D a tetra
-      newGrid->InsertNextCell((cellPoints->GetNumberOfIds()==3)?5:10, cellPoints);
+      // insert same cell with new points
+      newGrid->InsertNextCell(ugrid->GetCell(cellId)->GetCellType(), cellPoints);
     }
 
     // conserve all point and cell data
@@ -285,8 +285,8 @@ namespace lvlset{
         }
       }
       if(!isDuplicate){
-        // in 2D, insert a triangle, in 3D a tetra
-        newGrid->InsertNextCell((cellPoints->GetNumberOfIds()==3)?5:10, cellPoints);
+        // insert same cell if no degenerate points
+        newGrid->InsertNextCell(ugrid->GetCell(cellId)->GetCellType(), cellPoints);
         // if material was defined before, use it now
         if(materialArrayIndex>=0) materialNumberArray->InsertNextValue(matArray->GetTuple1(cellId));
       }
@@ -448,23 +448,29 @@ namespace lvlset{
     if(volumeMesh.GetPointer() != 0){
       appendFilter->Update();
 
-      // change all 3D cells into tetras and all 2D cells to triangles
-      vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
-        vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-      triangleFilter->SetInputConnection(appendFilter->GetOutputPort());
-      triangleFilter->Update();
-
       // remove degenerate points and remove cells which collapse to zero volume then
       //volumeMesh = appendFilter->GetOutput();
-      volumeMesh = triangleFilter->GetOutput();
+      volumeMesh = appendFilter->GetOutput();
+    #ifdef DEBUGOUTPUT
       std::cout << "Before duplicate removal: " << std::endl;
       std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
       std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+    #endif
+      // use 1/1000th of grid spacing for contraction of two similar points
       removeDuplicatePoints(volumeMesh, 1e-3*LevelSets.front().grid().grid_delta());
       removeDegenerateCells(volumeMesh);
+    #ifdef DEBUGOUTPUT
       std::cout << "After duplicate removal: " << std::endl;
       std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
       std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+    #endif
+
+      // change all 3D cells into tetras and all 2D cells to triangles
+      vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
+        vtkSmartPointer<vtkDataSetTriangleFilter>::New();
+      triangleFilter->SetInputData(volumeMesh);
+      triangleFilter->Update();
+      volumeMesh = triangleFilter->GetOutput();
     }
 
 

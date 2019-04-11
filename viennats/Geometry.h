@@ -1137,7 +1137,7 @@ namespace geometry {
               {
                 if(it->second.second!=max_mat+1){
                   std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
+                  oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
                   msg::print_error(oss.str());
                 }
               }
@@ -1151,15 +1151,8 @@ namespace geometry {
               if (report_import_errors) //assert(it->second.first==max_mat+1);
               {
                 if(it->second.first!=max_mat+1){
-                  // std::ostringstream oss;
-                  // oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
-                  // oss << tmp << ", " << Geometry.Elements[i][(j+D)%(D+1)] << " with " << it->second.first << ", " << it->second.second << std::endl;
-                  // oss << "Triangle " << std::distance(Triangles.begin(), it) << ": " << it->first << " with materials: " << it->second.first << ", " << it->second.second << std::endl;
-                  // oss << std::endl << " at coordinates:" << std::endl;
-                  // for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
                   std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
-                  msg::print_error(oss.str());
+                  oss << "Coinciding triangles with same orientation at points: " << i << std::endl;
                   msg::print_error(oss.str());
                 }
               }
