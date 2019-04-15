@@ -259,8 +259,7 @@ namespace lvlset{
   }
 
   /// This function removes all cells which contain a point more than once
-  void removeDegenerateCells(vtkSmartPointer<vtkUnstructuredGrid>& ugrid){
-
+  void removeDegenerateTetras(vtkSmartPointer<vtkUnstructuredGrid>& ugrid){
     vtkSmartPointer<vtkUnstructuredGrid> newGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
     // need to copy material numbers
@@ -455,14 +454,22 @@ namespace lvlset{
       std::cout << "Before duplicate removal: " << std::endl;
       std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
       std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+      vtkSmartPointer<vtkXMLUnstructuredGridWriter> gwriter = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+      gwriter->SetFileName("before_removal.vtu");
+      gwriter->SetInputData(appendFilter->GetOutput());
+      gwriter->Update();
     #endif
-      // use 1/1000th of grid spacing for contraction of two similar points
+
+      // use 1/1000th of grid spacing for contraction of two similar points, so that tetrahedralisation works correctly
       removeDuplicatePoints(volumeMesh, 1e-3*LevelSets.front().grid().grid_delta());
-      removeDegenerateCells(volumeMesh);
+
     #ifdef DEBUGOUTPUT
       std::cout << "After duplicate removal: " << std::endl;
       std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
       std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+      gwriter->SetFileName("after_removal.vtu");
+      gwriter->SetInputData(volumeMesh);
+      gwriter->Update();
     #endif
 
       // change all 3D cells into tetras and all 2D cells to triangles
@@ -471,6 +478,9 @@ namespace lvlset{
       triangleFilter->SetInputData(volumeMesh);
       triangleFilter->Update();
       volumeMesh = triangleFilter->GetOutput();
+
+      // now that only tetras are left, remove the ones with degenerate points
+      removeDegenerateTetras(volumeMesh);
     }
 
 
