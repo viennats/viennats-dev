@@ -287,6 +287,7 @@ struct ReportError {
             bool print_vtp;
             bool print_dx;
             bool print_lvst;
+            bool print_explicit_lvst;
             bool print_volume_tetra;
             bool print_volume_hull;
             bool print_velocities;
@@ -366,6 +367,7 @@ struct ReportError {
         (bool, print_vtp)
         (bool, print_dx)
         (bool, print_lvst)
+        (bool, print_explicit_lvst)
         (bool, print_volume_tetra)
         (bool, print_volume_hull)
         (bool, print_velocities)
@@ -502,6 +504,7 @@ struct ReportError {
                 print_vtp %= lit("print_vtp") > '=' > boolean > ';';
                 print_dx %= lit("print_dx") > '=' > boolean > ';';
                 print_lvst %= lit("print_lvst") > '=' > boolean > ';';
+                print_explicit_lvst %= lit("print_explicit_lvst") > '=' > boolean > ';';
                 print_volume_tetra %= lit("print_volume_tetra") > '=' > boolean > ';';
                 print_volume_hull %= lit("print_volume_hull") > '=' > boolean > ';';
                 print_velocities %= lit("print_velocities") > '=' > boolean > ';';
@@ -567,8 +570,8 @@ struct ReportError {
                 input_shift ^ default_disc_orientation ^ ignore_materials ^
                 change_input_parity ^ random_seed ^ num_dimensions ^ omp_threads ^ domain_extension ^
                 receptor_radius ^ further_tracking_distance ^ bits_per_distance ^ output_volume_extract_single_materials ^ print_vtk ^ print_vtp ^ print_dx ^ print_lvst ^
-                print_volume_tetra ^ print_volume_hull ^ print_velocities ^ print_coverages ^
-                print_rates ^ print_materials ^
+                print_explicit_lvst ^ print_volume_tetra ^ print_volume_hull ^ print_velocities ^
+                print_coverages ^ print_rates ^ print_materials ^
                 print_statistics ^ max_extended_starting_position ^ open_boundary ^
                 remove_bottom ^ snap_to_boundary_eps ^ process_cycles ^ material_mapping ^
                 add_layer ^ boundary_conditions ^ processes;
@@ -615,6 +618,7 @@ struct ReportError {
                 print_vtp,
                 print_dx,
                 print_lvst,
+                print_explicit_lvst,
                 print_volume_hull,
                 print_volume_tetra,
                 print_velocities,
@@ -680,6 +684,7 @@ struct ReportError {
         print_vtp=false;
         print_dx=false;
         print_lvst=true;
+        print_explicit_lvst=false;
         print_volume_tetra=true;
         print_volume_hull=false;
         print_velocities=false;

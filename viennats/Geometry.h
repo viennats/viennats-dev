@@ -1137,7 +1137,7 @@ namespace geometry {
               {
                 if(it->second.second!=max_mat+1){
                   std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
+                  oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
                   msg::print_error(oss.str());
                 }
               }
@@ -1151,15 +1151,8 @@ namespace geometry {
               if (report_import_errors) //assert(it->second.first==max_mat+1);
               {
                 if(it->second.first!=max_mat+1){
-                  // std::ostringstream oss;
-                  // oss << "Coinciding triangles in " << i << " with same orientation at points: " << std::endl;
-                  // oss << tmp << ", " << Geometry.Elements[i][(j+D)%(D+1)] << " with " << it->second.first << ", " << it->second.second << std::endl;
-                  // oss << "Triangle " << std::distance(Triangles.begin(), it) << ": " << it->first << " with materials: " << it->second.first << ", " << it->second.second << std::endl;
-                  // oss << std::endl << " at coordinates:" << std::endl;
-                  // for(unsigned a=0; a<D+1; ++a) oss << pts[a] << ", ";
                   std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: " << pts << std::endl;
-                  msg::print_error(oss.str());
+                  oss << "Coinciding triangles with same orientation at points: " << i << std::endl;
                   msg::print_error(oss.str());
                 }
               }
@@ -1252,11 +1245,13 @@ namespace geometry {
         typename SurfacesType::value_type searchSurface;
         // get position in element vector based on material
         // upper_bound returns iterator to first element greater than current material
-        // therefor elemIterator is essentially our .end() element
+        // therefore elemIterator is essentially our .end() element
+        // same goes for elemStart as .begin() element
+        auto elemStart = std::lower_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const materialElementType& i, const int& j) { return i.second < j; });
         auto elemEnd = std::upper_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const int& i, const materialElementType& j) { return i < j.second; });
 
         // go through all elements and remove duplicates and boundary elements
-        for(auto elemIt=materialElements.begin(); elemIt!=elemEnd; ++elemIt){
+        for(auto elemIt=elemStart; elemIt!=elemEnd; ++elemIt){
           lvlset::vec<unsigned, D> element;
           for(unsigned i=0; i<D; ++i) element[i]=(elemIt->first)[i];
 
@@ -1568,11 +1563,15 @@ namespace geometry {
 
       msg::print_start("Distance transformation...");
 
-      // Initialize each level set with "lvlset::init(...)"
+      // Initialize each level set with "lvlset::init(...) and wrap with material below"
       for (typename std::list< surface<D> >::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
         LevelSets.back().set_levelset_id();
+        // need to fix layer wrapping, so wrap with levelset below
+        if(it!=surfaces.begin()){
+          LevelSets.back().min(*(--(--LevelSets.end())));
+        }
       }
 
       msg::print_done();

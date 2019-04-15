@@ -90,7 +90,12 @@ ENDIF(NOT VIENNATS_STATIC_BUILD)
 
 # VTK
 # VTK_DIR needs to point to the VTK installation and to VTK/lib/cmake/vtk-{vtk-version}
-set(VTK_DIR $ENV{VTK_DIR})
+IF(VIENNATS_STATIC_BUILD)
+  set(VTK_DIR $ENV{VTK_STATIC_DIR})
+ELSE(VIENNATS_STATIC_BUILD)
+  set(VTK_DIR $ENV{VTK_DIR})
+ENDIF(VIENNATS_STATIC_BUILD)
+
 find_package(VTK REQUIRED)
 
 IF(VTK_FOUND)
