@@ -1749,6 +1749,15 @@ namespace proc {
 
                         it->export_levelset(oss.str(), Parameter.bits_per_distance);
                     }
+                    if(Parameter.print_explicit_lvst){
+                      std::ostringstream oss;
+                      oss << Parameter.output_path<< output_info.file_name <<"_lvst_" << i << "_" << output_info.output_counter << ".vtp";
+#ifdef VERBOSE
+                      msg::print_message("print explicit lvst");
+#endif
+
+                      write_explicit_levelset(*it,oss.str());
+                    }
                     it++;
                 }
 

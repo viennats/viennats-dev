@@ -1245,11 +1245,13 @@ namespace geometry {
         typename SurfacesType::value_type searchSurface;
         // get position in element vector based on material
         // upper_bound returns iterator to first element greater than current material
-        // therefor elemIterator is essentially our .end() element
+        // therefore elemIterator is essentially our .end() element
+        // same goes for elemStart as .begin() element
+        auto elemStart = std::lower_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const materialElementType& i, const int& j) { return i.second < j; });
         auto elemEnd = std::upper_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const int& i, const materialElementType& j) { return i < j.second; });
 
         // go through all elements and remove duplicates and boundary elements
-        for(auto elemIt=materialElements.begin(); elemIt!=elemEnd; ++elemIt){
+        for(auto elemIt=elemStart; elemIt!=elemEnd; ++elemIt){
           lvlset::vec<unsigned, D> element;
           for(unsigned i=0; i<D; ++i) element[i]=(elemIt->first)[i];
 
@@ -1561,11 +1563,15 @@ namespace geometry {
 
       msg::print_start("Distance transformation...");
 
-      // Initialize each level set with "lvlset::init(...)"
+      // Initialize each level set with "lvlset::init(...) and wrap with material below"
       for (typename std::list< surface<D> >::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
         LevelSets.back().set_levelset_id();
+        // need to fix layer wrapping, so wrap with levelset below
+        if(it!=surfaces.begin()){
+          LevelSets.back().min(*(--(--LevelSets.end())));
+        }
       }
 
       msg::print_done();
