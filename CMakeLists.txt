@@ -1,7 +1,6 @@
 # Required CMake Version
 ###############
- cmake_minimum_required(VERSION 2.8)
-#cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 2.8)
 
 # Project setup
 ###############
@@ -9,7 +8,7 @@ PROJECT(ViennaLS)
 
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 3)
-set(VERSION_PATCH 0)
+set(VERSION_PATCH 1)
 set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 ADD_DEFINITIONS(-DVIENNATS_VERSION="${VERSION}")

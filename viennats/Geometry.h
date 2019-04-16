@@ -1133,39 +1133,24 @@ namespace geometry {
           typename triangle_map::iterator it=Triangles.lower_bound(tmp);
           if ((it!=Triangles.end()) && (it->first==tmp)) {
             if (lvlset::Orientation(pts)) {
-              if (report_import_errors) //assert(it->second.second==max_mat+1);
-              {
-                if(it->second.second!=max_mat+1){
-                  std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
-                  msg::print_error(oss.str());
-                }
+              if (report_import_errors && it->second.second!=max_mat+1){
+                std::ostringstream oss;
+                oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
+                msg::print_error(oss.str());
               }
               it->second.second=Geometry.Materials[i];
-              //if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
-              //else if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
-
-
-
             } else {
-              if (report_import_errors) //assert(it->second.first==max_mat+1);
-              {
-                if(it->second.first!=max_mat+1){
-                  std::ostringstream oss;
-                  oss << "Coinciding triangles with same orientation at points: " << i << std::endl;
-                  msg::print_error(oss.str());
-                }
+              if (report_import_errors && it->second.first!=max_mat+1){
+                std::ostringstream oss;
+                oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
+                msg::print_error(oss.str());
               }
               it->second.first=Geometry.Materials[i];
-              //if(it->second.first==max_mat+1) it->second.first=Geometry.Materials[i];
-              // else if(it->second.second==max_mat+1) it->second.second=Geometry.Materials[i];
-
             }
 
             if (it->second.first==it->second.second) Triangles.erase(it);
 
           } else {
-            // std::cout << "Adding triangle " << i << " at: " << tmp << ", " << Geometry.Elements[i][(j+D)%(D+1)] << ", dir: " << lvlset::Orientation(pts) << std::endl;
             if (lvlset::Orientation(pts)) {
               Triangles.insert(it,std::make_pair(tmp,std::make_pair(max_mat+1,Geometry.Materials[i])));
             } else {
@@ -1182,7 +1167,6 @@ namespace geometry {
       typename SurfacesType::iterator srf_it=Surfaces.begin();
       for (auto matIt=materialNumbers.begin(); matIt!=materialNumbers.end(); ++matIt) {
         for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-          // std::cout << "Triangle with " << it->second.first << " and " << it->second.second << std::endl;
           if (((*matIt)>=it->second.first) && ((*matIt)<it->second.second)) {
             srf_it->Elements.push_back(it->first);
           } else if (((*matIt)>=it->second.second) && ((*matIt)<it->second.first)) {
@@ -1208,7 +1192,6 @@ namespace geometry {
             srf_it->Elements[k][h]=NodeReplacements[origin_node];
           }
         }
-        //srf_it->WriteVTK("surface_" + std::to_string(*matIt) + ".vtk");  // TODO remove
         ++srf_it;
       }
     }
