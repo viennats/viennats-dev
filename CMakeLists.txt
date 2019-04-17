@@ -23,8 +23,7 @@ OPTION(VIENNATS_STATIC_BUILD "" OFF)
 
 # Default compile options
 #################
-# disable-new-dtags is necessary for ld > 2.27
-SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5  -Wl,--disable-new-dtags")
+SET(CMAKE_CXX_FLAGS "-Wall -pedantic")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
@@ -53,7 +52,6 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/viennats/LSlib/)
 ################
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-
 # Find prerequisites
 ####################
 
@@ -64,16 +62,21 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 #  compiler dependent settings for OpenMP
 ###############################################
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -ferror-limit=2")
+    #MESSAGE(STATUS ${CMAKE_CXX_FLAGS})
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -ferror-limit=2")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fmax-errors=2")
+    # disable-new-dtags is necessary for ld > 2.27
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -fmax-errors=2")
     FIND_PACKAGE(OpenMP REQUIRED)
-    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")    
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp  ")  
     SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fmax-errors=2")
 endif()
+
+# disable-new-dtags sets RPATH which searches for libs recursively, instead of RUNPATH which does not
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
 
 # Boost ..
 SET(BOOST_MIN_VERSION 1.46.0)
@@ -111,10 +114,11 @@ find_package(VTK REQUIRED)
 IF(VTK_FOUND)
   message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
   include(${VTK_USE_FILE})
-  #only link necessary VTK libraries in order for static linking to work (-lGL fails)
+  #only link necessary VTK libraries
+  set(VTK_LIBRARIES vtksys;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkIOXML)
+  message(STATUS "Including following VTK Libraries: ${VTK_LIBRARIES}")
   IF(VIENNATS_STATIC_BUILD)
-    set(VTK_LIBRARIES vtksys;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkIOXML)
-    message(STATUS "Static build: Only including following VTK Libraries: ${VTK_LIBRARIES}")
+    message(STATUS "BUILDING STATIC BINARY")
   ENDIF(VIENNATS_STATIC_BUILD)
 
 ELSE(VTK_FOUND)

@@ -196,8 +196,8 @@ struct ReportError {
 
             struct ProcessParameterType{
                 double ProcessDistance;
-                double AFMStartPosition[3];
-                double AFMEndPosition[3];
+                std::vector<double> AFMStartPosition;
+                std::vector<double> AFMEndPosition;
                 int AddLayer;                   //the number of level set layers added to the geometry before the process is started
                 double ProcessTime;             //the process time in seconds
                 unsigned int ALDStep;
@@ -388,8 +388,8 @@ struct ReportError {
 
     BOOST_FUSION_ADAPT_STRUCT(client::Parameters::ProcessParameterType,
         (double, ProcessDistance)
-        (double, AFMStartPosition[3])
-        (double, AFMEndPosition[3])
+        (std::vector<double>, AFMStartPosition)
+        (std::vector<double>, AFMEndPosition)
         (int, AddLayer)
         (double, ProcessTime)
         (unsigned int, ALDStep)
@@ -471,8 +471,8 @@ struct ReportError {
                 quotes %= '"' >> lexeme[+(char_ - '"') > '"'];
                 listed %= '"' >> +(lexeme[+(char_ - '"' - ',')] % ',') >> '"';
                 boolean %= boolean_symbols[_val=_1];
-                intvec %= '{' >> +(lexeme[int_] % ',') > '}';
-                doublevec %= '{' >> +(lexeme[double_] % ',') > '}';
+                intvec %= ('{' >> +(lexeme[int_] % ',')) > '}';
+                doublevec %= ('{' >> +(lexeme[double_] % ',')) > '}';
                 boundaryvec %= (('{' > +(lexeme[boundary_condition_symbols] % ',') > '}') % ',');
                 model_param_end = lit(';') >> lit('}') >> lit(';');
 

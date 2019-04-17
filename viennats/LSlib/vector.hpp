@@ -37,7 +37,7 @@ namespace lvlset {
         explicit vec(T x0,T x1,T x2) {
             x[0]=x0;
             x[1]=x1;
-            x[2]=x2;
+            if(D==3) x[2]=x2;
         }
         explicit vec(T x0,T x1) {
             x[0]=x0;

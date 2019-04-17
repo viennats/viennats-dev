@@ -18,7 +18,7 @@ namespace model {
             const static double n[]; //{n_NH3, n_TDMAT}
 
 		    double molecular_thickness;
-            double reduction_ratio;
+            //double reduction_ratio;
             double step_size;
             int step;
             double m_NH3;
@@ -33,7 +33,7 @@ namespace model {
 
 
 	public:
-            
+
         class ParticleType {
 	public:
 		double Direction[3];
@@ -57,7 +57,7 @@ namespace model {
         static const bool CalculateNormalVectors=true;
 
         static const bool ReemissionIsMaterialDependent=false;
-        
+
 
         TiN_ALD(const std::string & Parameters, const int &current_step) {
 
@@ -127,9 +127,9 @@ namespace model {
                     int Type = step-1;
 
                         //TDMAT on NH3 : NH3 on TDMAT
-                        double Coverages0_6 = Coverages[6*Type+0]; 
+                        double Coverages0_6 = Coverages[6*Type+0];
                         //TDMAT on TiN : NH3 on TiN
-                        double Coverages1_7 = Coverages[6*Type+1]; 
+                        double Coverages1_7 = Coverages[6*Type+1];
 
                         delta_time = step_size;
 //                        std::cout << "step_size = " << step_size << "\n";
@@ -140,34 +140,34 @@ namespace model {
 //                        std::cout << "n[Type] = " << n[Type] << "\n";
 //                        delta_time = std::min(
 //                                        std::max(
-//                                            (step_size * Coverages1_7) / 
-//                                            (C[2*Type+1]*std::pow(std::max(Coverages[(6*Type+10)%12] + 
-//                                                            Coverages0_6 - Coverages1_7,0.), 
-//                                                         n[Type])), 
+//                                            (step_size * Coverages1_7) /
+//                                            (C[2*Type+1]*std::pow(std::max(Coverages[(6*Type+10)%12] +
+//                                                            Coverages0_6 - Coverages1_7,0.),
+//                                                         n[Type])),
 //                                        step_size),
 //                                     0.01);
 
                         Coverages[6*Type+0] = std::max(
-                                                Coverages[(6*Type+8)%12] 
+                                                Coverages[(6*Type+8)%12]
                                                 - std::pow(
                                                     std::max(
                                                         std::pow(
                                                             Coverages[(6*Type+8)%12] - Coverages0_6,
                                                             1.-n[Type])
-                                                        - (1 - n[Type])*Rates[0]*C[2*Type+0]*delta_time, 
+                                                        - (1 - n[Type])*Rates[0]*C[2*Type+0]*delta_time,
                                                     0.),
-                                                1./(1.-n[Type])), 
+                                                1./(1.-n[Type])),
                                             0.);
 
-                        Coverages[6*Type+1] = Coverages1_7 
-                                              + Rates[0]*C[2*Type+1] 
-                                                    * delta_time 
+                        Coverages[6*Type+1] = Coverages1_7
+                                              + Rates[0]*C[2*Type+1]
+                                                    * delta_time
                                                         * std::max(
                                                             std::pow(
                                                                 std::max(
                                                                     Coverages[(6*Type+10)%12] + Coverages0_6 - Coverages1_7,
                                                                 0.)
-                                                            ,n[Type]), 
+                                                            ,n[Type]),
                                                         0.);
 
                         // NH3 or TDMAT after a NH3 or TDMAT step
@@ -200,7 +200,7 @@ namespace model {
 //				default:
 //					assert(0);
 //			}
-                        
+
                         my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
 			p.Probability=1.;
 			p.Flux=Flux;
@@ -252,7 +252,7 @@ namespace model {
 
                 }
 	};
-           
+
             double const TiN_ALD::C[] = {0.75, 0.8, 3.8, 1.2};
             double const TiN_ALD::n[] = {0.9, 1.2};
 }

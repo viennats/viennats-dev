@@ -81,8 +81,7 @@ namespace model {
         static const int CoverageStorageSize=0;
         static const int RatesStorageSize=0;
         static const unsigned int NumberOfParticleTypes=0;
-//        static const unsigned int NumberOfParticleClusters[NumberOfParticleTypes];
-        static const unsigned int NumberOfParticleClusters[1];
+        unsigned int NumberOfParticleClusters[1];
 
         template<class VecType>
         void CalculateVelocity(

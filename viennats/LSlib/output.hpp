@@ -754,10 +754,11 @@ namespace lvlset {
       if(!fout.is_open()) msg::print_error("Could not open the file: " + path);
 
       //type & constant redefinitions
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::index_type index_type;
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::value_type value_type;
-      const unsigned int D = ls.dimensions;
+      typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
+      typedef typename LevelSetType::size_type size_type;
+      typedef typename LevelSetType::index_type index_type;
+      typedef typename LevelSetType::value_type value_type;
+      static const int D=LevelSetType::grid_type2::dimensions;
 
       /************************************************   WRITE FILE HEADER   ************************************************/
       fout << "LvSt" << LVST_FILE_VERSION_NUMBER << (bigEndian() ? 1 : 0)  <<  D;

@@ -169,8 +169,8 @@ struct tdr_geometry
   {
     string name0=read_string(reg,"name");
     string name;
-    unsigned int i;
-    while ((i=name0.find_first_of("_."))!=name0.npos)
+    std::size_t i;
+    while ((i=name0.find_first_of("_."))!=std::string::npos)
     {
       name=name+name0.substr(0,i);
       name0=name0.substr(i+1);
@@ -187,7 +187,7 @@ struct tdr_geometry
         material="Contact";
         // attribute "part 0", no idea for what
         break;
-      case 2: material="Interface"+read_int(reg,"bulk 0")+read_int(reg,"bulk 1");
+      case 2: material="Interface"+std::to_string(read_int(reg,"bulk 0"))+std::to_string(read_int(reg,"bulk 1"));
         break;
         return;
     }
