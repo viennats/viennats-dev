@@ -26,8 +26,7 @@ namespace model {
     class WetEtching {
 
         lvlset::vec<double,3> directions[3];
-        //lvlset::vec<double,3> direction010;
-        //lvlset::vec<double,3> direction001;
+
         double r100;
         double r110;
         double r111;
@@ -94,9 +93,14 @@ namespace model {
                 bool connected,
                 bool visible) const {
 
-            if (has_mask && Material>0) {
+          /*  if (has_mask && Material>0) {
                 Velocity=0;
                 return;
+            }*/
+
+            if( (Material == 3) || (Material == 5) ){
+              Velocity=0;
+              return;
             }
 
             lvlset::vec<double,3> N;

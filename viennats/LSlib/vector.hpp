@@ -291,7 +291,7 @@ namespace lvlset {
         return max*std::sqrt(d);
     }
 
-    template <int D, class T> inline T Norm2(const vec<T, D>& v) { //atoifl: squared l2 norm TODO name is misleading
+    template <int D, class T> inline T Norm2(const vec<T, D>& v) { //squared l2 norm TODO name is misleading
         return dot(v,v);
     }
 

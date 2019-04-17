@@ -836,10 +836,14 @@ namespace proc {
       }
     }
 
+    //TODO top layer preparation for selective depo
+    bool is_selective_depo = false;
+
     const double & ProcessTime = ProcessParameter.ProcessTime;
     double RelativeTime=0;
 
     //while ((OutputTimesIter!=OutputTimes.end()) && (RelativeTime>*OutputTimesIter)) ++OutputTimesIter;
+
 
 #ifdef VERBOSE
         msg::print_message("Start loop over time");
@@ -1200,7 +1204,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
 //                        if (time_step == MaxTimeStep) {
 //                            LevelSets.back().expand(3);
 //                            LevelSets=LevelSets_temp;
@@ -1226,7 +1231,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
@@ -1245,7 +1251,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {           //at
@@ -1264,7 +1271,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 }
@@ -1285,12 +1293,13 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 }
 
-                else assert(0);
+                //else assert(0);//???
 
                 if (time_step>=MaxTimeStep) {
                     assert(time_step==MaxTimeStep);
@@ -1341,7 +1350,6 @@ namespace proc {
       if (is_finished) break;
     }
   }
-
   ///Includes loop over full process time to run the simulation.
   template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
         LevelSetsType& LevelSets,
@@ -1434,23 +1442,41 @@ namespace proc {
     //AT prepare top layer for depo
     //TODO more general
     //NOTE AT following line has to be remain in line 1437
-    bool is_selective_depo = false;
+    bool is_selective_depo = true;
+
+    const bool epitaxy_possible[5] = {false,true,false,true,true};
     if(is_selective_depo){
-      auto it_maskLayer=LevelSets.end();
-      --it_maskLayer;
-      --it_maskLayer;
 
-      auto it_topLayer = LevelSets.end();
-      --it_topLayer;
+        auto it_topLayer=LevelSets.rbegin();
+        auto it_layer=it_topLayer;
 
-      typename LevelSetsType::value_type tmp = lvlset::min(lvlset::invert(*it_topLayer),*it_maskLayer);
+        typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
 
-      it_topLayer->swap(tmp);
+        bool upper_layer_is_depo_substrate = false;
+        unsigned int idx = LevelSets.size() - 1;
 
-    
+        for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
 
-  }
+          if(epitaxy_possible[idx] == true){
 
+            if(upper_layer_is_depo_substrate == false){
+                it_layer = it_maskLayer;
+                upper_layer_is_depo_substrate = true;
+            }
+
+          } else{ //epitaxy is not possible
+            if(upper_layer_is_depo_substrate == true){
+                typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
+                tmp.swap(tmp2);
+            }
+            upper_layer_is_depo_substrate = false;
+          }
+          --idx;
+        }
+
+        typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
+        LevelSets.push_back(tmp2);
+    }
 
     while(true) {
 
@@ -1762,7 +1788,7 @@ namespace proc {
                     std::ostringstream oss;
                     oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << "_implicit.vtk";
                     //TODO new parameter for levelset output to vtk (implicit, no surface mesh)
-                   // it->export_levelset_vtk(oss.str());
+                    it->export_levelset_vtk(oss.str());
                     it++;
                 }
 
@@ -1882,7 +1908,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
 
                     TimeTimeIntegration+=my::time::GetTime();
 
@@ -1902,7 +1929,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
@@ -1921,10 +1949,11 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
-                }else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {                  //NOTE TODO
+                }else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {
 
                   VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1940,16 +1969,15 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 }
-                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
-
- 
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {
 
                     VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
-                    //DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)
+                    //DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)?
 
                     const int rk_order = 1; //Runge Kutta (RK) order, Euler == RK 1st order
                     //NOTE 3rd order does not work at the moment
@@ -1966,22 +1994,24 @@ namespace proc {
                     time_step=lvlset::time_integrate(
                             LevelSets,
                             Velocities,
-                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
 
 
                     if(rk_order > 1){ //first euler integration all RK >= 2nd order
                       time_step=lvlset::time_integrate(
                               LevelSets,
                               Velocities,
-                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
+                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
                               Parameter.cfl_condition,
                               MaxTimeStep,
                               Coverages,
-                              Model.CoverageStorageSize);
+                              Model.CoverageStorageSize,
+                              is_selective_depo);
 
                       if(rk_order == 2){ //RK 2nd order: phi^(n+1) = 0.5*phi^n + 0.5 * phi^(n+2)
                         auto it=LevelSets.begin();
@@ -2007,11 +2037,12 @@ namespace proc {
                          time_step=lvlset::time_integrate(
                                   LevelSets,
                                   Velocities,
-                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient,PointMaterials),
+                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
                                   Parameter.cfl_condition,
                                   MaxTimeStep,
                                   Coverages,
-                                  Model.CoverageStorageSize);
+                                  Model.CoverageStorageSize,
+                                  is_selective_depo);
 
 
                           it=LevelSets.begin();
@@ -2022,14 +2053,9 @@ namespace proc {
                             typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.6667,0.3333);
 
                             it->swap(tmp);
-
                           }
-
                       }
-
                     }
-
-
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else assert(0);
@@ -2044,6 +2070,7 @@ namespace proc {
 
 
             }
+
 
             TimeTotalExclOutput+=my::time::GetTime();
             TimeTotalInclOutput+=my::time::GetTime();
@@ -2081,6 +2108,17 @@ namespace proc {
       }
 
       if (is_finished) break;
+    }
+
+     //unite final depo top layer and initial top layer => layers are in standard configuration again
+    if(is_selective_depo){
+        auto it_topLayer=LevelSets.rbegin();
+        auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
+
+        typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
+        it_topLayer->swap(tmp);
+        
+        //it_topLayer->export_levelset_vtk("top.vtk");
     }
   }
 

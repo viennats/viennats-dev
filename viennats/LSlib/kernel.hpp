@@ -1024,7 +1024,6 @@ namespace lvlset {
             //      GridTraitsType (see grid.hpp) into account if dynamic data structures are used for example
             //      Furthermore due to data structure alignment the result can be somehow inaccurate
 
-            //TODO
 
             unsigned long int x=sizeof(levelset<GridTraitsType, LevelSetTraitsType>);
 
@@ -4068,7 +4067,7 @@ namespace lvlset {
           it_neighbors.reserve(2*D*order);
 
 
-          offset = it_mid.get_offset(); //TODO change to proper get function
+          offset = it_mid.get_offset();
 
           for (int i = 0; i < 2*D; ++i){
               vec<index_type,D> tv(offset);
@@ -4251,7 +4250,6 @@ namespace lvlset {
      O O O
      O X O
      O O O
-
     */
     template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::neighbor_stencil {
 
@@ -4301,24 +4299,6 @@ namespace lvlset {
             if(true == is_center)
               center_index=i;
           }
-
-        /*
-          int i=0;
-          for ( i = 0; i < 2*D; ++i){
-              vec<index_type,D> tmp(index_type(0));
-              for (int j = 0; j < order; ++j) {
-                  if (i<D) tmp[i]++; else tmp[i-D]--;
-                  offsets.push_back(tmp);
-                  it_stencil_points.push_back(const_iterator_runs_offset(l,tmp, it_mid.start_indices()));
-              }
-
-
-          }
-         vec<index_type,D> tmp(index_type(0));
-         offsets.push_back(tmp);
-         it_stencil_points.push_back(const_iterator_runs_offset(l,tmp, it_mid.start_indices()));
-         center_index=i;*/
-
         }
 
         std::vector<const_iterator_runs_offset>& get_stencil_points(){

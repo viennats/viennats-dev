@@ -57,7 +57,6 @@ namespace lvlset {
         return LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE(alpha);
     }
 
-    //at
     class LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE {
     public:
         const double alpha;
@@ -68,17 +67,14 @@ namespace lvlset {
         return LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE(alpha);
     }
 
-    //at
 
     class STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE {
     public:
-        const double gamma;
-        const std::vector<unsigned int>& PointMaterials;
-        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(double a, const std::vector<unsigned int>& pm) : gamma(a), PointMaterials(pm){}
+        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(){}
     };
 
-    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS(double gamma, const std::vector<unsigned int>& pm) {
-        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(gamma,pm);
+    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS() {
+        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE();
     }
 
 
@@ -163,20 +159,20 @@ namespace lvlset {
         IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 1>(l,v,s.alpha) {}
     };
 
-    //at
     template <class LevelSetType, class VelocityType>
     class IntegrationScheme<LevelSetType, VelocityType, LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE>:public LaxFriedrichsScalar<LevelSetType, VelocityType, 2> {
     public:
         IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 2>(l,v,s.alpha) {}
     };
 
-    //at
+    //TODO Stencil order is given as template parameter, however in stencil local Lax Friedrichs the definitive order depends on the neighbor stencil order as well.
+    //
     template <class LevelSetType, class VelocityType>
     class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>
     :public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5> {
     public:
         IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s)
-           :StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v,s.gamma,s.PointMaterials) {}
+           :StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v) {}
     };
 
 
@@ -712,24 +708,22 @@ namespace lvlset {
         typedef typename LevelSetType::value_type value_type;
         typedef typename LevelSetType::index_type index_type;
 
-        const double gamma; //NOTE at the moment gamma (=) is not used
-        const std::vector<unsigned int>& PointMaterials;
-
         const int slf_order = 1; //stencil order
 
         //TODO at: hard coded just for testing
         //NOTE AT The following 4 lines must remain in lines 722-723
-        vec<value_type,3> direction100{0.707106781187,0.707106781187,0};
-        vec<value_type,3> direction010{-0.707106781187,0.707106781187,0};
+        vec<value_type,3> direction100{0,1,0};
+        vec<value_type,3> direction010{1,0,-1};
 
         //NOTE AT The following 4 lines must remain in lines 726-729
         const value_type r100=0.0166666666667;
-        const value_type r110=0.0309166666667;
-        const value_type r111=0.000121666666667;
-        const value_type r311=0.0300166666667;
+        const value_type r110=0.0166666666667;
+        const value_type r111=0.000833333333333;
+        const value_type r311=0.0166666666667;
 
         bool initialized;
 
+        //Final dissipation coefficients that are used by the time integrator. If D==2 last entries are 0.
         vec<value_type,3> final_alphas;
         vec<value_type,3> dx_all;
 
@@ -745,15 +739,13 @@ namespace lvlset {
         static void prepare_surface_levelset(LevelSetType& l) {
             assert(order > 4);                   //the user in the level-set-traits-class
 
-            //TODO sparse field expansion must depend on slf stencil order!
+            //expand the level set function to ensure that for all active grid points the level set values of the neighbor grid points, which are necessary to calculate the derivatives are also defined
+            //TODO Expansion of sparse field must depend on spatial derivative order AND  slf stencil order!
             l.expand(order*2+1);
-          //  l.expand(13);
-            // l.expand(order*2+1);                         //expand the level set function to ensure that for all active grid points
-                                                        //the level set values of the neighbor grid points,
-                                                        //which are necessary to calculate the derivatives are also defined
+
         }
 
-        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v, double a, const std::vector<unsigned int>& pm): LS(l), velocities(v), gamma(a), PointMaterials(pm), initialized(false) {
+        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v): LS(l), velocities(v), initialized(false) {
           for(int i = 0; i < 3; ++i){
             final_alphas[i] = 0;
             dx_all[i] = 0;
@@ -831,8 +823,8 @@ namespace lvlset {
                     normal_p[k] -= DN; //p=previous
                     normal_n[k] += DN; //n==next
 
-                    value_type vp = my::math::fourRateInterpolation<value_type>(normal_p, direction100, direction010, r100, r110, r111, r311);
-                    value_type vn = my::math::fourRateInterpolation<value_type>(normal_n, direction100, direction010, r100, r110, r111, r311);
+                    value_type vp = my::math::fourRateInterpolation<value_type,D>(normal_p, direction100, direction010, r100, r110, r111, r311);
+                    value_type vn = my::math::fourRateInterpolation<value_type,D>(normal_n, direction100, direction010, r100, r110, r111, r311);
                     //central difference
                     dv[k] = (vn - vp) / (2.0 * DN);
 
@@ -867,7 +859,7 @@ namespace lvlset {
                     value_type osher=0;
                     if(1){
 
-                        osher=my::math::fourRateInterpolation<value_type>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
+                        osher=my::math::fourRateInterpolation<value_type,D>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
                     }
 
                   //Total derivative is sum of terms given above

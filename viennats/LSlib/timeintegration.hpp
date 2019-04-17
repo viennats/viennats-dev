@@ -22,6 +22,8 @@
 #include "integration_schemes.hpp"
 #include "message.h"
 
+#include "operations.hpp" //AT TODO use boolean operations from kernel or from operations.hpp? The latter are more convienient to use.
+
 namespace lvlset {
 
     using namespace math;
@@ -476,6 +478,7 @@ namespace lvlset {
 
     }
 */
+
     template <class LevelSetsType, class IntegrationSchemeType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
     typename PointerAdapter<typename LevelSetsType::value_type>::result::value_type time_integrate_active_grid_points2(
             LevelSetsType& LevelSets,
@@ -484,8 +487,7 @@ namespace lvlset {
             const IntegrationSchemeType& IntegrationScheme,
 //            const bool separate_materials,
             //const SegmentationType& seg,
-            TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()         //TODO change to value_type
-
+            TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()        //TODO change to value_type
     ) {
         if (TimeStepRatio>0.4999) TimeStepRatio=0.4999;        //restriction of the CFL-Condition "TimeStepRatio" to values less than 0.5
                                                                //that means that the maximum distance which the surface moves within one time step
@@ -693,13 +695,14 @@ namespace lvlset {
     }
 
     //NOTE AT Overloaded for StencilLocalLaxFriedrichsScalar
+    //TODO Avoid this duplication of code
     template <class LevelSetsType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
     typename PointerAdapter<typename LevelSetsType::value_type>::result::value_type time_integrate_active_grid_points2(
             LevelSetsType& LevelSets,
             TimeStepRatioType TimeStepRatio,
             const VelocityClassType& Velocities,
             const typename lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& IntegrationScheme,
-//            const bool separate_materials,
+            //const bool separate_materials,
             //const SegmentationType& seg,
             TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()         //TODO change to value_type
 
@@ -715,9 +718,6 @@ namespace lvlset {
 
         assert(std::numeric_limits<value_type>::is_iec559);
         assert(std::numeric_limits<value_type>::has_infinity);
-
-
-
 
         LevelSetType & LevelSet=ptr::deref(LevelSets.back());         //top level set
 
@@ -748,6 +748,7 @@ namespace lvlset {
             value_type MaxTimeStep=std::numeric_limits<value_type>::max();
 
             // initialise integration by passing all found velocities to the scheme class
+            //NOTE Difference to generic time_integrate_active_grid_points2()
             typename lvlset::IntegrationScheme<LevelSetType, VelocityClassType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE> scheme(LevelSet, Velocities, IntegrationScheme);
 
 
@@ -856,9 +857,10 @@ namespace lvlset {
                 //first time step test, based on velocities
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
 
-                if(1){
-                  const double alpha_maxCFL = 1.0;
-
+                //Reduce time step according to monotonicty condition imposed by Lax Friedrichs
+                //NOTE Difference to generic time_integrate_active_grid_points2()
+                {
+                  const double alpha_maxCFL = 1.0; //TODO Can be potentially smaller than 1 (user input???)
                   //second time step test, based on alphas
                   vec<value_type,3> alphas = scheme.getFinalAlphas();
                   vec<value_type,3> dxs = scheme.getDx();
@@ -877,22 +879,15 @@ namespace lvlset {
                     MaxTimeStep2=MaxTimeStep;
                     std::cout << " to " << MaxTimeStep << std::endl;
                   }
-                }
-
-
+              }
             }
             #pragma omp barrier //wait until all other threads in section reach the same point.
             #pragma omp single //section of code that must be run by a single available thread.
             {
-
-
-
                 new_lvlset.finalize(1);
                 assert(new_lvlset.num_active_pts()==LevelSet.num_active_pts());
                 assert(new_lvlset.num_pts()==new_lvlset.num_active_pts());
                 LevelSet.swap(new_lvlset);
-
-
             }
 
             /*
@@ -1033,7 +1028,8 @@ namespace lvlset {
                                 CFLType CFL,
                                 TimeType MaxTimeStep,
                                 PointDataType& PointData,
-                                PointDataSizeType PointDataSize=1
+                                PointDataSizeType PointDataSize=1,
+                                const bool is_selective_depo=false
                             ) {
 
 //    msg::print_message("Velocity: ", Velocities.getVelocity());
@@ -1092,8 +1088,14 @@ namespace lvlset {
 
         tmp+=my::time::GetTime();
         std::cout << " " << tmp;*/
-      
-       
+        // unsigned int idx3=0;
+        // for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
+        //
+        //   std::ostringstream oss3;
+        //   oss3 << "before_timeintegration_" << idx3 << ".vtk";
+        //   ptr::deref(*it).export_levelset_vtk(oss3.str());
+        //   ++idx3;
+        // }
 
         //tmp=-my::time::GetTime();
         TimeType time_step=time_integrate_active_grid_points2(           //determine maximum possible time step
@@ -1121,13 +1123,15 @@ namespace lvlset {
         //std::cout << " " << tmp;
 
         //tmp=-my::time::GetTime();
+
         for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
-            ptr::deref(*it).max(ptr::deref(LevelSets.back()));  //adjust all level set functions below the top most level set function
+            if(is_selective_depo == false){
+                ptr::deref(*it).max(ptr::deref(LevelSets.back()));  //adjust all level set functions below the top most level set function
+            }
+
             ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor
             ptr::deref(*it).segment();
         }
-
-       
 
         //tmp+=my::time::GetTime();
         //std::cout << " " << tmp << std::endl;
@@ -1149,7 +1153,8 @@ namespace lvlset {
                                 CFLType CFL,
                                 TimeType MaxTimeStep,
                                 PointDataType& PointData,
-                                PointDataSizeType PointDataSize=1
+                                PointDataSizeType PointDataSize=1,
+                                const bool is_selective_depo=false
                             ) {
       //std::cout << "time_integrate!\n";
         //this specialization of "time_integrate" is for the time integration of just one level set function
