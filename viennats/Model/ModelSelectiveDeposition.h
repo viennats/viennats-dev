@@ -1,37 +1,44 @@
 /*
- * ModelWetEtching.h
+ * ModelSelectiveDeposition.h
  *
- *  Created on: Apr 22, 2009
- *      Author: ertl
+ *  Created on: Apr 17, 2019
+ *      Author: toifl
  */
 
-#ifndef MODELWETETCHING_H_
-#define MODELWETETCHING_H_
+#ifndef MODELSELECTIVEDEPOSITION_H_
+#define MODELSELECTIVEDEPOSITION_H_
 
 #include <stack>
 #include <vector>
 #include <cassert>
-//#include <algorithm>
+#include <algorithm>
 //#include <functional>
 
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
 #include "../parser_actors.h"
 #include "vector.hpp"
+#include "Math.h"
+
 
 namespace model {
 
 ///Anisotropic wet etching model
 
-    class WetEtching {
+    class SelectiveDeposition {
 
-        lvlset::vec<double,3> directions[3];
+        const double EPS=1e-6;
 
+        lvlset::vec<double,3> direction100;
+        lvlset::vec<double,3> direction010;
+
+        //the rates have to be given in the layer order, from bottom to topmost layer
         double r100;
         double r110;
         double r111;
         double r311;
-        bool has_mask;
+
+        std::vector<int> depo_possible; //TODO change to boolean
 
     public:
 
@@ -48,7 +55,7 @@ namespace model {
             double Flux;
         };
 
-        WetEtching(const std::string & Parameters) : has_mask(false) {
+        SelectiveDeposition(const std::string & Parameters){
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
@@ -57,23 +64,25 @@ namespace model {
                     Parameters.begin(),
                     Parameters.end(),
                     *(
-                            (str_p("direction100")  >> '='  >> '{' >> real_p[assign_a(directions[0][0])]  >> "," >> real_p[assign_a(directions[0][1])] >> "," >> real_p[assign_a(directions[0][2])] >> '}' >> ';') |
-                            (str_p("direction010")  >> '='  >> '{' >> real_p[assign_a(directions[1][0])]  >> "," >> real_p[assign_a(directions[1][1])] >> "," >> real_p[assign_a(directions[1][2])] >> '}' >> ';') |
-                            (str_p("r100")  >> '='  >> real_p[assign_a(r100)]  >>  ';') |
-                            (str_p("r110")  >> '='  >> real_p[assign_a(r110)]  >>  ';') |
-                            (str_p("r111")  >> '='  >> real_p[assign_a(r111)]  >>  ';') |
-                            (str_p("r311")  >> '='  >> real_p[assign_a(r311)]  >>  ';') |
-                            (str_p("has_mask")  >>  '='  >> (str_p("true") | str_p("false"))[assign_bool(has_mask)] >> ';')
+                            (str_p("direction100")  >> '='  >> '{' >> real_p[assign_a(direction100[0])]  >> "," >> real_p[assign_a(direction100[1])] >> "," >> real_p[assign_a(direction100[2])] >> '}' >> ';') |
+                            (str_p("direction010")  >> '='  >> '{' >> real_p[assign_a(direction010[0])]  >> "," >> real_p[assign_a(direction010[1])] >> "," >> real_p[assign_a(direction010[2])] >> '}' >> ';') |
+                            (str_p("rates100")  >> '='  >> real_p[assign_a(r100)]  >>  ';') |
+                            (str_p("rates110")  >> '='  >> real_p[assign_a(r110)]  >>  ';') |
+                            (str_p("rates111")  >> '='  >> real_p[assign_a(r111)]  >>  ';') |
+                            (str_p("rates311")  >> '='  >> real_p[assign_a(r311)]  >>  ';') |
+                            (str_p("depo_possible")  >>  '='  >>  '{' >> ( int_p[push_back_a(depo_possible)]  % ',')>> '}'  >> ';') //TODO change to boolean parsing
+
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
-            directions[0]=Normalize(directions[0]);
-            directions[1]=Normalize(directions[1]-directions[0]*dot(directions[0],directions[1]));
-            directions[2]=cross(directions[0], directions[1]);
 
-            for (int i=0;i<3;++i) assert(dot(directions[i], directions[(i+1)%3])<1e-6);
+
+            //for new toplayer
+            depo_possible.push_back(1);
+
+            std::reverse(depo_possible.begin(),depo_possible.end());
 
         }
 
@@ -89,47 +98,20 @@ namespace model {
                 const VecType& NormalVector,
                 const double *Coverages,
                 const double *Rates,
-                int Material,
+                int matnum,
                 bool connected,
                 bool visible) const {
 
-            if (has_mask && Material>0) {
+            assert(matnum < (int) depo_possible.size() );
+
+            if (depo_possible[matnum] == 0) {
                 Velocity=0;
                 return;
             }
 
-            lvlset::vec<double,3> N;
+            lvlset::vec<double,3> nv{NormalVector[0],NormalVector[1],NormalVector[2]};
 
-
-            for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
-            N.reverse_sort();
-
-            //assert(std::fabs(Norm(N)-1)<1e-4);
-            if(std::fabs(Norm(N)-1)>=1e-4){
-              std::cout << "ModelWetEtching.h: Problematic NormalVector = " << NormalVector[0] << ", " <<  NormalVector[1] << ", " << NormalVector[2]<< std::endl;
-              Velocity=0;
-              return;
-            }
-
-            if (dot(N, lvlset::vec<double,3>(-1,1,2))<0) {
-                Velocity=-((r100*(N[0]-N[1]-2*N[2])+r110*(N[1]-N[2])+3*r311*N[2])/N[0]);    //region A
-            } else {
-                Velocity=-((r111*((N[1]-N[0])*0.5+N[2])+r110*(N[1]-N[2])+1.5*r311*(N[0]-N[1]))/N[0]);//region C
-            }
-
-           /* double isotropic_rate=(Material < static_cast<int>(isotropic_rates.size()))?isotropic_rates[Material]:0;
-            double directional_rate=(Material < static_cast<int>(directional_rates.size()))?directional_rates[Material]:0;
-            double constant_rate=(Material < static_cast<int>(constant_rates.size()))?constant_rates[Material]:0;
-
-            Velocity=constant_rate;
-
-            if (connected) Velocity+=isotropic_rate;
-
-            if (visible) {
-                double dot=0.;
-                for (int i=0;i<3;++i) dot-=StartDirection[i]*NormalVector[i];
-                Velocity+=directional_rate*std::max(0.,dot);
-            }*/
+            Velocity = my::math::fourRateInterpolation<double,3>(nv, direction100, direction010, r100, r110, r111, r311);
 
         }
 
@@ -169,4 +151,4 @@ namespace model {
 //    const unsigned int WetEtching::NumberOfParticleClusters[ConstantRates::NumberOfParticleTypes]={};
 
 }
-#endif /* MODELWETETCHING_H_ */
+#endif /* MODELSELECTIVEDEPOSITION_H_ */
