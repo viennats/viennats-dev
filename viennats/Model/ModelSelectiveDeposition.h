@@ -27,8 +27,6 @@ namespace model {
 
     class SelectiveDeposition {
 
-        const double EPS=1e-6;
-
         lvlset::vec<double,3> direction100;
         lvlset::vec<double,3> direction010;
 
@@ -146,6 +144,10 @@ namespace model {
 //                            int D,
 //                            double dot // dot product between the incoming particle direction and the normal vector
                             ) {}
+
+      const std::vector<int>& get_depo_possible() const{
+        return depo_possible;
+      }
     };
 
 //    const unsigned int WetEtching::NumberOfParticleClusters[ConstantRates::NumberOfParticleTypes]={};

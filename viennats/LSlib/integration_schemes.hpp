@@ -710,17 +710,6 @@ namespace lvlset {
 
         const int slf_order = 1; //stencil order
 
-        //TODO at: hard coded just for testing
-        //NOTE AT The following 4 lines must remain in lines 722-723
-        vec<value_type,3> direction100{0,1,0};
-        vec<value_type,3> direction010{1,0,-1};
-
-        //NOTE AT The following 4 lines must remain in lines 726-729
-        const value_type r100=0.0166666666667;
-        const value_type r110=0.0166666666667;
-        const value_type r111=0.000833333333333;
-        const value_type r311=0.0166666666667;
-
         bool initialized;
 
         //Final dissipation coefficients that are used by the time integrator. If D==2 last entries are 0.
@@ -729,16 +718,15 @@ namespace lvlset {
 
 
     public:
-        const vec<value_type,3>& getFinalAlphas() const{
-          return final_alphas;
-        }
-        const vec<value_type,3>& getDx() const{
-          return dx_all;
-        }
+      const vec<value_type,3>& getFinalAlphas() const{
+        return final_alphas;
+      }
+      const vec<value_type,3>& getDx() const{
+        return dx_all;
+      }
 
-        static void prepare_surface_levelset(LevelSetType& l) {
-            assert(order > 4);                   //the user in the level-set-traits-class
-
+      static void prepare_surface_levelset(LevelSetType& l) {
+            assert(order > 4);
             //expand the level set function to ensure that for all active grid points the level set values of the neighbor grid points, which are necessary to calculate the derivatives are also defined
             //TODO Expansion of sparse field must depend on spatial derivative order AND  slf stencil order!
             l.expand(order*2+1);
@@ -754,6 +742,7 @@ namespace lvlset {
 
         template <class IteratorType>
         value_type operator()(const IteratorType& it, unsigned int material) {
+
 
           assert(it.is_active());
 
@@ -823,8 +812,8 @@ namespace lvlset {
                     normal_p[k] -= DN; //p=previous
                     normal_n[k] += DN; //n==next
 
-                    value_type vp = my::math::fourRateInterpolation<value_type,D>(normal_p, direction100, direction010, r100, r110, r111, r311);
-                    value_type vn = my::math::fourRateInterpolation<value_type,D>(normal_n, direction100, direction010, r100, r110, r111, r311);
+                  value_type vp=velocities.calculate_normaldependent_velocity(normal_p,material);
+                  value_type vn=velocities.calculate_normaldependent_velocity(normal_n,material);
                     //central difference
                     dv[k] = (vn - vp) / (2.0 * DN);
 
@@ -837,30 +826,29 @@ namespace lvlset {
 
                     //Monti term
                     value_type monti = 0;
-                    if(1){
-                      for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
+
+                    for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
                            int idx = (k + 1 + j) % D;
                             monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
-                      }
-                      monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
                     }
+                    monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+
 
                     //Toifl Quell term
                     value_type toifl=0;
-                    if(1){
-                      for(int j= 0; j < D - 1; ++j ){
-                         int idx = (k + 1 + j) % D;
-                         toifl += stars[i].gradient(idx) * dv[idx];
-                      }
-                    toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+
+                    for(int j= 0; j < D - 1; ++j ){
+                       int idx = (k + 1 + j) % D;
+                       toifl += stars[i].gradient(idx) * dv[idx];
                     }
+                    toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+
 
                     //Osher (constant V) term
                     value_type osher=0;
-                    if(1){
 
-                        osher=my::math::fourRateInterpolation<value_type,D>(stars[i].normal_vector(), direction100, direction010, r100, r110, r111, r311);
-                    }
+                    osher=velocities.calculate_normaldependent_velocity(stars[i].normal_vector(),material);
+
 
                   //Total derivative is sum of terms given above
                   alpha[k] = std::fabs( monti + toifl + osher);

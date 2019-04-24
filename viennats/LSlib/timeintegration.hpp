@@ -479,6 +479,38 @@ namespace lvlset {
     }
 */
 
+// SFINAE (Substitution Failure Is Not An Error): If IntegrationScheme is STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE the time step is reduced depending on dissipation coefficients.
+template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
+         typename std::enable_if< std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
+         TimeStepType reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType MaxTimeStep2) {
+
+  typedef typename LevelSetType::value_type value_type;
+
+  const double alpha_maxCFL = 1.0; //TODO Can be potentially smaller than 1 (user input???)
+  //second time step test, based on alphas
+  vec<value_type,3> alphas = scheme.getFinalAlphas();
+  vec<value_type,3> dxs = scheme.getDx();
+
+  TimeStepType MaxTimeStep=0;
+  for(int i = 0; i < 3; ++i){
+    if(math::abs(dxs[i]) > 1e-6 ){
+      MaxTimeStep += alphas[i] / dxs[i];
+    }
+  }
+
+  MaxTimeStep = alpha_maxCFL / MaxTimeStep;
+
+  return MaxTimeStep;
+}
+
+// SFINAE (Substitution Failure Is Not An Error): IntegrationScheme != STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE
+template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
+         typename std::enable_if< !std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
+         TimeStepType reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType MaxTimeStep2) {
+  return MaxTimeStep2;//do nothing
+}
+
+
     template <class LevelSetsType, class IntegrationSchemeType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
     typename PointerAdapter<typename LevelSetsType::value_type>::result::value_type time_integrate_active_grid_points2(
             LevelSetsType& LevelSets,
@@ -634,12 +666,22 @@ namespace lvlset {
             #pragma omp critical  //execute as single thread
             {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
+
+                //If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is reduced depending on the dissipation coefficients
+                //For all remaining schemes this function is empty.
+                MaxTimeStep = reduce_timestep_hamilton_jacobi(scheme, MaxTimeStep2);
+
+                if (MaxTimeStep<MaxTimeStep2){
+                   std::cout << "HJ: Reduced time step from " << MaxTimeStep2;
+                   MaxTimeStep2=MaxTimeStep;
+                   std::cout << " to " << MaxTimeStep << std::endl;
+                }
             }
             #pragma omp barrier //wait until all other threads in section reach the same point.
             #pragma omp single //section of code that must be run by a single available thread.
             {
 
-                //TODO AT here alpha dt check
+
 
                 new_lvlset.finalize(1);
                 assert(new_lvlset.num_active_pts()==LevelSet.num_active_pts());
@@ -671,249 +713,6 @@ namespace lvlset {
 
 
                 //NOTE AT now timestep is define, can be compared with SLF dt
-
-
-                // now deduct the velocity times the time step we take
-                Phi-=t*itRS->first;
-
-                // set the new LS value for the new layer
-                LevelSet.set_value(p, local_pt_id, Phi);
-
-                // this is run when two materials are close but the velocity is too slow to actually reach the second material, to get read of the extra entry in the TempRatesStop
-                while(math::abs(itRS->second)!=std::numeric_limits<value_type>::max()) ++itRS;
-
-                // advance the TempStopRates iterator by one
-                ++itRS;
-            }
-
-            assert(itRS==TempRatesStops.end());
-
-        }
-
-        return MaxTimeStep2;
-
-    }
-
-    //NOTE AT Overloaded for StencilLocalLaxFriedrichsScalar
-    //TODO Avoid this duplication of code
-    template <class LevelSetsType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
-    typename PointerAdapter<typename LevelSetsType::value_type>::result::value_type time_integrate_active_grid_points2(
-            LevelSetsType& LevelSets,
-            TimeStepRatioType TimeStepRatio,
-            const VelocityClassType& Velocities,
-            const typename lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& IntegrationScheme,
-            //const bool separate_materials,
-            //const SegmentationType& seg,
-            TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()         //TODO change to value_type
-
-    ) {
-        if (TimeStepRatio>0.4999) TimeStepRatio=0.4999;        //restriction of the CFL-Condition "TimeStepRatio" to values less than 0.5
-                                                               //that means that the maximum distance which the surface moves within one time step
-                                                               //is less than 0.499*GridSpacing
-
-        typedef PointerAdapter<typename LevelSetsType::value_type> ptr;
-        typedef typename ptr::result LevelSetType;
-        typedef typename LevelSetType::value_type value_type;
-        typedef typename LevelSetType::size_type size_type;
-
-        assert(std::numeric_limits<value_type>::is_iec559);
-        assert(std::numeric_limits<value_type>::has_infinity);
-
-        LevelSetType & LevelSet=ptr::deref(LevelSets.back());         //top level set
-
-        typename LevelSetType::points_type seg=LevelSet.get_new_segmentation();
-
-        for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) assert(ptr::deref(*it).number_of_layers()>=2);
-
-        // the levelset filled with the new values
-        LevelSetType new_lvlset(LevelSet.grid());
-
-        new_lvlset.initialize(seg, LevelSet.get_allocation()*(double(1)/LevelSet.number_of_layers()));
-
-        std::vector<size_type> active_pt_count(seg.size()+1, LevelSetType::INACTIVE);
-
-        // split over threads via segmentations
-        #pragma omp parallel num_threads(seg.size()+1) //use num_threads(seg.size()+1) threads
-        {
-            int p=0;
-            #ifdef _OPENMP
-            p=omp_get_thread_num();
-            #endif
-
-            // holds the advection velocities which will be applied later
-            std::vector<std::pair<value_type, value_type> > TempRatesStops;
-            // allocation factor is ~1.2 which is the maximum amount of new points one would expect
-            TempRatesStops.reserve(LevelSet.num_active_pts()*allocation_factor/(seg.size()+1));   //TODO
-
-            value_type MaxTimeStep=std::numeric_limits<value_type>::max();
-
-            // initialise integration by passing all found velocities to the scheme class
-            //NOTE Difference to generic time_integrate_active_grid_points2()
-            typename lvlset::IntegrationScheme<LevelSetType, VelocityClassType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE> scheme(LevelSet, Velocities, IntegrationScheme);
-
-
-            //iterators which iterate simultaneously over level sets
-            std::vector<typename LevelSetType::const_iterator_runs> ITs;
-            for (typename LevelSetsType::const_iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it){
-
-
-              ITs.push_back(typename LevelSetType::const_iterator_runs(ptr::deref(*it)));
-            }
-
-            // set start and end indices in the grid for each thread
-            typename LevelSetType::point_type start_v=(p==0)?LevelSet.grid().min_point_index():seg[p-1];
-            typename LevelSetType::point_type end_v=(p!=static_cast<int>(seg.size()))?seg[p]:LevelSet.grid().increment_indices(LevelSet.grid().max_point_index());
-
-            // initialise top levelset iterator
-            ITs.push_back(typename LevelSetType::const_iterator_runs(LevelSet, start_v));
-
-            // iterate over the LS points in the segmentation of each thread
-            for (typename LevelSetType::const_iterator_runs& srfIT=ITs.back(); srfIT.start_indices()<end_v; srfIT.next()) {
-
-                // if LS point is not an active point, push an undefined point to new levelset
-                if (!srfIT.is_active()) {
-                    assert(math::abs(srfIT.value())>0.5);
-                    new_lvlset.push_back_undefined(p,srfIT.start_indices(),(srfIT.sign()==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);
-                    continue;
-                }
-
-
-                if (active_pt_count[p]==LevelSetType::INACTIVE) active_pt_count[p]=srfIT.active_pt_id();
-
-                // Phi_im1 holds the LS value of the current grid point
-                value_type Phi_im1=srfIT.value();
-
-                assert(math::abs(srfIT.value())<=0.5);
-
-                // push current active point to new_lvlset
-                new_lvlset.push_back(p,srfIT.start_indices(),Phi_im1);
-
-                // q = cfl condition
-                value_type q=TimeStepRatio;
-                value_type tmp_tmax=0;
-
-                for(typename LevelSetsType::size_type i=LevelSets.size()-1; i>=0; --i){
-
-                  //value_type v=scheme(srfIT, 0);  // rate of topmost levelset
-                  value_type v = 0;
-
-                  // check if there is any other levelset at the same point:
-                  // if yes, take the velocity of the lowest levelset
-                  for(unsigned level_num=0; level_num<LevelSets.size(); ++level_num){
-                    // put iterator to same position as the top levelset
-                    ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
-
-                    // if the lower surface is actually outside, i.e. its LS value is lower or equal
-                    if(ITs[level_num].value() <= Phi_im1){
-                      v = scheme(srfIT, LevelSets.size()-1-level_num); //NOTE AT numerical hamiltonian is calculated
-                      break;
-                    }
-                  }
-
-                  // Phi_i LS value of material i
-                  value_type Phi_i=Phi_im1;
-
-                  // find LS point of material i-1, which is below i
-                  if(i>0){
-                    ITs[i-1].go_to_indices_sequential(srfIT.start_indices());
-                    Phi_im1=ITs[i-1].value();
-                  }else Phi_im1 = std::numeric_limits<value_type>::max();
-
-
-                  // if velocity is positive, set maximum time step possible without violating the cfl condition
-                  if (v>0.) {
-                    tmp_tmax+=q/v;
-                    TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
-                    break;
-                    // if velocity is 0, maximum time step is infinite
-                  } else if (v==0.) {
-                    tmp_tmax=std::numeric_limits<value_type>::max();
-                    TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
-                    break;
-                    // if the velocity is negative apply the velocity for as long as possible without infringing on material below
-                  } else {
-                    value_type tmp= math::abs(Phi_im1-Phi_i);
-
-                    if (tmp>=q) {
-                      tmp_tmax-=q/v;
-                      TempRatesStops.push_back(std::make_pair(v,std::numeric_limits<value_type>::max()));
-                      break;
-                    } else {
-                      tmp_tmax-=tmp/v;
-                      // the second part of the pair indicates how far we can move in this time step until the end of the material is reached
-                      TempRatesStops.push_back(std::make_pair(v,Phi_im1));
-                      q-=tmp;
-                    }
-                  }
-                }
-
-                if (tmp_tmax<MaxTimeStep) MaxTimeStep=tmp_tmax;
-
-            }
-
-            //determine max time step
-            #pragma omp critical  //execute as single thread
-            {
-                //first time step test, based on velocities
-                if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
-
-                //Reduce time step according to monotonicty condition imposed by Lax Friedrichs
-                //NOTE Difference to generic time_integrate_active_grid_points2()
-                {
-                  const double alpha_maxCFL = 1.0; //TODO Can be potentially smaller than 1 (user input???)
-                  //second time step test, based on alphas
-                  vec<value_type,3> alphas = scheme.getFinalAlphas();
-                  vec<value_type,3> dxs = scheme.getDx();
-
-                  MaxTimeStep=0;
-                  for(int i = 0; i < 3; ++i){
-                    if(math::abs(dxs[i]) > 1e-6 ){
-                      MaxTimeStep += alphas[i] / dxs[i];
-                    }
-                  }
-
-                  MaxTimeStep = alpha_maxCFL / MaxTimeStep;
-
-                  if (MaxTimeStep<MaxTimeStep2){
-                    std::cout << "HJ: Reduced time step from " << MaxTimeStep2;
-                    MaxTimeStep2=MaxTimeStep;
-                    std::cout << " to " << MaxTimeStep << std::endl;
-                  }
-              }
-            }
-            #pragma omp barrier //wait until all other threads in section reach the same point.
-            #pragma omp single //section of code that must be run by a single available thread.
-            {
-                new_lvlset.finalize(1);
-                assert(new_lvlset.num_active_pts()==LevelSet.num_active_pts());
-                assert(new_lvlset.num_pts()==new_lvlset.num_active_pts());
-                LevelSet.swap(new_lvlset);
-            }
-
-            /*
-                This is where the magic happens
-                Here the velocites are applied to the LS values
-            */
-
-            // iterator over all velocities in TempStopRates to apply them
-            typename std::vector<std::pair<value_type, value_type> >::const_iterator itRS=TempRatesStops.begin();
-
-            // iterate over all points in the segmentation of new topmost levelset
-            for (size_type local_pt_id=0;local_pt_id<LevelSet.num_pts(p);++local_pt_id) {
-                // phi is the LS value at the current grid point
-                value_type Phi=LevelSet.value(p, local_pt_id);
-
-                TimeStepType t=MaxTimeStep2;  // maximum time step we can take
-
-                // if there is a change in materials during one time step, deduct the time taken to advect up to the end of the top material and set the LS value to the one below
-                while (math::abs(itRS->second-Phi)<math::abs(t*itRS->first)) {
-                    t-=math::abs((itRS->second-Phi)/itRS->first);
-                    Phi=itRS->second;
-                    ++itRS;
-                }
-
-
-                //NOTE AT now timestep is defined, can be compared with SLF dt
 
 
                 // now deduct the velocity times the time step we take
@@ -1088,14 +887,6 @@ namespace lvlset {
 
         tmp+=my::time::GetTime();
         std::cout << " " << tmp;*/
-        // unsigned int idx3=0;
-        // for (typename LevelSetsType::iterator it=LevelSets.begin();it!=LevelSets.end();++it) {
-        //
-        //   std::ostringstream oss3;
-        //   oss3 << "before_timeintegration_" << idx3 << ".vtk";
-        //   ptr::deref(*it).export_levelset_vtk(oss3.str());
-        //   ++idx3;
-        // }
 
         //tmp=-my::time::GetTime();
         TimeType time_step=time_integrate_active_grid_points2(           //determine maximum possible time step
@@ -1125,8 +916,10 @@ namespace lvlset {
         //tmp=-my::time::GetTime();
 
         for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
+            //adjust all level set functions below the top most level set function
+            //For selective deposition this is not necessary.
             if(is_selective_depo == false){
-                ptr::deref(*it).max(ptr::deref(LevelSets.back()));  //adjust all level set functions below the top most level set function
+                ptr::deref(*it).max(ptr::deref(LevelSets.back()));
             }
 
             ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor

@@ -39,6 +39,13 @@
 
 #include "../LSlib/levelset.hpp"
 
+
+#include <type_traits>
+
+
+
+
+
 ///Process related objects and methods.
 namespace proc {
   template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
@@ -295,20 +302,50 @@ namespace proc {
                             ) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi)  {}
 
       double operator()(unsigned int active_pt,int matnum) const {
-                double v;
+                return calculate_velocity(
+                    calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
+                    Coverages+active_pt*Model.CoverageStorageSize,
+                    Rates+active_pt*Model.RatesStorageSize,
+                    matnum,
+                    (Model.CalculateConnectivities)?Connectivities[active_pt]:true,
+                    (Model.CalculateVisibilities)?Visibilities[active_pt]:true
+                  );
 
-                Model.CalculateVelocity(
-                        v,
-                        calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
-                        Coverages+active_pt*Model.CoverageStorageSize,
-                        Rates+active_pt*Model.RatesStorageSize,
-                        matnum,
-                        (Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-                        (Model.CalculateVisibilities)?Visibilities[active_pt]:true
-                );
-                return v;
-            }
-        };
+          }
+
+      double calculate_velocity(typename calc::Make3DVector<Dimensions> normal_vector, const double* coverages, const double* rates, int matnum,  bool calcConnectivities,  bool calcVisibilities) const {
+          double v;
+
+          Model.CalculateVelocity(
+                  v,
+                  normal_vector,
+                  coverages,
+                  rates,
+                  matnum,
+                  calcConnectivities,
+                  calcVisibilities
+          );
+
+          return v;
+      }
+
+      //Calculate the velocity for a process which only depends on normal vector and material number.
+      double calculate_normaldependent_velocity(const lvlset::vec<double,Dimensions> normal_vector,int matnum) const {
+        double nv[3]={normal_vector[0],normal_vector[1],0}; //TODO more elegant solution? Models require 3D vectors.
+        if(Dimensions==3)
+          nv[2] = normal_vector[2];
+
+        return calculate_velocity(
+            calc::Make3DVector<Dimensions>(nv),
+            nullptr, //Purely normal dependent models do not require coverages.
+            nullptr, //Purely normal dependent models do not require rates.
+            matnum,
+            false,
+            false
+          );
+      }
+
+    };
 
     ///Holds information about velocities of grid points.
     template <class ModelType, int Dimensions> class VelocityClass2 {
@@ -472,6 +509,84 @@ namespace proc {
 
         };
   }
+// SFINAE (Substitution Failure Is Not An Error): If model is SelectiveDeposition, the top layer is accordingly prepared.
+//From top to bottom: layer which allows epitaxy setminus next layer which does not allow epitaxy.
+//Afterwards: unite those results.
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if<std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+
+    const std::vector<int> epitaxy_possible = model.get_depo_possible();
+
+    auto it_topLayer=LevelSets.rbegin();
+    auto it_layer=it_topLayer;
+
+    typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
+
+    bool upper_layer_is_depo_substrate = false;
+    unsigned int idx = 1; //start with index 1, because epitaxy_possible starts with top layer to be added.
+
+    for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
+
+      if(epitaxy_possible[idx] != 0){
+
+        if(upper_layer_is_depo_substrate == false){
+            it_layer = it_maskLayer;
+            upper_layer_is_depo_substrate = true;
+        }
+
+      } else{ //epitaxy is not possible
+        if(upper_layer_is_depo_substrate == true){
+            typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
+            tmp.swap(tmp2);
+        }
+        upper_layer_is_depo_substrate = false;
+      }
+      ++idx;
+    }
+
+    //if bottom layer is a depo substrate, unite it with tmp
+    if(upper_layer_is_depo_substrate == true){
+      typename LevelSetsType::value_type tmp3  = lvlset::min(tmp, *it_layer);
+      tmp.swap(tmp3);
+    }
+
+    typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
+    LevelSets.push_back(tmp2);
+
+    return true;
+  }
+
+// SFINAE (Substitution Failure Is Not An Error):  model != SelectiveDeposition
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+    return false;
+  }
+
+
+// SFINAE (Substitution Failure Is Not An Error): After a selective deposition step the top layer has to be rebuilt to the standard configuration.
+// Unite final depo top layer and initial top layer => layers are in standard configuration again
+
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+  void finalize_toplayer( LevelSetsType& LevelSets) {
+
+      auto it_topLayer=LevelSets.rbegin();
+      auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
+
+      typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
+      it_topLayer->swap(tmp);
+  }
+
+ //SFINAE (Substitution Failure Is Not An Error): model != SelectiveDeposition
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+  void finalize_toplayer( LevelSetsType& LevelSets) {
+    //DO nothing
+  }
+
+
 
   template <class LevelSetsType, class ParameterType, class ProcessParameterType , class OutputInfoType> void ExecuteProcess(
                 LevelSetsType& LevelSets,
@@ -837,7 +952,6 @@ namespace proc {
     }
 
     //TODO top layer preparation for selective depo
-    bool is_selective_depo = false;
 
     const double & ProcessTime = ProcessParameter.ProcessTime;
     double RelativeTime=0;
@@ -1204,8 +1318,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize,
-                            is_selective_depo);
+                            Model.CoverageStorageSize
+                            );
 //                        if (time_step == MaxTimeStep) {
 //                            LevelSets.back().expand(3);
 //                            LevelSets=LevelSets_temp;
@@ -1231,8 +1345,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize,
-                            is_selective_depo);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
@@ -1251,11 +1365,11 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize,
-                            is_selective_depo);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {           //at
+                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {
 
                   VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1271,13 +1385,13 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize,
-                            is_selective_depo);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
                 }
 
-                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //at
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //TODO Runge Kutta is not implemented here
 
                   VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1293,8 +1407,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize,
-                            is_selective_depo);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
                 }
@@ -1316,7 +1430,7 @@ namespace proc {
             TimeTotalInclOutput+=my::time::GetTime();
 
             //#######################################
-            // print statistics
+    bool is_selective_depo = false;
             //#######################################
       if (Parameter.print_statistics) {
 #ifdef VERBOSE
@@ -1439,44 +1553,8 @@ namespace proc {
 #endif
 
 
-    //AT prepare top layer for depo
-    //TODO more general
-    //NOTE AT following line has to be remain in line 1437
-    bool is_selective_depo = true;
-
-    const bool epitaxy_possible[5] = {false,true,false,true,true};
-    if(is_selective_depo){
-
-        auto it_topLayer=LevelSets.rbegin();
-        auto it_layer=it_topLayer;
-
-        typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
-
-        bool upper_layer_is_depo_substrate = false;
-        unsigned int idx = LevelSets.size() - 1;
-
-        for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
-
-          if(epitaxy_possible[idx] == true){
-
-            if(upper_layer_is_depo_substrate == false){
-                it_layer = it_maskLayer;
-                upper_layer_is_depo_substrate = true;
-            }
-
-          } else{ //epitaxy is not possible
-            if(upper_layer_is_depo_substrate == true){
-                typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
-                tmp.swap(tmp2);
-            }
-            upper_layer_is_depo_substrate = false;
-          }
-          --idx;
-        }
-
-        typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
-        LevelSets.push_back(tmp2);
-    }
+    //Prepare top layer for depo (if Model is not SelectiveDeposition, function is empty.)
+    bool is_selective_depo  =  prepare_toplayer(LevelSets,Model);
 
     while(true) {
 
@@ -2110,16 +2188,8 @@ namespace proc {
       if (is_finished) break;
     }
 
-     //unite final depo top layer and initial top layer => layers are in standard configuration again
-    if(is_selective_depo){
-        auto it_topLayer=LevelSets.rbegin();
-        auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
-
-        typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
-        it_topLayer->swap(tmp);
-        
-        //it_topLayer->export_levelset_vtk("top.vtk");
-    }
+     //Unite final depo top layer and initial top layer => layers are in standard configuration again
+    finalize_toplayer<LevelSetsType,ModelType>(LevelSets);
   }
 
 }
