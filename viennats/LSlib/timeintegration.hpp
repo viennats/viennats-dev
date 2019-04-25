@@ -22,7 +22,7 @@
 #include "integration_schemes.hpp"
 #include "message.h"
 
-#include "operations.hpp" //AT TODO use boolean operations from kernel or from operations.hpp? The latter are more convienient to use.
+#include "operations.hpp"
 
 namespace lvlset {
 
@@ -482,7 +482,7 @@ namespace lvlset {
 // SFINAE (Substitution Failure Is Not An Error): If IntegrationScheme is STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE the time step is reduced depending on dissipation coefficients.
 template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
          typename std::enable_if< std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
-         TimeStepType reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType MaxTimeStep2) {
+         void reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType& MaxTimeStep) {
 
   typedef typename LevelSetType::value_type value_type;
 
@@ -491,7 +491,7 @@ template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType,
   vec<value_type,3> alphas = scheme.getFinalAlphas();
   vec<value_type,3> dxs = scheme.getDx();
 
-  TimeStepType MaxTimeStep=0;
+  MaxTimeStep=0;
   for(int i = 0; i < 3; ++i){
     if(math::abs(dxs[i]) > 1e-6 ){
       MaxTimeStep += alphas[i] / dxs[i];
@@ -499,16 +499,12 @@ template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType,
   }
 
   MaxTimeStep = alpha_maxCFL / MaxTimeStep;
-
-  return MaxTimeStep;
 }
 
 // SFINAE (Substitution Failure Is Not An Error): IntegrationScheme != STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE
 template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
          typename std::enable_if< !std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
-         TimeStepType reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType MaxTimeStep2) {
-  return MaxTimeStep2;//do nothing
-}
+         void reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType& MaxTimeStep2) {}
 
 
     template <class LevelSetsType, class IntegrationSchemeType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
@@ -669,12 +665,14 @@ template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType,
 
                 //If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is reduced depending on the dissipation coefficients
                 //For all remaining schemes this function is empty.
-                MaxTimeStep = reduce_timestep_hamilton_jacobi(scheme, MaxTimeStep2);
+                reduce_timestep_hamilton_jacobi(scheme, MaxTimeStep);
 
                 if (MaxTimeStep<MaxTimeStep2){
-                   std::cout << "HJ: Reduced time step from " << MaxTimeStep2;
+                   #ifdef VERBOSE
+                    std::cout << "HJ: Reduced time step from " << MaxTimeStep2;
+                    std::cout << " to " << MaxTimeStep << std::endl;
+                   #endif
                    MaxTimeStep2=MaxTimeStep;
-                   std::cout << " to " << MaxTimeStep << std::endl;
                 }
             }
             #pragma omp barrier //wait until all other threads in section reach the same point.

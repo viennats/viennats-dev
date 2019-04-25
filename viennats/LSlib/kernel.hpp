@@ -981,12 +981,6 @@ namespace lvlset {
           return *this;
         }
 
-        //writes the levelset to a vtk file
-        levelset& export_levelset_vtk(const std::string& path){
-          export_levelset_to_vtkfile(*this, path);
-          return *this;
-        }
-
         //reads the levelset from a levelset file; NOTE: grid has to be read first!!
         levelset& import_levelset(const std::string& path){
           import_levelset_from_file(*this, path);
@@ -2183,23 +2177,6 @@ namespace lvlset {
                 while (pos<end_v) {
 
                     typename LevelSetType::value_type d=min_or_max(itA.value(),itB.value());
-//                  typename LevelSetType::value_type d;
-
-//                    if (std::abs(itA.value()-itB.value())<0.001) d=POS_VALUE;
-
-//                  if ((itA.value()-itB.value())<-0.001) {
-//                    d=POS_VALUE;
-//                  } else if (std::abs(itA.value())<std::abs(itB.value())) {
-//                    d=itA.value();
-//                  } else {
-//                    d=itB.value();
-//                  }
-
-//                  min_or_max(itA.value(),itB.value());
-
-//                    if ((itA.value()<0)&&(itB.value()<0)) {
-//                      std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
-//                    }
 
                     if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
                         s.push_back(pos, d);
@@ -3429,9 +3406,7 @@ namespace lvlset {
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::go_up_BA;
     public:
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::is_finished;
-        const vec<index_type,D> get_offset() const{
-          return offset;
-        }
+
     private:
 
         template <class I>
@@ -4001,6 +3976,9 @@ namespace lvlset {
              l.go_to_indices_sequential(v, *this);
         }
 
+        const vec<index_type,D> get_offset() const{
+          return offset;
+        }
     };
 
 

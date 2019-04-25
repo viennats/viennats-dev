@@ -36,7 +36,7 @@ namespace lvlset {
 
             typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
 
-            LevelSetType tmp(lA.grid()); //at removed.grid_traits
+            LevelSetType tmp(lA.grid());
 
             tmp.initialize();
 
@@ -63,8 +63,6 @@ namespace lvlset {
                     default:
                         itB.next();
                 }
-
-                pos=std::max(itA.start_indices(),itB.start_indices()); //at
 
             }
 
@@ -253,10 +251,10 @@ namespace lvlset {
             vec<typename LevelSetType::index_type,GridTraitsType::dimensions> pos=std::max(itA.start_indices(),itB.start_indices());
 
 
-            if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
+            if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) { // TODO: this is dangerous, value might overflow and give wrong results
                 tmp.push_back(0,pos, d);
             } else {
-                tmp.push_back_undefined(0, pos, (tmp.sign(d)==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);   
+                tmp.push_back_undefined(0, pos, (tmp.sign(d)==POS_SIGN)?LevelSetType::POS_PT:LevelSetType::NEG_PT);
             }
 
             switch(compare(itA.end_indices(), itB.end_indices())) {

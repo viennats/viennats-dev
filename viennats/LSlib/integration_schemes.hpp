@@ -610,26 +610,24 @@ namespace lvlset {
 
           const int D=LevelSetType::dimensions;
 
-          if (initialized) {
-                for (int i=0;i<2*D*order;i++)
+          if(initialized){
+                for(int i=0;i<2*D*order;i++)
                   it_neighbors[i].go_to_indices_sequential(it.start_indices());
-          } else {
-            for (int i=0;i<2*D;i++) {
+          }else{
+            for(int i=0;i<2*D;i++){
               vec<index_type,D> tv(index_type(0));
 
-              for (int j=0;j<order;j++) {
-                if ( i<D ){
-
+              for (int j=0;j<order;j++){
+                if(i<D){
                   tv[i]++;
                 }
-                else {
+                else{
                   //tv[i-D]=index_type(1);
                   tv[i-D]--;
                 }
                 it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
-
               }
-            initialized=true;
+              initialized=true;
             }
           }
 
@@ -657,8 +655,6 @@ namespace lvlset {
 
                     const value_type d_pp   =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+2)-pos);
                     const value_type d_nn   =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-2)-pos);
-
-                  //  //std::cout << "d_p, d_n, d_pp, d_nn = " << d_p << ", " << d_n << ", " << d_pp << ", " <<d_nn << ", " << std::endl;
 
                     const value_type phi_pp=it_neighbors[i*order+1].value();
                     const value_type phi_nn=it_neighbors[(i+D)*order+1].value();
@@ -695,7 +691,7 @@ namespace lvlset {
         }
     };
 
-    //at
+    //
     template <class LevelSetType, class VelocityType, int order>
     class StencilLocalLaxFriedrichsScalar {
 
@@ -996,7 +992,6 @@ namespace lvlset {
                     if ((k>max_curvature) || (k<min_curvature)) s= -num/denom;
 
                 } else {
-                    //std::cout << "warning!!!dlkajf" << std::endl;
                     if (num>0) {
                         s=-std::numeric_limits<double>::max();
                     } else {

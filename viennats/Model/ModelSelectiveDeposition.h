@@ -12,7 +12,6 @@
 #include <vector>
 #include <cassert>
 #include <algorithm>
-//#include <functional>
 
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
@@ -46,6 +45,12 @@ namespace model {
         static const bool CalculateConnectivities=false;        //TODO can be useful?
         static const bool CalculateVisibilities=false;
         static const bool CalculateNormalVectors=true;
+
+
+        static const int CoverageStorageSize=0;
+        static const int RatesStorageSize=0;
+        static const unsigned int NumberOfParticleTypes=0;
+        unsigned int NumberOfParticleClusters[1];
 
         class ParticleType {
         public:
@@ -83,12 +88,6 @@ namespace model {
             std::reverse(depo_possible.begin(),depo_possible.end());
 
         }
-
-        static const int CoverageStorageSize=0;
-        static const int RatesStorageSize=0;
-        static const unsigned int NumberOfParticleTypes=0;
-//        static const unsigned int NumberOfParticleClusters[NumberOfParticleTypes];
-        static const unsigned int NumberOfParticleClusters[1];
 
         template<class VecType>
         void CalculateVelocity(

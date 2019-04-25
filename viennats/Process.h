@@ -551,7 +551,7 @@ namespace proc {
 //Afterwards: unite those results.
   template<class LevelSetsType,class ModelType,
            typename std::enable_if<std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+               void prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
 
     const std::vector<int> epitaxy_possible = model.get_depo_possible();
 
@@ -590,16 +590,12 @@ namespace proc {
 
     typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
     LevelSets.push_back(tmp2);
-
-    return true;
   }
 
 // SFINAE (Substitution Failure Is Not An Error):  model != SelectiveDeposition
   template<class LevelSetsType,class ModelType,
            typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
-    return false;
-  }
+               void prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {}
 
 
 // SFINAE (Substitution Failure Is Not An Error): After a selective deposition step the top layer has to be rebuilt to the standard configuration.
@@ -607,7 +603,7 @@ namespace proc {
 
   template<class LevelSetsType,class ModelType,
            typename std::enable_if< std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-  void finalize_toplayer( LevelSetsType& LevelSets) {
+  void finalize_toplayer(LevelSetsType& LevelSets){
 
       auto it_topLayer=LevelSets.rbegin();
       auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
@@ -619,9 +615,7 @@ namespace proc {
  //SFINAE (Substitution Failure Is Not An Error): model != SelectiveDeposition
   template<class LevelSetsType,class ModelType,
            typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-  void finalize_toplayer( LevelSetsType& LevelSets) {
-    //DO nothing
-  }
+  void finalize_toplayer( LevelSetsType& LevelSets) {}
 
 
 
@@ -1436,7 +1430,7 @@ namespace proc {
 
                 }
 
-                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //TODO Runge Kutta is not implemented here
+                /*else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //TODO Runge Kutta is not implemented here
 
                   VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
 
@@ -1456,7 +1450,7 @@ namespace proc {
                             );
                     TimeTimeIntegration+=my::time::GetTime();
 
-                }
+                }*/
 
                 //else assert(0);//???
 
@@ -1475,7 +1469,7 @@ namespace proc {
             TimeTotalInclOutput+=my::time::GetTime();
 
             //#######################################
-    bool is_selective_depo = false;
+            // print statistics
             //#######################################
       if (Parameter.print_statistics) {
 #ifdef VERBOSE
@@ -1509,6 +1503,9 @@ namespace proc {
       if (is_finished) break;
     }
   }
+
+
+
   ///Includes loop over full process time to run the simulation.
   template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
         LevelSetsType& LevelSets,
@@ -1599,7 +1596,8 @@ namespace proc {
 
 
     //Prepare top layer for depo (if Model is not SelectiveDeposition, function is empty.)
-    bool is_selective_depo  =  prepare_toplayer(LevelSets,Model);
+    constexpr bool is_selective_depo  =  std::is_same<model::SelectiveDeposition, ModelType>::value;
+    prepare_toplayer(LevelSets,Model);
 
     while(true) {
 
@@ -1847,6 +1845,7 @@ namespace proc {
 #ifdef VERBOSE
         msg::print_message("make output");
 #endif
+
 
 
                 DataAccessClass<ModelType, ParameterType::Dimension> Data(  Model,
