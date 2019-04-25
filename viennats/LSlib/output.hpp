@@ -700,6 +700,82 @@ namespace lvlset {
     }
 
     template <class GridTraitsType, class LevelSetTraitsType>
+    void export_levelset_to_vtkfile(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path){
+      std::ofstream out(path);
+
+      ls.expand(7);
+
+
+      typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
+      typename LevelSetType::template const_iterator_neighbor_filtered<typename LevelSetType::filter_value,  1> itA(ls, typename LevelSetType::filter_value(2.0));
+
+      std::vector< vec<typename LevelSetType::index_type, LevelSetType::dimensions> > indices;
+      std::vector<typename LevelSetType::value_type> values;
+      std::vector< vec<typename LevelSetType::value_type, LevelSetType::dimensions> > normals;
+
+      while (!itA.is_finished() ) {
+          values.push_back(itA.center().value() );
+          indices.push_back( itA.indices() );
+
+          vec<typename LevelSetType::value_type, LevelSetType::dimensions> tmp;
+          for(int i = 0; i < LevelSetType::dimensions; ++i ){
+            tmp[i] = itA.gradient(i);
+          }
+
+
+
+          tmp /= Norm2(itA.gradient());
+
+          normals.push_back(tmp);
+
+          itA.next();
+      }
+
+      out << "# vtk DataFile Version 3.0\nLevelSet\nASCII\nDATASET UNSTRUCTURED_GRID\nPOINTS ";
+      out << indices.size() << " double\n";
+
+
+      for(size_t i = 0; i < indices.size(); ++i){
+        for(int k =0; k < LevelSetType::dimensions; ++k){
+          out << indices[i][k];
+
+          if(k == LevelSetType::dimensions - 1){
+            if(2 == LevelSetType::dimensions) // fill with 0 in 2D case to pacify paraview
+              out << "\t0";
+          }else{
+            out << "\t";
+          }
+        }
+
+        out << std::endl;
+      }
+
+      out << "POINT_DATA " << values.size() << "\n";
+      out << "SCALARS Phi double 1\nLOOKUP_TABLE default\n";
+
+      for(size_t i = 0; i < indices.size(); ++i){
+        out << values[i] << std::endl;
+      }
+
+      out << "VECTORS norm double\n";
+
+      for(size_t i = 0; i < normals.size(); ++i){
+        for(int k =0; k < LevelSetType::dimensions; ++k){
+          out << normals[i][k];
+
+          if(k == LevelSetType::dimensions - 1){
+            if(2 == LevelSetType::dimensions) // fill with 0 in 2D case to pacify paraview
+              out << "\t0";
+          }else{
+            out << "\t";
+          }
+        }
+        out << std::endl;
+      }
+
+    }
+
+    template <class GridTraitsType, class LevelSetTraitsType>
     void export_levelset_to_file(levelset<GridTraitsType, LevelSetTraitsType>& ls, const std::string& path, const int& bits_per_distance = 8) {
       /*
       **************************************************************************************************************

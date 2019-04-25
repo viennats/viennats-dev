@@ -37,6 +37,15 @@
 #include "./LSlib/vector.hpp"
 #include "boundaries.h"
 
+#include "../LSlib/levelset.hpp"
+
+
+#include <type_traits>
+
+
+
+
+
 ///Process related objects and methods.
 namespace proc {
   template <class LevelSetType> void AddLayer(std::list<LevelSetType>& LS, int num_layers) {
@@ -56,41 +65,42 @@ namespace proc {
       const LevelSetsType& LS,
       std::vector<unsigned int>& PointMaterials) {
 
-      //this function determines the materials of the most top levelset
+      //this function determines the materials of the topmost levelset
 
-    typedef typename LevelSetsType::value_type LevelSetType;
+      typedef typename LevelSetsType::value_type LevelSetType;
 
-    PointMaterials.clear();
-    PointMaterials.resize(LS.back().num_active_pts());
+      PointMaterials.clear();
+      PointMaterials.resize(LS.back().num_active_pts());
 
-    typename LevelSetType::points_type segmentation=LS.back().get_new_segmentation();
+      typename LevelSetType::points_type segmentation=LS.back().get_new_segmentation();
 
-    #pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
-    for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
+      #pragma omp for schedule(static, 1) // parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+      for (int p=0;p<= static_cast<int>(segmentation.size());++p) {
 
-      typename LevelSetType::point_type  begin_v=(p==0)?LS.back().grid().min_point_index():segmentation[p-1];
-      typename LevelSetType::point_type  end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:LS.back().grid().increment_indices(LS.back().grid().max_point_index());
+        typename LevelSetType::point_type  begin_v=(p==0)?LS.back().grid().min_point_index():segmentation[p-1];
+        typename LevelSetType::point_type  end_v=(p!=static_cast<int>(segmentation.size()))?segmentation[p]:LS.back().grid().increment_indices(LS.back().grid().max_point_index());
 
-      //iterator necessary to access
-      std::vector< typename LevelSetType::const_iterator_runs> ITs;
-      for (typename LevelSetsType::const_iterator it=LS.begin();&(*it)!=&(LS.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(*it,begin_v));
+        //iterator necessary to access
+        std::vector< typename LevelSetType::const_iterator_runs> ITs;
+        for (typename LevelSetsType::const_iterator it=LS.begin();&(*it)!=&(LS.back());++it)  ITs.push_back(typename LevelSetType::const_iterator_runs(*it,begin_v));
 
-      for (typename LevelSetType::const_iterator_runs it(LS.back(),begin_v );it.start_indices()<end_v;it.next()) {
-        if (!it.is_active()) continue;
+        for (typename LevelSetType::const_iterator_runs it(LS.back(),begin_v );it.start_indices()<end_v;it.next()) {
+          if (!it.is_active()) continue;
 
-        const typename LevelSetType::value_type d=it.value2();
+          const typename LevelSetType::value_type d=it.value2();
 
-        int z=LS.size()-1;
-        for (;z>0;z--) {
-          ITs[z-1].go_to_indices_sequential(it.start_indices());
-          if (d<ITs[z-1].value()) break;
+          int z=LS.size()-1;
+          for (;z>0;z--) {
+            ITs[z-1].go_to_indices_sequential(it.start_indices());
+            if (d<ITs[z-1].value()) break;
+          }
+
+          PointMaterials[it.active_pt_id2()]=LS.size()-1-z;
         }
-
-        PointMaterials[it.active_pt_id2()]=LS.size()-1-z;
       }
+
     }
 
-        }
 
   namespace {
 
@@ -293,20 +303,50 @@ namespace proc {
                             ) : Model(m), NormalVector(n), Coverages(c), Rates(r), Connectivities(co), Visibilities(vi)  {}
 
       double operator()(unsigned int active_pt,int matnum) const {
-                double v;
+                return calculate_velocity(
+                    calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
+                    Coverages+active_pt*Model.CoverageStorageSize,
+                    Rates+active_pt*Model.RatesStorageSize,
+                    matnum,
+                    (Model.CalculateConnectivities)?Connectivities[active_pt]:true,
+                    (Model.CalculateVisibilities)?Visibilities[active_pt]:true
+                  );
 
-                Model.CalculateVelocity(
-                        v,
-                        calc::Make3DVector<Dimensions>(NormalVector+active_pt*Dimensions),
-                        Coverages+active_pt*Model.CoverageStorageSize,
-                        Rates+active_pt*Model.RatesStorageSize,
-                        matnum,
-                        (Model.CalculateConnectivities)?Connectivities[active_pt]:true,
-                        (Model.CalculateVisibilities)?Visibilities[active_pt]:true
-                );
-                return v;
-            }
-        };
+          }
+
+      double calculate_velocity(typename calc::Make3DVector<Dimensions> normal_vector, const double* coverages, const double* rates, int matnum,  bool calcConnectivities,  bool calcVisibilities) const {
+          double v;
+
+          Model.CalculateVelocity(
+                  v,
+                  normal_vector,
+                  coverages,
+                  rates,
+                  matnum,
+                  calcConnectivities,
+                  calcVisibilities
+          );
+
+          return v;
+      }
+
+      //Calculate the velocity for a process which only depends on normal vector and material number.
+      double calculate_normaldependent_velocity(const lvlset::vec<double,Dimensions> normal_vector,int matnum) const {
+        double nv[3]={normal_vector[0],normal_vector[1],0}; //TODO more elegant solution? Models require 3D vectors.
+        if(Dimensions==3)
+          nv[2] = normal_vector[2];
+
+        return calculate_velocity(
+            calc::Make3DVector<Dimensions>(nv),
+            nullptr, //Purely normal dependent models do not require coverages.
+            nullptr, //Purely normal dependent models do not require rates.
+            matnum,
+            false,
+            false
+          );
+      }
+
+    };
 
     ///Holds information about velocities of grid points.
     template <class ModelType, int Dimensions> class VelocityClass2 {
@@ -506,6 +546,84 @@ namespace proc {
 
         };
   }
+// SFINAE (Substitution Failure Is Not An Error): If model is SelectiveDeposition, the top layer is accordingly prepared.
+//From top to bottom: layer which allows epitaxy setminus next layer which does not allow epitaxy.
+//Afterwards: unite those results.
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if<std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+
+    const std::vector<int> epitaxy_possible = model.get_depo_possible();
+
+    auto it_topLayer=LevelSets.rbegin();
+    auto it_layer=it_topLayer;
+
+    typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
+
+    bool upper_layer_is_depo_substrate = false;
+    unsigned int idx = 1; //start with index 1, because epitaxy_possible starts with top layer to be added.
+
+    for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
+
+      if(epitaxy_possible[idx] != 0){
+
+        if(upper_layer_is_depo_substrate == false){
+            it_layer = it_maskLayer;
+            upper_layer_is_depo_substrate = true;
+        }
+
+      } else{ //epitaxy is not possible
+        if(upper_layer_is_depo_substrate == true){
+            typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
+            tmp.swap(tmp2);
+        }
+        upper_layer_is_depo_substrate = false;
+      }
+      ++idx;
+    }
+
+    //if bottom layer is a depo substrate, unite it with tmp
+    if(upper_layer_is_depo_substrate == true){
+      typename LevelSetsType::value_type tmp3  = lvlset::min(tmp, *it_layer);
+      tmp.swap(tmp3);
+    }
+
+    typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
+    LevelSets.push_back(tmp2);
+
+    return true;
+  }
+
+// SFINAE (Substitution Failure Is Not An Error):  model != SelectiveDeposition
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+               bool prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+    return false;
+  }
+
+
+// SFINAE (Substitution Failure Is Not An Error): After a selective deposition step the top layer has to be rebuilt to the standard configuration.
+// Unite final depo top layer and initial top layer => layers are in standard configuration again
+
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+  void finalize_toplayer( LevelSetsType& LevelSets) {
+
+      auto it_topLayer=LevelSets.rbegin();
+      auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
+
+      typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
+      it_topLayer->swap(tmp);
+  }
+
+ //SFINAE (Substitution Failure Is Not An Error): model != SelectiveDeposition
+  template<class LevelSetsType,class ModelType,
+           typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
+  void finalize_toplayer( LevelSetsType& LevelSets) {
+    //DO nothing
+  }
+
+
 
   template <class LevelSetsType, class ParameterType, class ProcessParameterType , class OutputInfoType> void ExecuteProcess(
                 LevelSetsType& LevelSets,
@@ -641,6 +759,7 @@ namespace proc {
         ) {
 
         typedef typename LevelSetsType::value_type LevelSetType;
+
         const int D=LevelSetType::dimensions;
     LevelSetType* boolop_ls;
 
@@ -877,10 +996,13 @@ namespace proc {
       }
     }
 
+    //TODO top layer preparation for selective depo
+
     const double & ProcessTime = ProcessParameter.ProcessTime;
     double RelativeTime=0;
 
     //while ((OutputTimesIter!=OutputTimes.end()) && (RelativeTime>*OutputTimesIter)) ++OutputTimesIter;
+
 
 #ifdef VERBOSE
         msg::print_message("Start loop over time");
@@ -1241,7 +1363,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize
+                            );
 //                        if (time_step == MaxTimeStep) {
 //                            LevelSets.back().expand(3);
 //                            LevelSets=LevelSets_temp;
@@ -1267,7 +1390,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
@@ -1286,10 +1410,55 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize
+                            );
                     TimeTimeIntegration+=my::time::GetTime();
 
-                } else assert(0);
+                } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::LAX_FRIEDRICHS_SCALAR_2ND_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize
+                            );
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {           //TODO Runge Kutta is not implemented here
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(7);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize
+                            );
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+
+                //else assert(0);//???
 
                 if (time_step>=MaxTimeStep) {
                     assert(time_step==MaxTimeStep);
@@ -1306,7 +1475,7 @@ namespace proc {
             TimeTotalInclOutput+=my::time::GetTime();
 
             //#######################################
-            // print statistics
+    bool is_selective_depo = false;
             //#######################################
       if (Parameter.print_statistics) {
 #ifdef VERBOSE
@@ -1340,7 +1509,6 @@ namespace proc {
       if (is_finished) break;
     }
   }
-
   ///Includes loop over full process time to run the simulation.
   template <class LevelSetsType, class ModelType, class ParameterType, class ProcessParameterType, class OutputInfoType> void ExecuteProcess(
         LevelSetsType& LevelSets,
@@ -1429,6 +1597,9 @@ namespace proc {
         msg::print_message("Start loop over time");
 #endif
 
+
+    //Prepare top layer for depo (if Model is not SelectiveDeposition, function is empty.)
+    bool is_selective_depo  =  prepare_toplayer(LevelSets,Model);
 
     while(true) {
 
@@ -1820,7 +1991,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
 
                     TimeTimeIntegration+=my::time::GetTime();
 
@@ -1840,7 +2012,8 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_1ST_ORDER) {                  //TODO
@@ -1859,7 +2032,113 @@ namespace proc {
                             Parameter.cfl_condition,
                             MaxTimeStep,
                             Coverages,
-                            Model.CoverageStorageSize);
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }else if (ProcessParameter.FiniteDifferenceScheme==LAX_FRIEDRICHS_2ND_ORDER) {
+
+                  VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(5);
+                    TimeExpansion+=my::time::GetTime();
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::LAX_FRIEDRICHS_SCALAR_2ND_ORDER(ProcessParameter.LaxFriedrichsDissipationCoefficient),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
+                    TimeTimeIntegration+=my::time::GetTime();
+
+                }
+                else if (ProcessParameter.FiniteDifferenceScheme==STENCIL_LOCAL_LAX_FRIEDRICHS) {
+
+                    VelocityClass<ModelType, ParameterType::Dimension> Velocities(Model, &NormalVectors[0], &Coverages[0], &Rates[0], Connectivities, Visibilities);
+                    //DetermineTopMostLayer(LevelSets,PointMaterials); //TODO is it really necessary to call it here (again)?
+
+                    const int rk_order = 1; //Runge Kutta (RK) order, Euler == RK 1st order
+                    //NOTE 3rd order does not work at the moment
+
+                    TimeExpansion-=my::time::GetTime();
+                    LevelSets.back().expand(3);
+                    TimeExpansion+=my::time::GetTime();
+
+
+
+                    LevelSetsType phi_n = LevelSets; //phi^n
+
+                    TimeTimeIntegration-=my::time::GetTime();
+                    time_step=lvlset::time_integrate(
+                            LevelSets,
+                            Velocities,
+                            lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
+                            Parameter.cfl_condition,
+                            MaxTimeStep,
+                            Coverages,
+                            Model.CoverageStorageSize,
+                            is_selective_depo);
+
+
+                    if(rk_order > 1){ //first euler integration all RK >= 2nd order
+                      time_step=lvlset::time_integrate(
+                              LevelSets,
+                              Velocities,
+                              lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
+                              Parameter.cfl_condition,
+                              MaxTimeStep,
+                              Coverages,
+                              Model.CoverageStorageSize,
+                              is_selective_depo);
+
+                      if(rk_order == 2){ //RK 2nd order: phi^(n+1) = 0.5*phi^n + 0.5 * phi^(n+2)
+                        auto it=LevelSets.begin();
+                        auto it2 = phi_n.begin();
+
+                        for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
+
+                          typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.5,0.5);
+                          it->swap(tmp);
+                        }
+
+                      } else if(rk_order == 3){//RK 3rd order: phi^(n+1) = 0.333*phi^n + 0.667 * phi^(n+3/2)
+
+                        auto it=LevelSets.begin();
+                        auto it2 = phi_n.begin();
+
+                        for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
+
+                          typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.25,0.75);
+                          it->swap(tmp);
+                        }
+
+                         time_step=lvlset::time_integrate(
+                                  LevelSets,
+                                  Velocities,
+                                  lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS(),
+                                  Parameter.cfl_condition,
+                                  MaxTimeStep,
+                                  Coverages,
+                                  Model.CoverageStorageSize,
+                                  is_selective_depo);
+
+
+                          it=LevelSets.begin();
+                          it2 = phi_n.begin();
+
+                          for(;  (it!=LevelSets.end()) && (it2!=phi_n.end()) ; ++it, ++it2){
+
+                            typename LevelSetsType::value_type tmp = lvlset::numerical_linear_combination(*it, *it2,0.6667,0.3333);
+
+                            it->swap(tmp);
+                          }
+                      }
+                    }
                     TimeTimeIntegration+=my::time::GetTime();
 
                 } else assert(0);
@@ -1874,6 +2153,7 @@ namespace proc {
 
 
             }
+
 
             TimeTotalExclOutput+=my::time::GetTime();
             TimeTotalInclOutput+=my::time::GetTime();
@@ -1912,6 +2192,9 @@ namespace proc {
 
       if (is_finished) break;
     }
+
+     //Unite final depo top layer and initial top layer => layers are in standard configuration again
+    finalize_toplayer<LevelSetsType,ModelType>(LevelSets);
   }
 
 }

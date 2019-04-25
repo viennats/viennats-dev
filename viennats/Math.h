@@ -15,6 +15,9 @@
 
 
 #include <cmath>
+
+//at for fourRateInterpolation()
+#include "LSlib/levelset.hpp"
 //#include <boost/static_assert.hpp>
 
 ///Namespace for all custom mathematical and statistical tools.
@@ -768,6 +771,149 @@ namespace my {
                 n[0]=0.;
                 n[1]=0.;
             }
+    }
+
+    //Four rate Hubbart Interpolation. Algorithm works only in 3D, input 2D vector (vx,vy) is treated as (vx,vy,0)
+    template<class T,int D>
+    T fourRateInterpolation(lvlset::vec<T,D> nv, lvlset::vec<T,3> direction100, lvlset::vec<T,3> direction010, T r100, T r110, T r111, T r311 ){
+
+        T Velocity=0;
+        lvlset::vec<T,3> directions[3];
+
+        directions[0] = direction100;
+        directions[1] = direction010;
+
+        directions[0]=Normalize(directions[0]);
+        directions[1]=Normalize(directions[1]-directions[0]*dot(directions[0],directions[1]));
+        directions[2]=cross(directions[0], directions[1]);
+
+        lvlset::vec<T,3> NormalVector;
+        NormalVector[0] = nv[0];
+        NormalVector[1] = nv[1];
+        if(D==3){
+          NormalVector[2] = nv[2];
+        }else{
+          NormalVector[2] = 0;
+        }
+
+        NormalVector=Normalize(NormalVector);
+
+        for (int i=0;i<3;++i) assert(dot(directions[i], directions[(i+1)%3])<1e-6);
+
+        lvlset::vec<T,3> N;
+
+        for (int i=0;i<3;i++) N[i]=std::fabs(directions[i][0]*NormalVector[0]+directions[i][1]*NormalVector[1]+directions[i][2]*NormalVector[2]);
+        N.reverse_sort();
+
+        assert(std::fabs(Norm(N)-1)<1e-4);
+
+
+        if (dot(N, lvlset::vec<T,3>(-1,1,2))<0) {
+            Velocity=-((r100*(N[0]-N[1]-2*N[2])+r110*(N[1]-N[2])+3*r311*N[2])/N[0]);    //region A
+        } else {
+            Velocity=-((r111*((N[1]-N[0])*0.5+N[2])+r110*(N[1]-N[2])+1.5*r311*(N[0]-N[1]))/N[0]);//region C
+        }
+
+        return Velocity;
+    }
+
+    //Weighted essentially non-oscillatory differentiation scheme 3rd order
+    //x1 ... x5 stencil points from left to right
+    //plus == true => right-sided
+    template<class T>
+    inline T weno3(T x1, T x2, T x3, T x4, T x5, T dx, bool plus=true, T eps=1e-6){
+
+      T dxp1 = x2 - x1; //i-2
+      T dxp2 = x3 - x2; //i-1
+      T dxp3 = x4 - x3; //i
+      T dxp4 = x5 - x4;  //i+1
+
+
+      T result = 0;
+
+      if(plus==true){
+
+          T rp = (eps + math::pow2( dxp4 - dxp3 )) / (eps + math::pow2(dxp3 - dxp2));
+          T wp = 1.0 / (1 + 2.0 * math::pow2(rp));
+
+          result = dxp2 + dxp3 - wp * (dxp4 - 2.0 * dxp3 + dxp2);
+
+          result /= (2.0 * dx);
+
+      } else {
+          T rp = (eps + math::pow2( dxp2 - dxp1)) / (eps + math::pow2( dxp3 - dxp2 ));
+          T wp = 1.0 / (1 + 2.0 * math::pow2(rp));
+
+          result = dxp2 + dxp3 - wp * (dxp1 - 2.0 * dxp2 + dxp3);
+
+          result /= (2.0 * dx);
+      }
+
+      return result;
+    }
+
+    //Weighted essentially non-oscillatory differentiation scheme 5th order
+    //x1 ... x7 stencil points from left to right
+    //plus == true => right-sided
+    template<class T>
+    inline T weno5(T x1, T x2, T x3, T x4, T x5, T x6, T x7, T dx, bool plus=true, T eps=1e-6){
+
+      if(plus==false){
+        T v1 = (x2 - x1)/dx; //i-3
+        T v2 = (x3 - x2)/dx; //i-2
+        T v3 = (x4 - x3)/dx; //i-1
+        T v4 = (x5 - x4)/dx; //i
+        T v5 = (x6 - x5)/dx;  //i+1
+
+
+        T p1 = v1/3.0 - 7*v2/6.0 + 11*v3/6.0;
+        T p2 = -v2/6.0 + 5*v3/6.0 + v4/3.0;
+        T p3 = v3/3.0 + 5*v4/6.0 - v5/6.0;
+
+        T s1 = 13/12.0  * pow2(v1 - 2*v2 + v3) + 1/4.0 * pow2(v1 - 4*v2 + 3*v3);
+        T s2 = 13/12.0  * pow2(v2 - 2*v3 + v4) + 1/4.0 * pow2(v2 - v4);
+        T s3 = 13/12.0  * pow2(v3 - 2*v4 + v5) + 1/4.0 * pow2(3*v3 - 4*v4 + v5);
+
+        T al1 = 0.1/(eps + s1);
+        T al2 = 0.6/(eps + s2);
+        T al3 = 0.3/(eps + s3);
+
+        T alsum = al1 + al2 + al3;
+
+        T w1=al1 / alsum;
+        T w2=al2 / alsum;
+        T w3=al3 / alsum;
+
+        return w1 * p1 + w2 * p2 + w3 * p3;
+      } else{
+        T v1 = (x7 - x6)/dx;
+        T v2 = (x6 - x5)/dx;
+        T v3 = (x5 - x4)/dx;
+        T v4 = (x4 - x3)/dx;
+        T v5 = (x3 - x2)/dx;
+
+
+        T p1 = v1/3.0 - 7*v2/6.0 + 11*v3/6.0;
+        T p2 = -v2/6.0 + 5*v3/6.0 + v4/3.0;
+        T p3 = v3/3.0 + 5*v4/6.0 - v5/6.0;
+
+        T s1 = 13/12.0  * pow2(v1 - 2*v2 + v3) + 1/4.0 * pow2(v1 - 4*v2 + 3*v3);
+        T s2 = 13/12.0  * pow2(v2 - 2*v3 + v4) + 1/4.0 * pow2(v2 - v4);
+        T s3 = 13/12.0  * pow2(v3 - 2*v4 + v5) + 1/4.0 * pow2(3*v3 - 4*v4 + v5);
+
+        T al1 = 0.1/(eps + s1);
+        T al2 = 0.6/(eps + s2);
+        T al3 = 0.3/(eps + s3);
+
+        T alsum = al1 + al2 + al3;
+
+        T w1=al1 / alsum;
+        T w2=al2 / alsum;
+        T w3=al3 / alsum;
+
+        return w1 * p1 + w2 * p2 + w3 * p3;
+
+      }
     }
 
   }

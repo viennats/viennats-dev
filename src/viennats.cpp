@@ -23,7 +23,7 @@
 //Processes
 #define PROCESS_CONSTANT_RATES
 #define PROCESS_SIMPLE_DEPOSITION
-#define PROCESS_TiN_ALD
+/*#define PROCESS_TiN_ALD
 #define PROCESS_TiN_PEALD
 #define PROCESS_TiO2_ALD
 #define PROCESS_SF6_O2_PLASMA_ETCHING
@@ -37,12 +37,13 @@
 #define PROCESS_HBr_O2_PLASMA_ETCHING
 #define PROCESS_N2_PLASMA_ETCHING
 #define PROCESS_NONLINEAR_DEPOSITION
-#define PROCESS_TWOSPECIES_DEPOSITION
+#define PROCESS_TWOSPECIES_DEPOSITION*/
 #define PROCESS_WET_ETCHING
-#define PROCESS_FIB
+#define PROCESS_SELECTIVE_DEPOSITION
+//#define PROCESS_FIB
 
 //LS Processes
-#define PROCESS_PLANARIZATION
+//#define PROCESS_PLANARIZATION
 #define PROCESS_MASK
 #define PROCESS_BOOLEANOPS
 
@@ -124,6 +125,11 @@
 #ifdef PROCESS_WET_ETCHING
 #include "Model/ModelWetEtching.h"
 #endif
+#ifdef PROCESS_SELECTIVE_DEPOSITION
+#include "Model/ModelSelectiveDeposition.h"
+#endif
+
+
 #ifdef PROCESS_FIB
 #include "Model/ModelFIB.h"
 #endif
@@ -297,6 +303,8 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     }
   }
 
+
+
   //output initial LevelSets if print lvst is specified
   if(p.print_lvst){
     int LevelsetCounter = 0;
@@ -318,7 +326,7 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
   //organization of the output information by initiation of required models
   OutputInfoType output_info;
 
-  //!Initialize the required models and call "proc::ExecuteProcess(...)"
+  //!Initialize the required models and call "proc::LevelSetType(...)"
   //!    Possible models are: ConstantRates, SimpleDeposition, SF6_O2PlasmaEtching, SiO2_PlasmaEtching,
   //!    HBr_O2PlasmaEtching, NonlinearDeposition, WetEtching, FIB, CalculateFlux, Planarization, Mask,
   //!    and BooleanOperation
@@ -454,6 +462,13 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 #ifdef PROCESS_WET_ETCHING
     if (pIter->ModelName == "WetEtching") {
       model::WetEtching m(pIter->ModelParameters);
+      proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+    }
+#endif
+
+#ifdef PROCESS_SELECTIVE_DEPOSITION
+    if (pIter->ModelName == "SelectiveDeposition") {
+      model::SelectiveDeposition m(pIter->ModelParameters);
       proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
     }
 #endif
