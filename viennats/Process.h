@@ -551,17 +551,19 @@ namespace proc {
 //Afterwards: unite those results.
   template<class LevelSetsType,class ModelType,
            typename std::enable_if<std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-               void prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {
+  void prepare_toplayer(LevelSetsType& LevelSets, ModelType model, bool isStart=false) {
 
     const std::vector<int> epitaxy_possible = model.get_depo_possible();
 
-    auto it_topLayer=LevelSets.rbegin();
-    auto it_layer=it_topLayer;
+    //auto it_topLayer=LevelSets.rbegin();
+    auto it_layer=LevelSets.rbegin();
 
-    typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
+    // generate empty LS
+    typename LevelSetsType::value_type tmp(LevelSets.rbegin()->grid());
+    //typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
 
     bool upper_layer_is_depo_substrate = false;
-    unsigned int idx = 1; //start with index 1, because epitaxy_possible starts with top layer to be added.
+    unsigned int idx = (isStart)?1:0; //start with index 1, because epitaxy_possible starts with top layer to be added.
 
     for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
 
@@ -576,6 +578,7 @@ namespace proc {
         if(upper_layer_is_depo_substrate == true){
             typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
             tmp.swap(tmp2);
+            // tmp  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
         }
         upper_layer_is_depo_substrate = false;
       }
@@ -586,34 +589,38 @@ namespace proc {
     if(upper_layer_is_depo_substrate == true){
       typename LevelSetsType::value_type tmp3  = lvlset::min(tmp, *it_layer);
       tmp.swap(tmp3);
+      // tmp = lvlset::min(tmp, *it_layer);
     }
 
     typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
-    LevelSets.push_back(tmp2);
+    // tmp = lvlset::invert(tmp);
+
+    if(isStart) LevelSets.push_back(tmp2);
+    else LevelSets.back().swap(tmp2);
   }
 
 // SFINAE (Substitution Failure Is Not An Error):  model != SelectiveDeposition
   template<class LevelSetsType,class ModelType,
            typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-               void prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {}
+  void prepare_toplayer( LevelSetsType& LevelSets, ModelType model, bool isStart=false) {}
 
 
 // SFINAE (Substitution Failure Is Not An Error): After a selective deposition step the top layer has to be rebuilt to the standard configuration.
 // Unite final depo top layer and initial top layer => layers are in standard configuration again
 
-  template<class LevelSetsType,class ModelType,
+  template<class ModelType,class LevelSetsType,
            typename std::enable_if< std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
   void finalize_toplayer(LevelSetsType& LevelSets){
 
       auto it_topLayer=LevelSets.rbegin();
-      auto it_formerToplayer=LevelSets.rbegin(); ++it_formerToplayer;
+      auto it_formerToplayer=++LevelSets.rbegin(); //++it_formerToplayer;
 
       typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
       it_topLayer->swap(tmp);
   }
 
  //SFINAE (Substitution Failure Is Not An Error): model != SelectiveDeposition
-  template<class LevelSetsType,class ModelType,
+  template<class ModelType,class LevelSetsType,
            typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
   void finalize_toplayer( LevelSetsType& LevelSets) {}
 
@@ -1597,7 +1604,7 @@ namespace proc {
 
     //Prepare top layer for depo (if Model is not SelectiveDeposition, function is empty.)
     constexpr bool is_selective_depo  =  std::is_same<model::SelectiveDeposition, ModelType>::value;
-    prepare_toplayer(LevelSets,Model);
+    prepare_toplayer(LevelSets,Model, true);
 
     while(true) {
 
@@ -1846,7 +1853,8 @@ namespace proc {
         msg::print_message("make output");
 #endif
 
-
+              // undo special layer wrapping for SelectiveDeposition
+              if(is_selective_depo) finalize_toplayer<ModelType>(LevelSets);
 
                 DataAccessClass<ModelType, ParameterType::Dimension> Data(  Model,
                                                                             &Coverages[0],
@@ -1950,6 +1958,9 @@ namespace proc {
           msg::print_done();
 
       }
+
+            // Apply special layer wrapping again, needed for SelectiveDeposition
+            if(is_selective_depo) prepare_toplayer(LevelSets,Model);
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
@@ -2193,7 +2204,7 @@ namespace proc {
     }
 
      //Unite final depo top layer and initial top layer => layers are in standard configuration again
-    finalize_toplayer<LevelSetsType,ModelType>(LevelSets);
+    finalize_toplayer<ModelType>(LevelSets);
   }
 
 }

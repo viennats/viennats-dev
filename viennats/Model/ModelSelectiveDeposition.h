@@ -83,9 +83,9 @@ namespace model {
 
 
             //for new toplayer
-            depo_possible.push_back(1);
+            depo_possible.insert(depo_possible.begin(), 1);
 
-            std::reverse(depo_possible.begin(),depo_possible.end());
+            //std::reverse(depo_possible.begin(),depo_possible.end());
 
         }
 
