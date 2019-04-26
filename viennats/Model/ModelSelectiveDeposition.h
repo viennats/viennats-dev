@@ -80,13 +80,6 @@ namespace model {
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
-
-
-            //for new toplayer
-            depo_possible.insert(depo_possible.begin(), 1);
-
-            //std::reverse(depo_possible.begin(),depo_possible.end());
-
         }
 
         template<class VecType>

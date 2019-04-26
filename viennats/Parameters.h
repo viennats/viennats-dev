@@ -743,7 +743,14 @@ struct ReportError {
 
 
         //IMPORTANT: MODEL PARAMETERS ARE MISSING }; AT THE END, NEED TO ADD BEFORE ANYTHING ELSE
-        for(std::list<client::Parameters::ProcessParameterType>::iterator it=process_parameters.begin(); it!=process_parameters.end(); ++it) it->ModelParameters.append(";");
+        // SelectiveDeposition process requires that add_layer is at least 1
+        for(std::list<client::Parameters::ProcessParameterType>::iterator it=process_parameters.begin(); it!=process_parameters.end(); ++it){
+           it->ModelParameters.append(";");
+
+           if((it->ModelName == "SelectiveDeposition") && (it->AddLayer<1)){
+             it->AddLayer = 1;
+           }
+        }
 
         // fix input transformation
         for(size_t i=0; i<input_transformation.size(); ++i) input_transformation_signs[i] = input_transformation[i] >= 0;

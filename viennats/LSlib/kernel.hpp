@@ -1816,12 +1816,10 @@ namespace lvlset {
 
     template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g)  :  Grid(g)   {
 
-        //initialize empty level set
-        /*sub_levelsets.resize(segmentation.size()+1, sub_levelset_type(this));
-        for (typename sub_levelsets_type::iterator it=sub_levelsets.begin();it!=sub_levelsets.end();++it) {
-            //it->start_indices[D-1].push_back(0);
-            //it->num_active_points=0;
-        }*/
+        // add single undefined point at gridmin, so it is a valid levelset
+        initialize();
+        sub_levelsets[0].push_back_undefined(Grid.min_point_index(), POS_PT);
+        finalize(1);
     }
 
     template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g, value_type c, int direction, bool is_direction_negative)  :  segmentation(points_type()), Grid(g)  {
@@ -1830,15 +1828,15 @@ namespace lvlset {
 
         initialize();
 
-        for (int v=0;v<D;++v) {
-            if (v!=direction) {
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=POS_INFINITE_BOUNDARY);
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=NEG_INFINITE_BOUNDARY);
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=INFINITE_BOUNDARY);
-            } else {
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)==INFINITE_BOUNDARY);
-            }
-        }
+        // for (int v=0;v<D;++v) {
+        //     if (v!=direction) {
+        //         assert(grid().boundary_conditions(v)!=POS_INFINITE_BOUNDARY);
+        //         assert(grid().boundary_conditions(v)!=NEG_INFINITE_BOUNDARY);
+        //         assert(grid().boundary_conditions(v)!=INFINITE_BOUNDARY);
+        //     } else {
+        //         assert(grid().boundary_conditions(v)==INFINITE_BOUNDARY);
+        //     }
+        // }
 
         //sub_levelsets.initialize(1,*this);
 
@@ -3016,7 +3014,6 @@ namespace lvlset {
             if (pos_breaks==end_breaks) {
                 end_run_abs_coords[r_level]=l.grid().max_point_index(r_level);
             } else {
-                //shfdhsfhdskjhgf assert(pos_breaks<end_breaks);
                 end_run_abs_coords[r_level]=(*pos_breaks)-1;
             }
 

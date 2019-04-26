@@ -551,35 +551,31 @@ namespace proc {
 //Afterwards: unite those results.
   template<class LevelSetsType,class ModelType,
            typename std::enable_if<std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-  void prepare_toplayer(LevelSetsType& LevelSets, ModelType model, bool isStart=false) {
+  void prepare_toplayer(LevelSetsType& LevelSets, ModelType model) {
+
+    typedef typename LevelSetsType::value_type LevelSetType;
 
     const std::vector<int> epitaxy_possible = model.get_depo_possible();
 
-    //auto it_topLayer=LevelSets.rbegin();
+    // top iterator for booling
     auto it_layer=LevelSets.rbegin();
-
-    // generate empty LS
-    //typename LevelSetsType::value_type tmp(LevelSets.rbegin()->grid());
-    typename LevelSetsType::value_type tmp =lvlset::max(*it_layer,lvlset::invert(*it_layer)); //generate empty set
+    // empty levelset which will contain the final top layer
+    LevelSetType tmp(it_layer->grid());
 
     bool upper_layer_is_depo_substrate = false;
-    unsigned int idx = (isStart)?1:0; //start with index 1, because epitaxy_possible starts with top layer to be added.
-    unsigned old_idx=0;
+    unsigned int idx = 0;
 
+    // always subtract(intersect) the first non-depo layer after a depo layer; then add(union) the results
     for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
-
       if(epitaxy_possible[idx] != 0){
         if(upper_layer_is_depo_substrate == false){
             it_layer = it_maskLayer;
             upper_layer_is_depo_substrate = true;
-            old_idx=idx;
         }
-
       } else{ //epitaxy is not possible
         if(upper_layer_is_depo_substrate == true){
-            typename LevelSetsType::value_type tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
+            LevelSetType tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
             tmp.swap(tmp2);
-            // tmp  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
         }
         upper_layer_is_depo_substrate = false;
       }
@@ -588,27 +584,22 @@ namespace proc {
 
     //if bottom layer is a depo substrate, unite it with tmp
     if(upper_layer_is_depo_substrate == true){
-      typename LevelSetsType::value_type tmp3  = lvlset::min(tmp, *it_layer);
+      LevelSetType tmp3  = lvlset::min(tmp, *it_layer);
       tmp.swap(tmp3);
-      // tmp = lvlset::min(tmp, *it_layer);
     }
 
-    typename LevelSetsType::value_type tmp2 = lvlset::invert(tmp);
-    // tmp = lvlset::invert(tmp);
-
-    if(isStart) LevelSets.push_back(tmp2);
-    else LevelSets.back().swap(tmp2);
+    LevelSetType tmp2 = lvlset::invert(tmp);
+    LevelSets.back().swap(tmp2);
   }
 
 // SFINAE (Substitution Failure Is Not An Error):  model != SelectiveDeposition
   template<class LevelSetsType,class ModelType,
            typename std::enable_if< !std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
-  void prepare_toplayer( LevelSetsType& LevelSets, ModelType model, bool isStart=false) {}
+  void prepare_toplayer( LevelSetsType& LevelSets, ModelType model) {}
 
 
 // SFINAE (Substitution Failure Is Not An Error): After a selective deposition step the top layer has to be rebuilt to the standard configuration.
 // Unite final depo top layer and initial top layer => layers are in standard configuration again
-
   template<class ModelType,class LevelSetsType,
            typename std::enable_if< std::is_same<model::SelectiveDeposition, ModelType>::value>::type* = nullptr>
   void finalize_toplayer(LevelSetsType& LevelSets){
@@ -617,6 +608,7 @@ namespace proc {
       auto it_formerToplayer=++LevelSets.rbegin(); //++it_formerToplayer;
 
       typename LevelSetsType::value_type tmp  = lvlset::min(*it_formerToplayer,lvlset::invert(*it_topLayer));
+      tmp.expand(2);
       it_topLayer->swap(tmp);
   }
 
@@ -1605,7 +1597,7 @@ namespace proc {
 
     //Prepare top layer for depo (if Model is not SelectiveDeposition, function is empty.)
     constexpr bool is_selective_depo  =  std::is_same<model::SelectiveDeposition, ModelType>::value;
-    prepare_toplayer(LevelSets,Model, true);
+    prepare_toplayer(LevelSets,Model);
 
     while(true) {
 
