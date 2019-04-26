@@ -77,12 +77,12 @@ namespace model {
 
 
             //reverse because material id is reversed w.r.t. layer id (for output)
-            std::reverse(r100.begin(),r100.end());
+            /*std::reverse(r100.begin(),r100.end());
             std::reverse(r110.begin(),r110.end());
             std::reverse(r111.begin(),r111.end());
-            std::reverse(r311.begin(),r311.end());
-            std::reverse(zeroVel.begin(),zeroVel.end());
+            std::reverse(r311.begin(),r311.end());*/
 
+            // find materials with no growth in any direction and store in zeroVel
             for(unsigned int i=0; i < r100.size(); ++i){
               zeroVel.push_back(false);
               if(fabs(r100[i]) < EPS)
