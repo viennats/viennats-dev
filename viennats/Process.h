@@ -559,19 +559,20 @@ namespace proc {
     auto it_layer=LevelSets.rbegin();
 
     // generate empty LS
-    typename LevelSetsType::value_type tmp(LevelSets.rbegin()->grid());
-    //typename LevelSetsType::value_type tmp =lvlset::max(*it_topLayer,lvlset::invert(*it_topLayer)); //generate empty set
+    //typename LevelSetsType::value_type tmp(LevelSets.rbegin()->grid());
+    typename LevelSetsType::value_type tmp =lvlset::max(*it_layer,lvlset::invert(*it_layer)); //generate empty set
 
     bool upper_layer_is_depo_substrate = false;
     unsigned int idx = (isStart)?1:0; //start with index 1, because epitaxy_possible starts with top layer to be added.
+    unsigned old_idx=0;
 
     for(auto it_maskLayer=LevelSets.rbegin(); it_maskLayer != LevelSets.rend(); ++it_maskLayer){
 
       if(epitaxy_possible[idx] != 0){
-
         if(upper_layer_is_depo_substrate == false){
             it_layer = it_maskLayer;
             upper_layer_is_depo_substrate = true;
+            old_idx=idx;
         }
 
       } else{ //epitaxy is not possible
@@ -1847,14 +1848,14 @@ namespace proc {
             TimeTotalExclOutput+=my::time::GetTime();
             TimeOutput-=my::time::GetTime();
 
+            // undo special layer wrapping for SelectiveDeposition
+            if(MakeOutput || VolumeOutput) finalize_toplayer<ModelType>(LevelSets);
+
             if (MakeOutput) {
 
 #ifdef VERBOSE
         msg::print_message("make output");
 #endif
-
-              // undo special layer wrapping for SelectiveDeposition
-              if(is_selective_depo) finalize_toplayer<ModelType>(LevelSets);
 
                 DataAccessClass<ModelType, ParameterType::Dimension> Data(  Model,
                                                                             &Coverages[0],
@@ -1945,6 +1946,7 @@ namespace proc {
             }
 
       if(VolumeOutput){
+
           {
             std::ostringstream oss;
             oss << "Writing volume " << output_info.output_counter;
@@ -1957,10 +1959,11 @@ namespace proc {
           output_info.output_counter++;
           msg::print_done();
 
+
       }
 
-            // Apply special layer wrapping again, needed for SelectiveDeposition
-            if(is_selective_depo) prepare_toplayer(LevelSets,Model);
+      // Apply special layer wrapping again, needed for SelectiveDeposition
+      if(MakeOutput || VolumeOutput) prepare_toplayer(LevelSets,Model);
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
