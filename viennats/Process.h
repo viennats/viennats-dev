@@ -588,6 +588,8 @@ namespace proc {
       tmp.swap(tmp3);
     }
 
+    tmp.expand(2);
+
     LevelSetType tmp2 = lvlset::invert(tmp);
     LevelSets.back().swap(tmp2);
   }
@@ -1841,7 +1843,11 @@ namespace proc {
             TimeOutput-=my::time::GetTime();
 
             // undo special layer wrapping for SelectiveDeposition
-            if(MakeOutput || VolumeOutput) finalize_toplayer<ModelType>(LevelSets);
+            //if(MakeOutput || VolumeOutput) finalize_toplayer<ModelType>(LevelSets);
+            if(MakeOutput || VolumeOutput){
+              finalize_toplayer<ModelType>(LevelSets);
+              prepare_toplayer(LevelSets, Model);
+            }
 
             if (MakeOutput) {
 
@@ -1873,6 +1879,7 @@ namespace proc {
                 for (unsigned int i=0;i<LevelSets.size();i++) {
                   //for each levelset remove non opposite signed neighbors before outputting it to a file
                   it->prune();
+
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
                         oss << Parameter.output_path<< output_info.file_name <<"_" << i << "_" << output_info.output_counter << ".dx";
@@ -1921,6 +1928,7 @@ namespace proc {
                         it->export_levelset(oss.str(), Parameter.bits_per_distance);
                     }
                     if(Parameter.print_explicit_lvst){
+                      it->expand(7);  // needed for correct normal vectors
                       std::ostringstream oss;
                       oss << Parameter.output_path<< output_info.file_name <<"_lvst_" << i << "_" << output_info.output_counter << ".vtp";
 #ifdef VERBOSE
@@ -1955,7 +1963,7 @@ namespace proc {
       }
 
       // Apply special layer wrapping again, needed for SelectiveDeposition
-      if(MakeOutput || VolumeOutput) prepare_toplayer(LevelSets,Model);
+      //if(MakeOutput || VolumeOutput) prepare_toplayer(LevelSets,Model);
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();

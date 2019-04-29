@@ -286,38 +286,62 @@ namespace lvlset {
       }
     }
 
-    template <class GridTraitsType, class LevelSetTraitsType>
-    void write_explicit_levelset(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename){
-      const int D=GridTraitsType::dimensions;
+    template <class LevelSetType>
+    void write_explicit_levelset(const LevelSetType& l, const std::string& filename){
+
+      const int D=LevelSetType::dimensions;
+      const double gridDelta = l.grid().grid_delta();
+
+      // set up iterator and initialise storage
+      typename LevelSetType::template const_iterator_neighbor_filtered<typename LevelSetType::filter_value,  1> itA(l, typename LevelSetType::filter_value(2.0));
+      std::vector< vec<typename LevelSetType::value_type, D> > normals;
 
       vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
       vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
       vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
       vtkSmartPointer<vtkFloatArray> polyValues = vtkSmartPointer<vtkFloatArray>::New();
+      vtkSmartPointer<vtkFloatArray> polyNormals = vtkSmartPointer<vtkFloatArray>::New();
 
       polyValues->SetNumberOfComponents(1);
       polyValues->SetName("LSValues");
 
-      // start iterator over LS
-      typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs it_l(l);
-      double gridDelta = l.grid().grid_delta();
+      polyNormals->SetNumberOfComponents(3);
+      polyNormals->SetName("Normals");
 
-      while(!it_l.is_finished()){
-        if(!it_l.is_active()){
-          it_l.next();
-          continue;
-        }
+
+      while(!itA.is_finished()){
+
         double p[3];
-        for(unsigned i=0; i<D; ++i) p[i] = gridDelta*it_l.start_indices(i);
+        for(unsigned i=0; i<D; ++i) p[i] = gridDelta*itA.indices(i);
         vtkIdType pointId = polyPoints->InsertNextPoint(p);
         polyCells->InsertNextCell(1, &pointId); // insert vertex for visualisation
-        polyValues->InsertNextValue(it_l.value());
-        it_l.next();
+        polyValues->InsertNextValue(itA.center().value());
+
+        // generate normal vector and push
+        double tmp[3] = {0.,0.,0.};
+
+        double modulus=0;
+        for(int i = 0; i < D; ++i ){
+          const double grad=itA.gradient(i);
+          modulus+=grad*grad;
+          tmp[i] = itA.gradient(i);
+        }
+
+        modulus=sqrt(modulus);
+        for(unsigned i=0; i<D; ++i){
+          tmp[i]/=modulus;
+        }
+
+        polyNormals->InsertNextTuple(tmp);
+
+        itA.next();
       }
+
 
       polyData->SetPoints(polyPoints);
       polyData->SetVerts(polyCells);
       polyData->GetPointData()->SetScalars(polyValues);
+      polyData->GetPointData()->SetNormals(polyNormals);
 
       vtkSmartPointer<vtkXMLPolyDataWriter> pWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
       pWriter->SetFileName(filename.c_str());

@@ -58,7 +58,7 @@ namespace model {
             double Flux;
         };
 
-        SelectiveDeposition(const std::string & Parameters){
+        SelectiveDeposition(const std::string & Parameters, const int AddLayer){
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
@@ -80,6 +80,9 @@ namespace model {
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
+
+            // each new added layer must be depositable
+            for(int i=0; i<AddLayer; ++i) depo_possible.insert(depo_possible.begin(), 1);
         }
 
         template<class VecType>
