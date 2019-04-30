@@ -677,6 +677,15 @@ namespace lvlset {
                 return subs.size();
             }
 
+            void deep_copy(const sub_levelsets_type& s){
+              subs.resize(s.size());
+
+              #pragma omp parallel for schedule(static,1)// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+              for (int k=0;k<static_cast<int>(s.size());++k) {
+                  subs[k]= sub_levelset_ptr_type(new sub_levelset_type(s[k]));
+              }
+            }
+
             sub_levelsets_type(const sub_levelsets_type& s) {
                 // builds a new sub_levelsets_type that copies the one passed to the function as s
                 subs.resize(s.size());
@@ -1340,6 +1349,17 @@ namespace lvlset {
 
              return *this;
         }*/
+
+        void deep_copy(const levelset& l){
+          segmentation=l.segmentation;
+          sub_levelsets.deep_copy(l.sub_levelsets);
+          num_layers=l.num_layers;
+          active_pt_id_offsets=l.active_pt_id_offsets;
+          pt_id_offsets=l.pt_id_offsets;
+
+          // since Grid is a const reference to the underlying grid, it has to be the same
+          assert(&Grid==&l.Grid);
+        }
 
 
 

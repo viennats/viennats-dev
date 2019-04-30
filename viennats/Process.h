@@ -575,6 +575,7 @@ namespace proc {
       } else{ //epitaxy is not possible
         if(upper_layer_is_depo_substrate == true){
             LevelSetType tmp2  = lvlset::min(tmp, lvlset::max(*it_layer,lvlset::invert(*it_maskLayer)));
+            tmp.prune();
             tmp.swap(tmp2);
         }
         upper_layer_is_depo_substrate = false;
@@ -588,7 +589,7 @@ namespace proc {
       tmp.swap(tmp3);
     }
 
-    tmp.expand(2);
+    tmp.prune();
 
     LevelSetType tmp2 = lvlset::invert(tmp);
     LevelSets.back().swap(tmp2);
@@ -1842,11 +1843,12 @@ namespace proc {
             TimeTotalExclOutput+=my::time::GetTime();
             TimeOutput-=my::time::GetTime();
 
-            // undo special layer wrapping for SelectiveDeposition
-            //if(MakeOutput || VolumeOutput) finalize_toplayer<ModelType>(LevelSets);
+            {
+            // undo special layer wrapping for SelectiveDeposition, keep copy of old top layer to swap it back after output
+            typename LevelSetsType::value_type SelectiveDepositionLS(LevelSets.back().grid());
             if(MakeOutput || VolumeOutput){
+              SelectiveDepositionLS.deep_copy(LevelSets.back());
               finalize_toplayer<ModelType>(LevelSets);
-              prepare_toplayer(LevelSets, Model);
             }
 
             if (MakeOutput) {
@@ -1879,6 +1881,7 @@ namespace proc {
                 for (unsigned int i=0;i<LevelSets.size();i++) {
                   //for each levelset remove non opposite signed neighbors before outputting it to a file
                   it->prune();
+                  it->expand(2);
 
                     if (Parameter.print_dx) {
                         std::ostringstream oss;
@@ -1963,7 +1966,11 @@ namespace proc {
       }
 
       // Apply special layer wrapping again, needed for SelectiveDeposition
-      //if(MakeOutput || VolumeOutput) prepare_toplayer(LevelSets,Model);
+      if(MakeOutput || VolumeOutput){
+        LevelSets.back().swap(SelectiveDepositionLS);
+      }
+
+      }
 
             TimeOutput+=my::time::GetTime();
             TimeTotalExclOutput-=my::time::GetTime();
