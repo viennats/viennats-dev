@@ -1890,7 +1890,7 @@ namespace proc {
                         msg::print_message("print dx");
 #endif
 
-                        if (i!=LevelSets.size()-1) {
+                        if (i!=LevelSets.size()-1 || is_selective_depo) { // selective deposition cannot have data written since top levelset is different in output
                             write_explicit_surface_opendx(*it,oss.str());
                         } else {
                             write_explicit_surface_opendx(*it,oss.str(), Data);
@@ -1903,7 +1903,7 @@ namespace proc {
                         msg::print_message("print vtk");
 #endif
 
-                        if (i!=LevelSets.size()-1) {
+                        if (i!=LevelSets.size()-1 || is_selective_depo) {
                             write_explicit_surface_vtk(*it,oss.str());
                         } else {
                             write_explicit_surface_vtk(*it,oss.str(), Data);
@@ -1915,7 +1915,7 @@ namespace proc {
 #ifdef VERBOSE
                       msg::print_message("print vtp");
 #endif
-                      if (i!=LevelSets.size()-1) {
+                      if (i!=LevelSets.size()-1 || is_selective_depo) {
                           write_explicit_surface_vtp(*it,oss.str());
                       } else {
                           write_explicit_surface_vtp(*it,oss.str(), Data);
