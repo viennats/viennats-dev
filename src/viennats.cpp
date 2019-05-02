@@ -39,6 +39,7 @@
 #define PROCESS_NONLINEAR_DEPOSITION
 #define PROCESS_TWOSPECIES_DEPOSITION
 #define PROCESS_WET_ETCHING
+#define PROCESS_SELECTIVE_DEPOSITION
 #define PROCESS_FIB
 
 //LS Processes
@@ -124,6 +125,11 @@
 #ifdef PROCESS_WET_ETCHING
 #include "Model/ModelWetEtching.h"
 #endif
+#ifdef PROCESS_SELECTIVE_DEPOSITION
+#include "Model/ModelSelectiveDeposition.h"
+#endif
+
+
 #ifdef PROCESS_FIB
 #include "Model/ModelFIB.h"
 #endif
@@ -297,6 +303,8 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
     }
   }
 
+
+
   //output initial LevelSets if print lvst is specified
   if(p.print_lvst){
     int LevelsetCounter = 0;
@@ -454,6 +462,13 @@ void main_(ParameterType2& p2) {          //TODO changed from const to not const
 #ifdef PROCESS_WET_ETCHING
     if (pIter->ModelName == "WetEtching") {
       model::WetEtching m(pIter->ModelParameters);
+      proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
+    }
+#endif
+
+#ifdef PROCESS_SELECTIVE_DEPOSITION
+    if (pIter->ModelName == "SelectiveDeposition") {
+      model::SelectiveDeposition m(pIter->ModelParameters, pIter->AddLayer);
       proc::ExecuteProcess(LevelSets, m, p, *pIter, output_info);
     }
 #endif

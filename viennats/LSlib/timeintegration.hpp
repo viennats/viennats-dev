@@ -22,6 +22,8 @@
 #include "integration_schemes.hpp"
 #include "message.h"
 
+#include "operations.hpp"
+
 namespace lvlset {
 
     using namespace math;
@@ -476,6 +478,35 @@ namespace lvlset {
 
     }
 */
+
+// SFINAE (Substitution Failure Is Not An Error): If IntegrationScheme is STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE the time step is reduced depending on dissipation coefficients.
+template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
+         typename std::enable_if< std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
+         void reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType& MaxTimeStep) {
+
+  typedef typename LevelSetType::value_type value_type;
+
+  const double alpha_maxCFL = 1.0; //TODO Can be potentially smaller than 1 (user input???)
+  //second time step test, based on alphas
+  vec<value_type,3> alphas = scheme.getFinalAlphas();
+  vec<value_type,3> dxs = scheme.getDx();
+
+  MaxTimeStep=0;
+  for(int i = 0; i < 3; ++i){
+    if(math::abs(dxs[i]) > 1e-6 ){
+      MaxTimeStep += alphas[i] / dxs[i];
+    }
+  }
+
+  MaxTimeStep = alpha_maxCFL / MaxTimeStep;
+}
+
+// SFINAE (Substitution Failure Is Not An Error): IntegrationScheme != STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE
+template<class LevelSetType,class VelocityClassType,class IntegrationSchemeType, class TimeStepType,
+         typename std::enable_if< !std::is_same< lvlset::STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE, IntegrationSchemeType>::value>::type* = nullptr>
+         void reduce_timestep_hamilton_jacobi( lvlset::IntegrationScheme<LevelSetType, VelocityClassType, IntegrationSchemeType>& scheme, TimeStepType& MaxTimeStep2) {}
+
+
     template <class LevelSetsType, class IntegrationSchemeType, class TimeStepRatioType, class VelocityClassType,class TimeStepType>
     typename PointerAdapter<typename LevelSetsType::value_type>::result::value_type time_integrate_active_grid_points2(
             LevelSetsType& LevelSets,
@@ -484,8 +515,7 @@ namespace lvlset {
             const IntegrationSchemeType& IntegrationScheme,
 //            const bool separate_materials,
             //const SegmentationType& seg,
-            TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()         //TODO change to value_type
-
+            TimeStepType MaxTimeStep2=std::numeric_limits<TimeStepType>::max()        //TODO change to value_type
     ) {
         if (TimeStepRatio>0.4999) TimeStepRatio=0.4999;        //restriction of the CFL-Condition "TimeStepRatio" to values less than 0.5
                                                                //that means that the maximum distance which the surface moves within one time step
@@ -580,9 +610,9 @@ namespace lvlset {
                     // put iterator to same position as the top levelset
                     ITs[level_num].go_to_indices_sequential(srfIT.start_indices());
 
-                    // if the lower surface is actually outside, e.g. its LS value is lower or equal
+                    // if the lower surface is actually outside, i.e. its LS value is lower or equal
                     if(ITs[level_num].value() <= Phi_im1){
-                      v = scheme(srfIT, LevelSets.size()-1-level_num);
+                      v = scheme(srfIT, LevelSets.size()-1-level_num); //NOTE AT numerical hamiltonian is calculated
                       break;
                     }
                   }
@@ -597,7 +627,7 @@ namespace lvlset {
                   }else Phi_im1 = std::numeric_limits<value_type>::max();
 
 
-                  // if velocity is positive, set maximum time step possible without violating the cfl confition
+                  // if velocity is positive, set maximum time step possible without violating the cfl condition
                   if (v>0.) {
                     tmp_tmax+=q/v;
                     TempRatesStops.push_back(std::make_pair(v,-std::numeric_limits<value_type>::max()));
@@ -632,10 +662,25 @@ namespace lvlset {
             #pragma omp critical  //execute as single thread
             {
                 if (MaxTimeStep<MaxTimeStep2) MaxTimeStep2=MaxTimeStep;
+
+                //If scheme is STENCIL_LOCAL_LAX_FRIEDRICHS the time step is reduced depending on the dissipation coefficients
+                //For all remaining schemes this function is empty.
+                reduce_timestep_hamilton_jacobi(scheme, MaxTimeStep);
+
+                if (MaxTimeStep<MaxTimeStep2){
+                   #ifdef VERBOSE
+                    std::cout << "HJ: Reduced time step from " << MaxTimeStep2;
+                    std::cout << " to " << MaxTimeStep << std::endl;
+                   #endif
+                   MaxTimeStep2=MaxTimeStep;
+                }
             }
             #pragma omp barrier //wait until all other threads in section reach the same point.
             #pragma omp single //section of code that must be run by a single available thread.
             {
+
+
+
                 new_lvlset.finalize(1);
                 assert(new_lvlset.num_active_pts()==LevelSet.num_active_pts());
                 assert(new_lvlset.num_pts()==new_lvlset.num_active_pts());
@@ -663,6 +708,10 @@ namespace lvlset {
                     Phi=itRS->second;
                     ++itRS;
                 }
+
+
+                //NOTE AT now timestep is define, can be compared with SLF dt
+
 
                 // now deduct the velocity times the time step we take
                 Phi-=t*itRS->first;
@@ -776,7 +825,8 @@ namespace lvlset {
                                 CFLType CFL,
                                 TimeType MaxTimeStep,
                                 PointDataType& PointData,
-                                PointDataSizeType PointDataSize=1
+                                PointDataSizeType PointDataSize=1,
+                                const bool is_selective_depo=false
                             ) {
 
 //    msg::print_message("Velocity: ", Velocities.getVelocity());
@@ -843,7 +893,9 @@ namespace lvlset {
                                                 Velocities,
                                                 integration_scheme,
                                                 MaxTimeStep);
-        //tmp+=my::time::GetTime();
+
+
+            //tmp+=my::time::GetTime();
         //std::cout << " " << tmp;
 
         /*tmp=-my::time::GetTime();
@@ -860,11 +912,18 @@ namespace lvlset {
         //std::cout << " " << tmp;
 
         //tmp=-my::time::GetTime();
+
         for (typename LevelSetsType::iterator it=LevelSets.begin();&(*it)!=&(LevelSets.back());++it) {
-            ptr::deref(*it).max(ptr::deref(LevelSets.back()));  //adjust all level set functions below the top most level set function
+            //adjust all level set functions below the top most level set function
+            //For selective deposition this is not necessary.
+            if(is_selective_depo == false){
+                ptr::deref(*it).max(ptr::deref(LevelSets.back()));
+            }
+
             ptr::deref(*it).prune();            //remove grid points which do not have at least one opposite signed neighbor
             ptr::deref(*it).segment();
         }
+
         //tmp+=my::time::GetTime();
         //std::cout << " " << tmp << std::endl;
 
@@ -885,7 +944,8 @@ namespace lvlset {
                                 CFLType CFL,
                                 TimeType MaxTimeStep,
                                 PointDataType& PointData,
-                                PointDataSizeType PointDataSize=1
+                                PointDataSizeType PointDataSize=1,
+                                const bool is_selective_depo=false
                             ) {
       //std::cout << "time_integrate!\n";
         //this specialization of "time_integrate" is for the time integration of just one level set function

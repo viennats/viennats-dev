@@ -30,6 +30,8 @@
 #include "grid.hpp"
 #include "math.hpp"
 
+#include "../Math.h" //for WENO3 and WENO5
+
 #ifdef _OPENMP
     #include <omp.h>
 #endif
@@ -554,11 +556,14 @@ namespace lvlset {
                 }
             }
 
+
             void print(std::ostream& out = std::cout) const {
                 std::ostringstream oss;
 
                 out << std::endl;
                 out << "levelset data structure" << std::endl << std::endl;
+
+
 
                 for (int dim=D-1;dim>=0;--dim) {
                     out <<  dim <<  " start_indices: " << start_indices[dim].size();
@@ -670,6 +675,15 @@ namespace lvlset {
             size_type size() const {
                 // return the size of the vector for parallelization
                 return subs.size();
+            }
+
+            void deep_copy(const sub_levelsets_type& s){
+              subs.resize(s.size());
+
+              #pragma omp parallel for schedule(static,1)// parallelization - Iterations divided into chunks of size 1. Each chunk is assigned to a thread
+              for (int k=0;k<static_cast<int>(s.size());++k) {
+                  subs[k]= sub_levelset_ptr_type(new sub_levelset_type(s[k]));
+              }
             }
 
             sub_levelsets_type(const sub_levelsets_type& s) {
@@ -796,6 +810,10 @@ namespace lvlset {
 
         //######################################################################
 
+        //########################################################################
+        //Numerical scheme definitions, central is default
+        enum class differentiation_scheme {FIRST_ORDER,WENO3, WENO5};
+        //########################################################################
 
         /*class local_pt_id_type {
         public:
@@ -1013,7 +1031,6 @@ namespace lvlset {
             //      GridTraitsType (see grid.hpp) into account if dynamic data structures are used for example
             //      Furthermore due to data structure alignment the result can be somehow inaccurate
 
-            //TODO
 
             unsigned long int x=sizeof(levelset<GridTraitsType, LevelSetTraitsType>);
 
@@ -1333,6 +1350,17 @@ namespace lvlset {
              return *this;
         }*/
 
+        void deep_copy(const levelset& l){
+          segmentation=l.segmentation;
+          sub_levelsets.deep_copy(l.sub_levelsets);
+          num_layers=l.num_layers;
+          active_pt_id_offsets=l.active_pt_id_offsets;
+          pt_id_offsets=l.pt_id_offsets;
+
+          // since Grid is a const reference to the underlying grid, it has to be the same
+          assert(&Grid==&l.Grid);
+        }
+
 
 
         template <class V> void push_back(int sub, const V& point, value_type distance) {
@@ -1615,6 +1643,9 @@ namespace lvlset {
                                             //the const_iterator_neighbor iterator stops
                                             //this iterator is internally used for rebuilding and expanding the level set function
 
+        class neighbor_stencil;
+        class star_stencil;
+
     private:
          template <class I>
          void next(I &) const;
@@ -1805,12 +1836,10 @@ namespace lvlset {
 
     template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g)  :  Grid(g)   {
 
-        //initialize empty level set
-        /*sub_levelsets.resize(segmentation.size()+1, sub_levelset_type(this));
-        for (typename sub_levelsets_type::iterator it=sub_levelsets.begin();it!=sub_levelsets.end();++it) {
-            //it->start_indices[D-1].push_back(0);
-            //it->num_active_points=0;
-        }*/
+        // add single undefined point at gridmin, so it is a valid levelset
+        initialize();
+        sub_levelsets[0].push_back_undefined(Grid.min_point_index(), POS_PT);
+        finalize(1);
     }
 
     template <class GridTraitsType, class LevelSetTraitsType> levelset<GridTraitsType, LevelSetTraitsType>::levelset(const grid_type2& g, value_type c, int direction, bool is_direction_negative)  :  segmentation(points_type()), Grid(g)  {
@@ -1819,15 +1848,15 @@ namespace lvlset {
 
         initialize();
 
-        for (int v=0;v<D;++v) {
-            if (v!=direction) {
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=POS_INFINITE_BOUNDARY);
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=NEG_INFINITE_BOUNDARY);
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)!=INFINITE_BOUNDARY);
-            } else {
-                //shfdhsfhdskjhgf assert(grid().boundary_conditions(v)==INFINITE_BOUNDARY);
-            }
-        }
+        // for (int v=0;v<D;++v) {
+        //     if (v!=direction) {
+        //         assert(grid().boundary_conditions(v)!=POS_INFINITE_BOUNDARY);
+        //         assert(grid().boundary_conditions(v)!=NEG_INFINITE_BOUNDARY);
+        //         assert(grid().boundary_conditions(v)!=INFINITE_BOUNDARY);
+        //     } else {
+        //         assert(grid().boundary_conditions(v)==INFINITE_BOUNDARY);
+        //     }
+        // }
 
         //sub_levelsets.initialize(1,*this);
 
@@ -2166,23 +2195,6 @@ namespace lvlset {
                 while (pos<end_v) {
 
                     typename LevelSetType::value_type d=min_or_max(itA.value(),itB.value());
-//                  typename LevelSetType::value_type d;
-
-//                    if (std::abs(itA.value()-itB.value())<0.001) d=POS_VALUE;
-
-//                  if ((itA.value()-itB.value())<-0.001) {
-//                    d=POS_VALUE;
-//                  } else if (std::abs(itA.value())<std::abs(itB.value())) {
-//                    d=itA.value();
-//                  } else {
-//                    d=itB.value();
-//                  }
-
-//                  min_or_max(itA.value(),itB.value());
-
-//                    if ((itA.value()<0)&&(itB.value()<0)) {
-//                      std::cout << "itA.value(): " << itA.value() << ", itB.value(): " << itB.value() << ", d: " << d << std::endl;
-//                    }
 
                     if (math::abs(d)<std::numeric_limits<typename LevelSetType::value_type>::max()) {
                         s.push_back(pos, d);
@@ -2667,6 +2679,8 @@ namespace lvlset {
             const value_type phi_p=neighbor(dir,0).value();
             const value_type phi_n=neighbor(dir+D,0).value();
 
+
+
             return ((d_p/d_n)*(phi_p-phi_0)-(d_n/d_p)*(phi_n-phi_0))/(d_n-d_p);
         }
 
@@ -3020,7 +3034,6 @@ namespace lvlset {
             if (pos_breaks==end_breaks) {
                 end_run_abs_coords[r_level]=l.grid().max_point_index(r_level);
             } else {
-                //shfdhsfhdskjhgf assert(pos_breaks<end_breaks);
                 end_run_abs_coords[r_level]=(*pos_breaks)-1;
             }
 
@@ -3410,6 +3423,7 @@ namespace lvlset {
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::go_up_BA;
     public:
         using levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_base::is_finished;
+
     private:
 
         template <class I>
@@ -3979,6 +3993,9 @@ namespace lvlset {
              l.go_to_indices_sequential(v, *this);
         }
 
+        const vec<index_type,D> get_offset() const{
+          return offset;
+        }
     };
 
 
@@ -4005,6 +4022,343 @@ namespace lvlset {
         }
     }
 
+    /*A star stencil is used for calculation of spatial derivatives.
+      The central point is given by a const_iterator_runs_offset.
+      First order difference or WENO schemes can be chosen when a star stencil is constructed.
+      Provides convenient methods such as gradient or normal vector.
+    */
+    template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::star_stencil {
+
+      const levelset<GridTraitsType, LevelSetTraitsType> &l;
+      typename levelset<GridTraitsType,LevelSetTraitsType>::const_iterator_runs_offset it_center;
+      std::vector<const_iterator_runs_offset> it_neighbors;
+      vec<index_type,D> offset;
+
+      int order;
+      differentiation_scheme dscheme;
+
+      public:
+
+        star_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                     const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs_offset& it_mid,
+                     const differentiation_scheme ds) :
+                            l(lx),it_center(it_mid),dscheme(ds){
+
+          switch(dscheme){
+            case differentiation_scheme::WENO3:
+              order=2;
+              break;
+            case differentiation_scheme::WENO5:
+              order=3;
+              break;
+            default:
+              order=1;
+          }
+
+          it_neighbors.reserve(2*D*order);
+          offset = it_mid.get_offset();
+
+          for (int i = 0; i < 2*D; ++i){
+              vec<index_type,D> tv(offset);
+              for (int j = 0; j < order; ++j) {
+                  if (i<D) tv[i]++; else tv[i-D]--;
+                  it_neighbors.push_back(const_iterator_runs_offset(l, tv,it_center.start_indices()));
+              }
+          }
+
+        }
+
+        star_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                     const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs_offset& it_mid) :
+                            l(lx),it_center(it_mid){
+
+          dscheme = differentiation_scheme::FIRST_ORDER;
+          order=1;
+
+          it_neighbors.reserve(2*D*order);
+
+
+          offset = it_mid.get_offset();
+
+          for (int i = 0; i < 2*D; ++i){
+              vec<index_type,D> tv(offset);
+              for (int j = 0; j < order; ++j) {
+                  if (i<D) tv[i]++; else tv[i-D]--;
+                  it_neighbors.push_back(const_iterator_runs_offset(l, tv,it_center.start_indices()));
+              }
+          }
+
+        }
+        const const_iterator_runs_offset& neighbor(int direction, int item=0) const {
+            //access to a certain neighbor grid point
+            return it_neighbors[order*direction+item];
+        }
+
+        const const_iterator_runs_offset& center() const {     //access to the center grid point
+            return it_center;
+        }
+
+        const vec<index_type,D>& get_center_offset() const {
+            return offset;
+        }
+
+        vec<index_type,D> indices() const { //returns the indices of the center
+            return it_center.start_indices() + offset;
+        }
+
+        index_type indices(int dir) const {         //returns the index of the center for the given axis direction
+            return it_center.start_indices(dir) + offset[dir];
+        }
+
+        vec<value_type,D>  position() const { //center position
+          vec<value_type, D> tmp;
+          for (int i=0;i<D;++i) tmp[i]=position(i);
+          return tmp;
+        }
+
+        value_type position(int dir ) const {
+          return l.Grid.grid_position_of_local_index(dir,indices(dir));
+        }
+
+        const vec<value_type,D> getDx() const {
+          vec<value_type,D> dx_all;
+          for (int i=0;i<D;++i){
+            dx_all[i] = l.Grid.grid_position_of_global_index(i,indices(i)+1)-l.Grid.grid_position_of_local_index(i,indices(i));
+          }
+          return dx_all;
+        }
+
+        // (d phi / d x)^+ .. right sided derivative
+        // NOTE we assume uniform grid here
+        value_type inline phi_x_p(int dir) const {
+          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+          const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+          //const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+
+          const value_type dx = math::abs(d_p);
+          const value_type phi_0=center().value();
+          const value_type phi_p=neighbor(dir,0).value();
+
+          if(dscheme == differentiation_scheme::FIRST_ORDER){
+
+            return (phi_p-phi_0)/dx;
+
+          } else{
+
+            const value_type phi_pp=neighbor(dir, 1).value();
+            const value_type phi_n=neighbor(dir+D,0).value();
+
+            if(dscheme == differentiation_scheme::WENO3){
+
+              return my::math::weno3<value_type>(0, phi_n, phi_0, phi_p,  phi_pp, dx,  true);
+
+            } else if(dscheme == differentiation_scheme::WENO5){
+
+              const value_type phi_nn=neighbor(dir+D, 1).value();
+              const value_type phi_ppp=neighbor(dir, 2).value();
+
+              return my::math::weno5<value_type>(0, phi_nn, phi_n, phi_0, phi_p,  phi_pp, phi_ppp, dx,  true);
+
+            } else{
+              std::cerr << "Invalid differentiation_scheme\n";
+              exit(-1); //TODO better error handling
+
+            }
+          }
+
+        }
+
+        // (d phi / d x)^- .. left-sided derivative along axis x = {x,y,z}, given by axis index dir
+        // NOTE we assume uniform grid here
+        value_type inline phi_x_n(int dir) const {
+          const value_type pos  =  l.Grid.grid_position_of_local_index(dir,indices(dir));
+          const value_type d_p  =  l.Grid.grid_position_of_global_index(dir,indices(dir)+1)-pos;
+          //const value_type d_n  =  l.Grid.grid_position_of_global_index(dir,indices(dir)-1)-pos;
+
+          const value_type dx = math::abs(d_p);
+
+          const value_type phi_0=center().value();
+          const value_type phi_n=neighbor(dir+D,0).value();
+
+          if(dscheme == differentiation_scheme::FIRST_ORDER){
+
+            return (phi_0-phi_n)/dx;
+
+          } else{
+
+            const value_type phi_p=neighbor(dir,0).value();
+            const value_type phi_nn=neighbor(dir+D, 1).value();
+
+            if(dscheme == differentiation_scheme::WENO3){
+
+              return my::math::weno3<value_type>(phi_nn, phi_n, phi_0, phi_p, 0, dx,  false);
+
+            } else if(dscheme == differentiation_scheme::WENO5){
+
+              const value_type phi_pp=neighbor(dir,1).value();
+              const value_type phi_nnn=neighbor(dir+D, 2).value();
+
+              return my::math::weno5<value_type>(phi_nnn, phi_nn, phi_n, phi_0, phi_p,  phi_pp, 0, dx,  false);
+
+            } else{
+              std::cerr << "Invalid differentiation_scheme\n";
+              exit(-1); //TODO better error handling
+
+            }
+          }
+
+        }
+        value_type gradient(int dir) const {
+            //returns the derivation in respect to the real coordinates for the given axis direction
+            return 0.5*(phi_x_p(dir) + phi_x_n(dir));
+        }
+
+        vec<value_type,D>  gradient() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient(i);
+            return tmp;
+        }
+
+        vec<value_type,D>  normal_vector() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient(i);
+
+	          value_type norm2 = NormL2(tmp);
+
+      			if(math::abs(norm2) < 1e-6){
+      				tmp[0]=0; tmp[1]=0; tmp[2]=0;
+            }
+      			else{
+      				tmp /= NormL2(tmp);
+      		 	}
+      			return tmp;
+        }
+
+        value_type gradient_diff(int dir) const {
+            return 0.5*(phi_x_p(dir) - phi_x_n(dir));
+        }
+
+        vec<value_type,D>  gradient_diff() const {
+            vec<value_type, D> tmp;
+            for (int i=0;i<D;++i) tmp[i]=gradient_diff(i);
+            return tmp;
+        }
+
+        void print(std::ostream& out = std::cout) const {
+          out << "Star stencil\nindices = " << indices()
+              <<  ", center position = " << position()
+              << ", normal vector = " << normal_vector() << std::endl;
+        }
+
+    };
+
+
+    //NOTE Sparse field is assumed to be properly expanded (with respect to given stencil order in constructor)
+    //TODO This requirement is not checked at the moment
+    /*
+    Construct the stencil for stencil local Lax-Friedrichs Flux ('neighbor stencil')
+     e.g., stencil of order 1 around central point X in 2D
+     O O O
+     O X O
+     O O O
+    */
+    template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::neighbor_stencil {
+
+    private:
+      const levelset<GridTraitsType, LevelSetTraitsType> &l;
+      std::vector<const_iterator_runs_offset> it_stencil_points;
+
+      int center_index;
+
+      const int stencil_order;
+      std::vector< vec<index_type,D>> offsets;
+
+      public:
+
+        neighbor_stencil(const levelset<GridTraitsType, LevelSetTraitsType>& lx,
+                        const typename levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_runs& it_mid,
+                        const int order) :
+                            l(lx), stencil_order(order){
+
+          int num_stencil_points = std::pow(2*stencil_order + 1, D); //for neighborhood including diagonal neighbors
+
+          //int num_stencil_points = 2*order*D + 1;
+
+          offsets.reserve(num_stencil_points);
+          it_stencil_points.reserve(num_stencil_points);
+
+          //prepare offset vectors for iteration over all SLF stencils,
+          //they are of the form [-3, -3], [-2, -3] [-1, -3] [0, -3] [1, -3] [2, -3], [3, -3], ...
+         for( int i = 0; i < num_stencil_points; ++i){
+            vec<index_type,D> tmp;
+            for (int d = 0; d < D; ++d){
+              tmp[d] = index_type( (int) (i / std::pow(2*stencil_order + 1,d) ) % (2 * stencil_order + 1) - stencil_order );
+            }
+
+            offsets.push_back(tmp);
+            it_stencil_points.push_back(const_iterator_runs_offset(l, offsets[i], it_mid.start_indices()));
+
+            bool is_center=false;
+            for(int d = 0; d < D; ++d){
+              if(tmp[d] == index_type(0))
+                is_center=true;
+              else{
+                is_center=false;
+                break;
+              }
+            }
+            if(true == is_center)
+              center_index=i;
+          }
+        }
+
+        std::vector<const_iterator_runs_offset>& get_stencil_points(){
+          return it_stencil_points;
+        }
+
+        void print(std::ostream& out = std::cout) const {
+          out << "Compact stencil order = " << stencil_order << std::endl;
+          for(size_t i = 0; i < it_stencil_points.size(); ++i){
+              out << "#" << i << " ";
+              print_point(i,out);
+          }
+
+          out << "Center stencil index = " << center_index << std::endl;
+        }
+
+        void print_point(size_t index, std::ostream& out = std::cout) const{
+          out << "Offset: " << it_stencil_points[index].get_offset() <<
+                 ", start_indices(): " <<  it_stencil_points[index].start_indices() + it_stencil_points[index].get_offset() <<
+                 ", is_defined(): " << it_stencil_points[index].is_defined();
+          if( it_stencil_points[index].is_defined()){
+            out << ", phi=" << it_stencil_points[index].value() << std::endl;
+          }else{
+            out << std::endl;
+          }
+        }
+
+        int indexByOffset( vec<index_type,D> offset){ //returns index of the star stencil with a certain offset
+          return  std::distance(offsets.begin(), std::find(offsets.begin(), offsets.end(), offset));
+        }
+
+
+        std::vector<star_stencil> star_stencils(const differentiation_scheme ds=differentiation_scheme::FIRST_ORDER) const {
+
+          std::vector<star_stencil> s;
+          s.reserve(it_stencil_points.size());
+
+          for(auto sp : it_stencil_points)
+            s.push_back(star_stencil(l,sp,ds));
+
+          return s;
+
+        }
+
+        int get_center_index() const{
+          return center_index;
+        }
+
+    };
 
 
     template <class GridTraitsType, class LevelSetTraitsType> class levelset<GridTraitsType, LevelSetTraitsType>::const_iterator_neighbor {
@@ -4219,6 +4573,10 @@ namespace lvlset {
         }
 
     };
+
+
+
+
 
 }
 

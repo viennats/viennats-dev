@@ -1,44 +1,41 @@
 /*
- * ModelWetEtching.h
+ * ModelSelectiveDeposition.h
  *
- *  Created on: Apr 22, 2009
- *      Author: ertl
+ *  Created on: Apr 17, 2019
+ *      Author: toifl
  */
 
-#ifndef MODELWETETCHING_H_
-#define MODELWETETCHING_H_
+#ifndef MODELSELECTIVEDEPOSITION_H_
+#define MODELSELECTIVEDEPOSITION_H_
 
 #include <stack>
 #include <vector>
 #include <cassert>
-//#include <algorithm>
-//#include <functional>
+#include <algorithm>
 
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
 #include "../parser_actors.h"
 #include "vector.hpp"
+#include "Math.h"
+
 
 namespace model {
 
 ///Anisotropic wet etching model
 
-    class WetEtching {
-
-        const double EPS = 1e-6;
+    class SelectiveDeposition {
 
         lvlset::vec<double,3> direction100;
         lvlset::vec<double,3> direction010;
 
+        //the rates have to be given in the layer order, from bottom to topmost layer
+        double r100;
+        double r110;
+        double r111;
+        double r311;
 
-
-        std::vector<double> r100;
-        std::vector<double> r110;
-        std::vector<double> r111;
-        std::vector<double> r311;
-
-        std::vector<bool> zeroVel;
-
+        std::vector<int> depo_possible; //TODO change to boolean
 
     public:
 
@@ -49,13 +46,19 @@ namespace model {
         static const bool CalculateVisibilities=false;
         static const bool CalculateNormalVectors=true;
 
+
+        static const int CoverageStorageSize=0;
+        static const int RatesStorageSize=0;
+        static const unsigned int NumberOfParticleTypes=0;
+        unsigned int NumberOfParticleClusters[1];
+
         class ParticleType {
         public:
             double Direction[3];
             double Flux;
         };
 
-        WetEtching(const std::string & Parameters) {
+        SelectiveDeposition(const std::string & Parameters, const int AddLayer){
             using namespace boost::spirit::classic;
             using namespace parser_actors;
 
@@ -64,41 +67,23 @@ namespace model {
                     Parameters.begin(),
                     Parameters.end(),
                     *(
-                          (str_p("direction100")  >> '='  >> '{' >> real_p[assign_a(direction100[0])]  >> "," >> real_p[assign_a(direction100[1])] >> "," >> real_p[assign_a(direction100[2])] >> '}' >> ';') |
-                          (str_p("direction010")  >> '='  >> '{' >> real_p[assign_a(direction010[0])]  >> "," >> real_p[assign_a(direction010[1])] >> "," >> real_p[assign_a(direction010[2])] >> '}' >> ';') |
-                          (str_p("rates100")  >>  '='  >>  '{' >> ( real_p[push_back_a(r100)]  % ',')>> '}'  >> ';') |
-                          (str_p("rates110")  >>  '='  >>  '{' >> ( real_p[push_back_a(r110)]  % ',')>> '}'  >> ';') |
-                          (str_p("rates111")  >>  '='  >>  '{' >> ( real_p[push_back_a(r111)]  % ',')>> '}'  >> ';') |
-                          (str_p("rates311")  >>  '='  >>  '{' >> ( real_p[push_back_a(r311)]  % ',')>> '}'  >> ';')
+                            (str_p("direction100")  >> '='  >> '{' >> real_p[assign_a(direction100[0])]  >> "," >> real_p[assign_a(direction100[1])] >> "," >> real_p[assign_a(direction100[2])] >> '}' >> ';') |
+                            (str_p("direction010")  >> '='  >> '{' >> real_p[assign_a(direction010[0])]  >> "," >> real_p[assign_a(direction010[1])] >> "," >> real_p[assign_a(direction010[2])] >> '}' >> ';') |
+                            (str_p("rates100")  >> '='  >> real_p[assign_a(r100)]  >>  ';') |
+                            (str_p("rates110")  >> '='  >> real_p[assign_a(r110)]  >>  ';') |
+                            (str_p("rates111")  >> '='  >> real_p[assign_a(r111)]  >>  ';') |
+                            (str_p("rates311")  >> '='  >> real_p[assign_a(r311)]  >>  ';') |
+                            (str_p("depo_possible")  >>  '='  >>  '{' >> ( int_p[push_back_a(depo_possible)]  % ',')>> '}'  >> ';') //TODO change to boolean parsing
+
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
 
             if (!b) msg::print_error("Failed interpreting process parameters!");
 
 
-            //reverse because material id is reversed w.r.t. layer id (for output)
-            /*std::reverse(r100.begin(),r100.end());
-            std::reverse(r110.begin(),r110.end());
-            std::reverse(r111.begin(),r111.end());
-            std::reverse(r311.begin(),r311.end());*/
-
-            // find materials with no growth in any direction and store in zeroVel
-            for(unsigned int i=0; i < r100.size(); ++i){
-              zeroVel.push_back(false);
-              if(fabs(r100[i]) < EPS)
-                if(fabs(r110[i]) < EPS)
-                  if(fabs(r111[i]) < EPS)
-                    if(fabs(r311[i]) < EPS)
-                      zeroVel[i]=true;
-            }
-
-
+            // each new added layer must be depositable
+            for(int i=0; i<AddLayer; ++i) depo_possible.insert(depo_possible.begin(), 1);
         }
-
-        static const int CoverageStorageSize=0;
-        static const int RatesStorageSize=0;
-        static const unsigned int NumberOfParticleTypes=0;
-        unsigned int NumberOfParticleClusters[1];
 
         template<class VecType>
         void CalculateVelocity(
@@ -106,20 +91,20 @@ namespace model {
                 const VecType& NormalVector,
                 const double *Coverages,
                 const double *Rates,
-                int Material,
+                int matnum,
                 bool connected,
                 bool visible) const {
 
+            assert(matnum < (int) depo_possible.size() );
 
-            if (zeroVel[Material] == true) {
+            if (depo_possible[matnum] == 0) {
                 Velocity=0;
                 return;
             }
 
             lvlset::vec<double,3> nv{NormalVector[0],NormalVector[1],NormalVector[2]};
 
-            Velocity = my::math::fourRateInterpolation<double,3>(nv, direction100, direction010, r100[Material], r110[Material], r111[Material], r311[Material]);
-
+            Velocity = my::math::fourRateInterpolation<double,3>(nv, direction100, direction010, r100, r110, r111, r311);
 
         }
 
@@ -154,9 +139,13 @@ namespace model {
 //                            int D,
 //                            double dot // dot product between the incoming particle direction and the normal vector
                             ) {}
+
+      const std::vector<int>& get_depo_possible() const{
+        return depo_possible;
+      }
     };
 
 //    const unsigned int WetEtching::NumberOfParticleClusters[ConstantRates::NumberOfParticleTypes]={};
 
 }
-#endif /* MODELWETETCHING_H_ */
+#endif /* MODELSELECTIVEDEPOSITION_H_ */

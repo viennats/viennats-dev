@@ -18,7 +18,11 @@
 #include <algorithm>
 #include <cassert>
 #include <vector>
+
+
 #include "math.hpp"
+
+#include "../Math.h"
 
 namespace lvlset {
 
@@ -53,6 +57,27 @@ namespace lvlset {
         return LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE(alpha);
     }
 
+    class LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE {
+    public:
+        const double alpha;
+        LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE(double a) : alpha(a) {}
+    };
+
+    LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE LAX_FRIEDRICHS_SCALAR_2ND_ORDER(double alpha) {
+        return LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE(alpha);
+    }
+
+
+    class STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE {
+    public:
+        STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE(){}
+    };
+
+    STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE STENCIL_LOCAL_LAX_FRIEDRICHS() {
+        return STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE();
+    }
+
+
     class SMOOTHING_SCHEME_TYPE {
     public:
         const int material_level;
@@ -78,6 +103,11 @@ namespace lvlset {
 
     template <class LevelSetType, class VelocityType, int order>
     class LaxFriedrichsScalar;
+
+    template <class LevelSetType, class VelocityType, int order>
+    class StencilLocalLaxFriedrichsScalar;
+
+
 
     template <class LevelSetType>
     class SmoothingScheme;
@@ -128,6 +158,23 @@ namespace lvlset {
     public:
         IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_1ST_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 1>(l,v,s.alpha) {}
     };
+
+    template <class LevelSetType, class VelocityType>
+    class IntegrationScheme<LevelSetType, VelocityType, LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE>:public LaxFriedrichsScalar<LevelSetType, VelocityType, 2> {
+    public:
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const LAX_FRIEDRICHS_SCALAR_2ND_ORDER_TYPE& s):LaxFriedrichsScalar<LevelSetType, VelocityType, 2>(l,v,s.alpha) {}
+    };
+
+    //TODO Stencil order is given as template parameter, however in stencil local Lax Friedrichs the definitive order depends on the neighbor stencil order as well.
+    //
+    template <class LevelSetType, class VelocityType>
+    class IntegrationScheme<LevelSetType, VelocityType, STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE>
+    :public StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5> {
+    public:
+        IntegrationScheme(LevelSetType& l, const VelocityType& v, const STENCIL_LOCAL_LAX_FRIEDRICHS_SCALAR_TYPE& s)
+           :StencilLocalLaxFriedrichsScalar<LevelSetType, VelocityType, 5>(l,v) {}
+    };
+
 
     template <class LevelSetType, class VelocityType>
     class IntegrationScheme<LevelSetType, VelocityType, SMOOTHING_SCHEME_TYPE>:public SmoothingScheme<LevelSetType> {
@@ -528,7 +575,8 @@ namespace lvlset {
     template <class LevelSetType, class VelocityType, int order>
     class LaxFriedrichsScalar {
 
-        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
+
+        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       // derivative neighbor iterators, relative to central point
 
         const LevelSetType & LS;
 
@@ -558,33 +606,40 @@ namespace lvlset {
         template <class IteratorType>
         value_type operator()(const IteratorType& it, unsigned int material) {
 
-            assert(it.is_active());
+          assert(it.is_active());
 
-            const int D=LevelSetType::dimensions;
+          const int D=LevelSetType::dimensions;
 
+          if(initialized){
+                for(int i=0;i<2*D*order;i++)
+                  it_neighbors[i].go_to_indices_sequential(it.start_indices());
+          }else{
+            for(int i=0;i<2*D;i++){
+              vec<index_type,D> tv(index_type(0));
 
-            if (initialized) {
-         for (int i=0;i<2*D*order;i++) it_neighbors[i].go_to_indices_sequential(it.start_indices());
-            } else {
-              for (int i=0;i<2*D;i++) {
-          vec<index_type,D> tv(index_type(0));
-          for (int j=0;j<order;j++) {
-            if (i<D) tv[i]++; else tv[i-D]--;
-            it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+              for (int j=0;j<order;j++){
+                if(i<D){
+                  tv[i]++;
+                }
+                else{
+                  //tv[i-D]=index_type(1);
+                  tv[i-D]--;
+                }
+                it_neighbors.push_back(typename LevelSetType::const_iterator_runs_offset(LS, tv,it.start_indices()));
+              }
+              initialized=true;
+            }
           }
-          initialized=true;
-         }
-       }
 
             value_type grad=0.;
             value_type dissipation=0.;
 
-            for (int i=0;i<D;i++) {
+            for (int i=0;i<D;i++) { //iterate over dimensions
 
                 const value_type pos    =   LS.grid().grid_position_of_local_index(i,it.start_indices(i));
 
-                const value_type d_p    =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)-pos);
-                const value_type d_n    =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-1)-pos);
+                const value_type d_p    =   math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)+1)  - pos );
+                const value_type d_n    =   -math::abs( LS.grid().grid_position_of_global_index(i,it.start_indices(i)-1) - pos );
 
                 const value_type phi_0=it.value();
                 const value_type phi_p=it_neighbors[i*order].value();
@@ -596,6 +651,7 @@ namespace lvlset {
                 const value_type f__0 = (((d_n*phi_p    -d_p    *phi_n) /   (d_p    -d_n)   +phi_0))    /(d_p   *d_n);
 
                 if (order==2) {         //if second order time integration scheme is used
+
 
                     const value_type d_pp   =   math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)+2)-pos);
                     const value_type d_nn   =   -math::abs(LS.grid().grid_position_of_global_index(i,it.start_indices(i)-2)-pos);
@@ -633,6 +689,199 @@ namespace lvlset {
             return v*std::sqrt(grad)-((v==0.)?0:dissipation);                   //TODO
 
         }
+    };
+
+    //
+    template <class LevelSetType, class VelocityType, int order>
+    class StencilLocalLaxFriedrichsScalar {
+
+    private:
+        //std::vector<typename LevelSetType::const_iterator_runs_offset> it_slf_stencil_points;
+        std::vector<typename LevelSetType::const_iterator_runs_offset> it_neighbors;       //the neighbor iterators
+        const LevelSetType & LS;
+        const VelocityType& velocities;
+
+        typedef typename LevelSetType::value_type value_type;
+        typedef typename LevelSetType::index_type index_type;
+
+        const int slf_order = 1; //stencil order
+
+        bool initialized;
+
+        //Final dissipation coefficients that are used by the time integrator. If D==2 last entries are 0.
+        vec<value_type,3> final_alphas;
+        vec<value_type,3> dx_all;
+
+
+    public:
+      const vec<value_type,3>& getFinalAlphas() const{
+        return final_alphas;
+      }
+      const vec<value_type,3>& getDx() const{
+        return dx_all;
+      }
+
+      static void prepare_surface_levelset(LevelSetType& l) {
+            assert(order > 4);
+            //expand the level set function to ensure that for all active grid points the level set values of the neighbor grid points, which are necessary to calculate the derivatives are also defined
+            //TODO Expansion of sparse field must depend on spatial derivative order AND  slf stencil order!
+            l.expand(order*2+1);
+
+        }
+
+        StencilLocalLaxFriedrichsScalar(const LevelSetType& l, const VelocityType& v): LS(l), velocities(v), initialized(false) {
+          for(int i = 0; i < 3; ++i){
+            final_alphas[i] = 0;
+            dx_all[i] = 0;
+          }
+        }
+
+        template <class IteratorType>
+        value_type operator()(const IteratorType& it, unsigned int material) {
+
+
+          assert(it.is_active());
+
+          value_type v = velocities(it.active_pt_id(), material);
+
+
+          if( v == value_type(0) ){
+            return 0;
+          }
+          else{
+
+            const int D = LevelSetType::dimensions;
+            const bool DEBUG = false;
+
+            typename LevelSetType::neighbor_stencil n(LS,it, slf_order);
+
+            std::vector< typename LevelSetType::star_stencil> stars = n.star_stencils(LevelSetType::differentiation_scheme::FIRST_ORDER);
+            typename LevelSetType::star_stencil center = stars[n.get_center_index() ];
+
+            vec<value_type,D> dxs = center.getDx();
+            for(int u = 0; u < D; ++u){
+              dx_all[u] = dxs[u];
+            }
+
+            if(DEBUG){
+              for(auto star : stars){
+                std::cout << star.position() << std::endl;
+                std::cout << star.center().value() << std::endl;
+                std::cout << star.center().active_pt_id() << std::endl;
+              }
+              std::cout << std::endl;
+            }
+
+
+            value_type hamiltonian=0.; //numerical Hamiltonian
+            value_type dissipation=0.; //dissipation
+
+            hamiltonian = NormL2(center.gradient()); //|grad(phi)|
+            hamiltonian *= v; //V |grad(phi)|
+
+            if(DEBUG) std::cout <<"H = " << hamiltonian << std::endl;
+
+            //dissipation block
+            {
+              std::vector< vec<value_type,D>> alphas;
+              alphas.reserve(stars.size());
+
+
+              for(size_t i = 0; i < stars.size(); ++i){
+                vec<value_type,D> alpha;
+
+                vec<value_type,D> normal_p =  stars[i].normal_vector();
+
+  	            //Check for corrupted normal
+    				    if( (math::abs(normal_p[0]) < 1e-6) && (math::abs(normal_p[1]) < 1e-6) && (math::abs(normal_p[2]) < 1e-6) ){
+  			             alphas.push_back(vec<value_type,D>(0.0));
+                     continue;
+    				    }
+
+                vec<value_type,D> normal_n =  normal_p;
+
+                vec<value_type,D> dv(value_type(0));
+                const value_type DN = 1e-4;
+
+                for(int k=0; k < D; ++k){
+
+                    normal_p[k] -= DN; //p=previous
+                    normal_n[k] += DN; //n==next
+
+                  value_type vp=velocities.calculate_normaldependent_velocity(normal_p,material);
+                  value_type vn=velocities.calculate_normaldependent_velocity(normal_n,material);
+                    //central difference
+                    dv[k] = (vn - vp) / (2.0 * DN);
+
+                    normal_p[k] += DN;
+                    normal_n[k] -= DN;
+                  }
+
+                  //determine \partial H / \partial phi_l
+                  for (int k = 0 ; k < D; ++k) { //iterate over dimensions
+
+                    //Monti term
+                    value_type monti = 0;
+
+                    for(int j = 0; j < D - 1; ++j ){ //phi_p**2 + phi_q**2
+                           int idx = (k + 1 + j) % D;
+                            monti +=  stars[i].gradient(idx) * stars[i].gradient(idx);
+                    }
+                    monti  *= dv[k] / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+
+
+                    //Toifl Quell term
+                    value_type toifl=0;
+
+                    for(int j= 0; j < D - 1; ++j ){
+                       int idx = (k + 1 + j) % D;
+                       toifl += stars[i].gradient(idx) * dv[idx];
+                    }
+                    toifl *= -stars[i].gradient(k) / (Norm2(stars[i].gradient())); // denominator: |grad(phi)|^2
+
+
+                    //Osher (constant V) term
+                    value_type osher=0;
+
+                    osher=velocities.calculate_normaldependent_velocity(stars[i].normal_vector(),material);
+
+
+                  //Total derivative is sum of terms given above
+                  alpha[k] = std::fabs( monti + toifl + osher);
+                }
+
+                alphas.push_back(alpha);
+              }
+
+
+              //determine max alphas for every axis
+              vec<value_type,D>  maxal;
+              for(int d=0; d < D; ++d)
+              {
+                  maxal[d] = 0;
+                  std::vector<value_type> alpha_comp;
+
+                  for(size_t i = 0 ; i < stars.size() ; ++i){
+                    alpha_comp.push_back(alphas[i][d]);
+                  }
+                  maxal[d] = *std::max_element(alpha_comp.begin(),alpha_comp.end());
+
+                  final_alphas[d] = maxal[d];
+
+                  dissipation += maxal[d] * center.gradient_diff(d);
+              }
+              if(DEBUG) std::cout << "max(alpha) = " << maxal << std::endl<< std::endl;
+              if (DEBUG) std::cout << "D = " << dissipation << std::endl;
+
+                if(DEBUG) std::cout << "diff = " << center.gradient_diff() << "\n";
+
+            }
+
+            if(DEBUG) std::cout << "H-D = " << hamiltonian - dissipation << std::endl;
+
+            return hamiltonian - dissipation;
+          }
+      }
     };
 
 
@@ -743,7 +992,6 @@ namespace lvlset {
                     if ((k>max_curvature) || (k<min_curvature)) s= -num/denom;
 
                 } else {
-                    std::cout << "warning!!!dlkajf" << std::endl;
                     if (num>0) {
                         s=-std::numeric_limits<double>::max();
                     } else {

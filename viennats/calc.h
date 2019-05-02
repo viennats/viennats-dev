@@ -209,12 +209,12 @@ namespace calc {
                   n[i]=0;
                   if ((pos > 0 && neg < 0) || (pos < 0 && neg > 0)) {
                     if (default_directions[i]<0) {
-              n[i]=std::min(neg,pos);
-            } else if (default_directions[i]>0) {
-              n[i]=std::max(neg,pos);
-            } else {
-              n[i]=(pos+neg)*0.5;
-            }
+                      n[i]=std::min(neg,pos);
+                    } else if (default_directions[i]>0) {
+                      n[i]=std::max(neg,pos);
+                    } else {
+                      n[i]=(pos+neg)*0.5;
+                    }
                   } else {
                     n[i]=(pos+neg)*0.5;
                   }

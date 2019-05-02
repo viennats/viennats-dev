@@ -40,7 +40,7 @@ TO ADD NEW PARAMETER TO THIS PARSER:
 
 
 namespace proc{
-        enum FiniteDifferenceSchemeType {ENGQUIST_OSHER_1ST_ORDER, ENGQUIST_OSHER_2ND_ORDER, LAX_FRIEDRICHS_1ST_ORDER, LAX_FRIEDRICHS_2ND_ORDER};
+        enum FiniteDifferenceSchemeType {ENGQUIST_OSHER_1ST_ORDER, ENGQUIST_OSHER_2ND_ORDER, LAX_FRIEDRICHS_1ST_ORDER, LAX_FRIEDRICHS_2ND_ORDER,STENCIL_LOCAL_LAX_FRIEDRICHS};
 }
 
 
@@ -160,7 +160,8 @@ struct ReportError {
             ("ENGQUIST_OSHER_1ST_ORDER", proc::ENGQUIST_OSHER_1ST_ORDER)
             ("ENGQUIST_OSHER_2ND_ORDER", proc::ENGQUIST_OSHER_2ND_ORDER)
             ("LAX_FRIEDRICHS_1ST_ORDER", proc::LAX_FRIEDRICHS_1ST_ORDER)
-            ("LAX_FRIEDRICHS_2ND_ORDER", proc::LAX_FRIEDRICHS_2ND_ORDER);
+            ("LAX_FRIEDRICHS_2ND_ORDER", proc::LAX_FRIEDRICHS_2ND_ORDER)
+            ("STENCIL_LOCAL_LAX_FRIEDRICHS", proc::STENCIL_LOCAL_LAX_FRIEDRICHS);
         }
     }finite_difference_symbols;
 
@@ -742,7 +743,14 @@ struct ReportError {
 
 
         //IMPORTANT: MODEL PARAMETERS ARE MISSING }; AT THE END, NEED TO ADD BEFORE ANYTHING ELSE
-        for(std::list<client::Parameters::ProcessParameterType>::iterator it=process_parameters.begin(); it!=process_parameters.end(); ++it) it->ModelParameters.append(";");
+        // SelectiveDeposition process requires that add_layer is at least 1
+        for(std::list<client::Parameters::ProcessParameterType>::iterator it=process_parameters.begin(); it!=process_parameters.end(); ++it){
+           it->ModelParameters.append(";");
+
+           if((it->ModelName == "SelectiveDeposition") && (it->AddLayer<1)){
+             it->AddLayer = 1;
+           }
+        }
 
         // fix input transformation
         for(size_t i=0; i<input_transformation.size(); ++i) input_transformation_signs[i] = input_transformation[i] >= 0;

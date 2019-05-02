@@ -38,15 +38,21 @@ namespace model {
 
 	public:
 
-        bool MaskLayer;
-        bool DirEmpty;
-        static const bool OutputFluxes=false;
-        static const bool SpatiallyEqualDistributedFlux=true;
+      bool MaskLayer;
+      bool DirEmpty;
+      static const bool OutputFluxes=false;
+      static const bool SpatiallyEqualDistributedFlux=true;
 	    static const bool ReemissionIsMaterialDependent=false;
 	    bool CalculateConnectivities;
 	    bool CalculateVisibilities;
 	    bool CalculateNormalVectors;
 	    bool IncludeVectorRates;
+
+
+			static const int CoverageStorageSize=0;
+			static const int RatesStorageSize=0;
+			static const unsigned int NumberOfParticleTypes=0;
+			unsigned int NumberOfParticleClusters[1];
 
 		class ParticleType {
 		public:
@@ -103,10 +109,6 @@ namespace model {
 
 		}
 
-		static const int CoverageStorageSize=0;
-		static const int RatesStorageSize=0;
-		static const unsigned int NumberOfParticleTypes=0;
-		unsigned int NumberOfParticleClusters[1];
 
 		template<class VecType>
 		void CalculateVelocity(
