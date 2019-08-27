@@ -15,7 +15,8 @@ namespace model {
 
 	class NonlinearDeposition {
 
-		double deposition_rate;
+		std::vector<double> deposition_rates;
+		double distribution_order=1;
 		double sticking_probability;
 		double reaction_order;
 
@@ -54,11 +55,12 @@ namespace model {
                     Parameters.end(),
                     *(
                     	    (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
-                            (str_p("deposition_rate")  >> '='  >> real_p[assign_a(deposition_rate)]  >> ';') |
+                            (str_p("deposition_rates")  >> '='  >> '{' >> (real_p[push_back_a(deposition_rates)] % ',') >> '}'  >> ';') |
                             (str_p("sticking_probability")  >> '='  >> real_p[assign_a(sticking_probability)]  >> ';') |
                             (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
                             (str_p("stop_criterion")  >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
-                            (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';')
+                            (str_p("statistical_accuracy")  >> '='  >>real_p[assign_a(Accuracy)]  >> ';') |
+														(str_p("distribution_order")  >> '='  >>real_p[assign_a(distribution_order)]  >> ';')
 
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
@@ -79,8 +81,9 @@ namespace model {
             const double *Coverages,
             const double *Rates,
             int Material, bool Connected, bool Visible) const {
-
-		    Velocity=deposition_rate*std::pow(Rates[0],reaction_order);
+				if(Material<deposition_rates.size())
+		    	Velocity=deposition_rates[Material]*std::pow(Rates[0],reaction_order);
+				else Velocity = 0;
 		}
 
 		template<class VecType>
@@ -101,7 +104,7 @@ namespace model {
 
 		template <class PT> void ParticleGeneration(PT& p, int ParticleType, double ProcessTime, double* Position)  const {
 			//my::stat::Cosine1DistributedRandomDirection(StartDirection,p.Direction);
-			my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
+			my::stat::CosineNDistributedRandomDirection(distribution_order,StartDirection,p.Direction);
 
 			p.Probability=1.;
 			p.Flux=1.;
