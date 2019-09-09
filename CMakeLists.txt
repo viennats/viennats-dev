@@ -1,7 +1,6 @@
 # Required CMake Version
 ###############
- cmake_minimum_required(VERSION 2.8)
-#cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 2.8)
 
 # Project setup
 ###############
@@ -9,7 +8,7 @@ PROJECT(ViennaLS)
 
 set(VERSION_MAJOR 2)
 set(VERSION_MINOR 3)
-set(VERSION_PATCH 0)
+set(VERSION_PATCH 1)
 set(VERSION ${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH})
 
 ADD_DEFINITIONS(-DVIENNATS_VERSION="${VERSION}")
@@ -24,7 +23,7 @@ OPTION(VIENNATS_STATIC_BUILD "" OFF)
 
 # Default compile options
 #################
-SET(CMAKE_CXX_FLAGS "-Wall -pedantic -fmax-errors=5")
+SET(CMAKE_CXX_FLAGS "-Wall -pedantic")
 SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
 SET(CMAKE_CXX_FLAGS_RELEASE "-O3 ")
 SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
@@ -53,16 +52,31 @@ INCLUDE_DIRECTORIES(${CMAKE_SOURCE_DIR}/viennats/LSlib/)
 ################
 SET(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR})
 
-
 # Find prerequisites
 ####################
 
 # Look for additional CMake modules in the cmake subdirectory ..
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/cmake")
 
-# OpenMP ..
-FIND_PACKAGE(OpenMP REQUIRED)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+###############################################
+#  compiler dependent settings for OpenMP
+###############################################
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    #MESSAGE(STATUS ${CMAKE_CXX_FLAGS})
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -ferror-limit=2")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp=libomp")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    # disable-new-dtags is necessary for ld > 2.27
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -Werror -fmax-errors=2")
+    FIND_PACKAGE(OpenMP REQUIRED)
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp  ")
+    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}  -fmax-errors=2")
+endif()
+
+# disable-new-dtags sets RPATH which searches for libs recursively, instead of RUNPATH which does not
+SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
 
 # Boost ..
 SET(BOOST_MIN_VERSION 1.46.0)
@@ -89,20 +103,26 @@ ENDIF(NOT VIENNATS_STATIC_BUILD)
 
 # VTK
 # VTK_DIR needs to point to the VTK installation and to VTK/lib/cmake/vtk-{vtk-version}
-set(VTK_DIR $ENV{VTK_DIR})
+IF(VIENNATS_STATIC_BUILD)
+  set(VTK_DIR $ENV{VTK_STATIC_DIR})
+ELSE(VIENNATS_STATIC_BUILD)
+  set(VTK_DIR $ENV{VTK_DIR})
+ENDIF(VIENNATS_STATIC_BUILD)
+
 find_package(VTK REQUIRED)
 
 IF(VTK_FOUND)
-message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
-include(${VTK_USE_FILE})
-#only link necessary VTK libraries in order for static linking to work (-lGL fails)
-IF(VIENNATS_STATIC_BUILD)
+  message(STATUS "VTK found (include: ${VTK_INCLUDE_DIRS}, lib: ${VTK_LIBRARY_DIRS})")
+  include(${VTK_USE_FILE})
+  #only link necessary VTK libraries
   set(VTK_LIBRARIES vtksys;vtkFiltersCore;vtkFiltersGeneral;vtkFiltersGeometry;vtkIOXML)
-  message(STATUS "Static build: Only including following VTK Libraries: ${VTK_LIBRARIES}")
-ENDIF(VIENNATS_STATIC_BUILD)
+  message(STATUS "Including following VTK Libraries: ${VTK_LIBRARIES}")
+  IF(VIENNATS_STATIC_BUILD)
+    message(STATUS "BUILDING STATIC BINARY")
+  ENDIF(VIENNATS_STATIC_BUILD)
 
 ELSE(VTK_FOUND)
-message(STATUS "VTK not found.")
+  message(STATUS "VTK not found.")
 ENDIF(VTK_FOUND)
 
 

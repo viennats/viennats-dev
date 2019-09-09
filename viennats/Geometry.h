@@ -22,6 +22,14 @@ License:         MIT (X11), see file LICENSE in the base directory
 #include "message.h"
 #include <stdexcept>
 
+#include <vtkIdList.h>
+#include <vtkSmartPointer.h>
+#include <vtkDataArray.h>
+#include <vtkUnstructuredGrid.h>
+#include <vtkPolyData.h>
+#include <vtkXMLUnstructuredGridReader.h>
+#include <vtkXMLPolyDataReader.h>
+
 #ifdef USE_HDF5
 #include "HDF.h"
 #endif
@@ -582,6 +590,66 @@ namespace geometry {
 
     }
 
+    void ReadVTU(const std::string& FileName,
+      double scale,//=1.,
+      std::vector<int> InputTransformationDirections,//=std::vector<int>(),
+      std::vector<bool> InputTransformationSigns,//=std::vector<bool>(),
+      bool change_input_parity,//=false,
+      std::vector<double> shift//=std::vector<double>()
+    ){
+
+      vtkSmartPointer<vtkXMLUnstructuredGridReader> greader = vtkSmartPointer<vtkXMLUnstructuredGridReader>::New();
+      greader->SetFileName(FileName.c_str());
+      greader->Update();
+
+      vtkSmartPointer<vtkUnstructuredGrid> ugrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+      ugrid = greader->GetOutput();
+
+      // get all points
+      Nodes.resize(ugrid->GetNumberOfPoints());
+      for(unsigned i=0; i<Nodes.size(); ++i){
+        double p[3];
+        ugrid->GetPoint(i, p);
+        for(unsigned j=0; j<D; ++j){
+          Nodes[i][j]=p[InputTransformationDirections[j]];
+          if(shift.size()>j) Nodes[i][j]+=shift[j];//Assign desired shift
+          if(InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+          Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+        }
+      }
+
+      // get all cells
+      Elements.resize(ugrid->GetNumberOfCells());
+      for(unsigned i=0; i<Elements.size(); ++i){
+        vtkIdList* pointList = vtkIdList::New();
+        ugrid->GetCellPoints(i, pointList);
+        lvlset::vec<unsigned int, D+1> elem;
+
+        for(unsigned j=0; j<D+1; ++j){
+          elem[j]=pointList->GetId(j);
+        }
+        Elements[i] = elem;
+      }
+
+      // get materials
+      vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+      cellData = ugrid->GetCellData();
+
+      int arrayIndex;
+      vtkDataArray* matArray = cellData->GetArray("Material", arrayIndex);
+      Materials.reserve(Elements.size()); // must be the same number
+      if(arrayIndex>=0){  // if array exists
+        for(unsigned i=0; i<matArray->GetNumberOfTuples(); ++i){
+          Materials.push_back(matArray->GetTuple1(i));
+        }
+      }else{  // if no material specified, use the same for all elements
+        for(unsigned i=0; i<Elements.size(); ++i){
+          Materials.push_back(1);
+        }
+      }
+    }
+
+
     void Read(std::string  const& FileName,
       double              scale,//=1.,
       std::vector<int>    InputTransformationDirections,//=std::vector<int>(),
@@ -621,6 +689,8 @@ namespace geometry {
         ReadDX(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
       } else if (GeometryFile.find(".vtk") == (GeometryFile.size()-4)) {
         ReadVTK(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
+      } else if(GeometryFile.find(".vtu") == (GeometryFile.size()-4)){
+        ReadVTU(GeometryFile, scale, InputTransformationDirections, InputTransformationSigns, change_input_parity, shift);
       } else {
         #ifdef USE_HDF5
         msg::print_error("This software accepts only STR, TDR, GRD, DX and VTK geometry files!");
@@ -728,6 +798,7 @@ namespace geometry {
 
     std::vector<lvlset::vec<double, D> > Nodes;
     std::vector<lvlset::vec<unsigned int, D> > Elements;
+    std::vector<int> Materials;
 
     static constexpr int dimension=D;
 
@@ -894,6 +965,87 @@ namespace geometry {
       f.close();
     }
 
+    void ReadVTP(  std::string FileName,
+      double scale,
+      std::vector<int> InputTransformationDirections,
+      std::vector<bool> InputTransformationSigns,
+      bool change_input_parity,
+      std::vector<double> shift
+    ) {
+      // Prepare transformation properties
+      while(InputTransformationDirections.size()<D) InputTransformationDirections.push_back(InputTransformationDirections.size());
+      while(InputTransformationSigns.size()<D) InputTransformationSigns.push_back(false);
+
+      if ((InputTransformationDirections[0]+1)%D!=InputTransformationDirections[1]) change_input_parity=!change_input_parity;
+      for (int i=0;i<D;++i) {
+        if (InputTransformationSigns[i]) change_input_parity=!change_input_parity;
+      }
+
+      // READ FROM VTP FILE
+      vtkSmartPointer<vtkXMLPolyDataReader> pReader = vtkSmartPointer<vtkXMLPolyDataReader>::New();
+      pReader->SetFileName(FileName.c_str());
+      pReader->Update();
+
+      vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+      polyData = pReader->GetOutput();
+
+
+      // read points(Nodes)
+      Nodes.resize(polyData->GetNumberOfPoints());
+      for (unsigned i=0;i<Nodes.size();i++) {
+        double coords[3];
+        polyData->GetPoint(i, coords);
+
+        for (int j=0;j<D;j++) {
+          Nodes[i][j]=coords[InputTransformationDirections[j]];
+          int shift_size=shift.size();
+          if (shift_size>j) Nodes[i][j]+=shift[j];//Assign desired shift
+          if (InputTransformationSigns[j]) Nodes[i][j]=-Nodes[i][j];//Assign sign transformation, if needed
+          Nodes[i][j]*=scale;//Scale the geometry according to parameters file
+        }
+      }
+
+      //read cells (Elements)
+      vtkCellArray* cellArray;
+      if(D==3){
+        Elements.reserve(polyData->GetNumberOfPolys());
+        cellArray = polyData->GetPolys();
+      }else{
+        Elements.reserve(polyData->GetNumberOfLines());
+        cellArray = polyData->GetLines();
+      }
+
+      cellArray->InitTraversal();
+      vtkIdList* pointList = vtkIdList::New();
+      while(cellArray->GetNextCell(pointList)){
+        lvlset::vec<unsigned int, D> elem;
+        for(unsigned j=0; j<D; ++j){
+          elem[j]=pointList->GetId(j);
+        }
+        Elements.push_back(elem);
+      }
+
+      // get materials
+      vtkSmartPointer<vtkCellData> cellData = vtkSmartPointer<vtkCellData>::New();
+      cellData = polyData->GetCellData();
+
+      int arrayIndex;
+      vtkDataArray* matArray = cellData->GetArray("Material", arrayIndex);
+      Materials.reserve(Elements.size()); // must be the same number
+      if(arrayIndex>=0){  // if array exists
+        for(unsigned i=0; i<matArray->GetNumberOfTuples(); ++i){
+          Materials.push_back(matArray->GetTuple1(i));
+        }
+      }else{  // if no material specified, use the same for all elements
+        for(unsigned i=0; i<Elements.size(); ++i){
+          Materials.push_back(1);
+        }
+      }
+
+
+      CalculateExtensions();
+    }
+
     void CalculateExtensions() {
       assert(!Elements.empty());
       Min=Nodes[Elements[0][0]];
@@ -909,17 +1061,32 @@ namespace geometry {
   };
 
 
+  template<class MaterialsType> void GetMaterialNumbers(
+      const MaterialsType& materials,
+      MaterialsType& discreteMaterials){
+    for(auto it=materials.begin(); it!=materials.end(); ++it){
+      // if material is not yet in discreteMaterials
+      if(std::find(discreteMaterials.begin(), discreteMaterials.end(), *it)==discreteMaterials.end()){
+        discreteMaterials.push_back(*it);
+      }
+    }
+    std::sort(discreteMaterials.begin(), discreteMaterials.end());
+  }
+
+
   template <int D, class SurfacesType> void TransformGeometryToSurfaces(
     const geometry<D>& Geometry,
     SurfacesType &Surfaces,
     std::bitset<2*D> remove_flags,
     double eps,
     bool report_import_errors) {
-
+      // get the unique material numbers for explicit booling
+      std::vector<int> materialInts;
+      GetMaterialNumbers(Geometry.Materials, materialInts);
+      std::vector<unsigned> materialNumbers(materialInts.begin(), materialInts.end());
 
       //determine maximum number of materials
-      unsigned int max_mat= *std::max_element(Geometry.Materials.begin(),Geometry.Materials.end());
-      if (report_import_errors) assert(max_mat>=1);
+      unsigned max_mat = materialNumbers.back();
 
 
       typedef std::map<lvlset::vec<unsigned int,D>, std::pair<unsigned int, unsigned int> > triangle_map;
@@ -966,10 +1133,18 @@ namespace geometry {
           typename triangle_map::iterator it=Triangles.lower_bound(tmp);
           if ((it!=Triangles.end()) && (it->first==tmp)) {
             if (lvlset::Orientation(pts)) {
-              if (report_import_errors) assert(it->second.second==max_mat+1);
+              if (report_import_errors && it->second.second!=max_mat+1){
+                std::ostringstream oss;
+                oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
+                msg::print_error(oss.str());
+              }
               it->second.second=Geometry.Materials[i];
             } else {
-              if (report_import_errors) assert(it->second.first==max_mat+1);
+              if (report_import_errors && it->second.first!=max_mat+1){
+                std::ostringstream oss;
+                oss << "Coinciding triangles with same orientation in Element: " << i << std::endl;
+                msg::print_error(oss.str());
+              }
               it->second.first=Geometry.Materials[i];
             }
 
@@ -986,23 +1161,21 @@ namespace geometry {
       }
 
 
-      Surfaces.resize(max_mat);
+      Surfaces.resize(materialNumbers.size());
 
       //for all materials/for each surface
       typename SurfacesType::iterator srf_it=Surfaces.begin();
-      for (unsigned int m=0;m<max_mat;++m) {
-
+      for (auto matIt=materialNumbers.begin(); matIt!=materialNumbers.end(); ++matIt) {
         for (typename triangle_map::iterator it=Triangles.begin();it!=Triangles.end();++it) {
-          if ((m>=it->second.first-1) && (m<it->second.second-1)) {
+          if (((*matIt)>=it->second.first) && ((*matIt)<it->second.second)) {
             srf_it->Elements.push_back(it->first);
-          } else if ((m>=it->second.second-1) && (m<it->second.first-1)) {
+          } else if (((*matIt)>=it->second.second) && ((*matIt)<it->second.first)) {
             srf_it->Elements.push_back(it->first);
             std::swap(srf_it->Elements.back()[0],srf_it->Elements.back()[1]);
           }
         }
 
         //replace Nodes of Geometry by Nodes of individual surface
-
         const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
         std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
         unsigned int NodeCounter=0;
@@ -1021,44 +1194,95 @@ namespace geometry {
         }
         ++srf_it;
       }
+    }
 
-      // srf_it IS NOW ON THE LAST ELEMENT SO IT IS USED TO ASSIGN THE BORDER DO NOT ADD CODE BETWEEN THIS AND MATERIAL LOOP
-      // Make boundary surface to be used for volume exports
-      // const unsigned int undefined_node=std::numeric_limits<unsigned int>::max();
-      // std::vector<unsigned int> NodeReplacements(Geometry.Nodes.size(),undefined_node);
-      // unsigned int NodeCounter=0;
-      // std::cout << Geometry.Elements.size() << std::endl;
-      //
-      // for(unsigned int i=0; i<Geometry.Elements.size(); ++i){  //iterate through all elements(tetrahedrons)
-      //
-      //   for(unsigned int j=0; j<D+1; ++j){
-      //     bool bordernode=false;
-      //     std::vector<unsigned int> elems;
-      //     std::vector<lvlset::vec<double,D> > nodes;
-      //     for(int k=0; k<D; ++k){
-      //       elems.push_back(Geometry.Elements[i][(j+k)%(D+1)]);
-      //       nodes.push_back(Geometry.Nodes[elems[k]]);
-      //     }
-      //
-      //     for(int a=0; a<D; ++a){
-      //       double average=0;
-      //       for(int k=0; k<D; ++k) average += nodes[k][a];
-      //       if((average/D) >= Geometry.Max[a]-eps) bordernode=remove_flags[a+D];
-      //       else if((average/D) <= Geometry.Min[a]+eps) bordernode=remove_flags[a];
-      //     }
-      //     if(bordernode){
-      //       for(int k=0; k<D; ++k){
-      //         unsigned int origin_node=elems[k];
-      //         if(NodeReplacements[origin_node] == undefined_node){
-      //           NodeReplacements[origin_node] = NodeCounter++;
-      //           srf_it->Nodes.push_back(Geometry.Nodes[origin_node]);
-      //         }
-      //         elems[k] = NodeReplacements[origin_node];
-      //       }
-      //       srf_it->Elements.push_back(lvlset::vec<unsigned int, D>(&elems[0]));
-      //     }
-      //   }
-      // }
+
+    template<int D, class SurfacesType> void TransformHullToSurfaces(
+        const surface<D>& Geometry,
+        SurfacesType &Surfaces,
+        std::bitset<2*D> remove_flags,
+        double eps,
+        bool report_import_errors){
+
+      // get the unique material numbers for explicit booling
+      std::vector<int> materialNumbers;
+      GetMaterialNumbers(Geometry.Materials, materialNumbers);
+
+      // sort all elements based on materials, so they are in ascending order
+      typedef std::pair< lvlset::vec<unsigned int, D>, int> materialElementType;
+      std::vector<materialElementType> materialElements;
+
+      materialElements.reserve(Geometry.Elements.size());
+      for(unsigned i=0; i<Geometry.Elements.size(); ++i){
+        materialElements.push_back(std::make_pair(Geometry.Elements[i], Geometry.Materials[i]));
+      }
+
+      // elements will now be sorted based on material number
+      std::sort(materialElements.begin(), materialElements.end(), [](const materialElementType& i, const materialElementType& j) { return i.second < j.second; });
+
+
+      // cycle through all available materials and use all triangles of lower materials as well
+      for(auto materialIt=materialNumbers.begin(); materialIt!=materialNumbers.end(); ++materialIt){
+        // for each material we need a new surface
+        Surfaces.push_back(typename SurfacesType::value_type());
+        typename SurfacesType::value_type searchSurface;
+        // get position in element vector based on material
+        // upper_bound returns iterator to first element greater than current material
+        // therefore elemIterator is essentially our .end() element
+        // same goes for elemStart as .begin() element
+        auto elemStart = std::lower_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const materialElementType& i, const int& j) { return i.second < j; });
+        auto elemEnd = std::upper_bound(materialElements.begin(), materialElements.end(), *materialIt, [](const int& i, const materialElementType& j) { return i < j.second; });
+
+        // go through all elements and remove duplicates and boundary elements
+        for(auto elemIt=elemStart; elemIt!=elemEnd; ++elemIt){
+          lvlset::vec<unsigned, D> element;
+          for(unsigned i=0; i<D; ++i) element[i]=(elemIt->first)[i];
+
+          std::bitset<2*D> flags;
+          flags.set();
+          //if triangle at border skip
+          for (int k=0;k<D;k++) {
+            for (int l=0;l<D;l++) {
+              if (Geometry.Nodes[element[k]][l]<Geometry.Max[l]-eps) {
+                flags.reset(l+D);
+              }
+              if (Geometry.Nodes[element[k]][l]>Geometry.Min[l]+eps) {
+                flags.reset(l);
+              }
+            }
+          }
+          flags &=remove_flags;
+          if (flags.any()) continue;
+
+          element.sort();
+          // if triangle already exists, check if there already is a degenerate one
+          auto degenerateIt = std::find(searchSurface.Elements.begin(), searchSurface.Elements.end(), element);
+          if(degenerateIt != searchSurface.Elements.end()){ //degenerate found
+            searchSurface.Elements.erase(degenerateIt); // remove element
+            Surfaces.back().Elements.erase(Surfaces.back().Elements.begin()+std::distance(searchSurface.Elements.begin(), degenerateIt)); // remove actual element
+            continue; // ignore current element as well
+          }else{
+            searchSurface.Elements.push_back(element); // push element if it does not exist yet
+            Surfaces.back().Elements.push_back(elemIt->first); // push element in actual surfaces
+          }
+        }
+
+        // Take only the required nodes for the new surface
+        const unsigned undefinedNode=std::numeric_limits<unsigned int>::max();
+        std::vector<unsigned> NodeReplacements(Geometry.Nodes.size(),undefinedNode);
+        unsigned NodeCounter=0;
+        // go over all elements and replace their node ids with the new ones
+        for (unsigned k=0;k<Surfaces.back().Elements.size();++k) {
+          for (int h=0;h<D;h++) {
+            unsigned origin_node=Surfaces.back().Elements[k][h];
+            if (NodeReplacements[origin_node]==undefinedNode) {
+              NodeReplacements[origin_node]=NodeCounter++;
+              Surfaces.back().Nodes.push_back(Geometry.Nodes[origin_node]);
+            }
+            Surfaces.back().Elements[k][h]=NodeReplacements[origin_node];
+          }
+        }
+      }
     }
 
     //Reads in surfaces and transforms it to a levelset
@@ -1077,8 +1301,16 @@ namespace geometry {
       for(unsigned i=0; i<p.geometry_files.size(); ++i){
         surfaces.push_back(surface<D>());
         msg::print_start("Read surface input file " + p.geometry_files[i] + "...");
-        surfaces.back().ReadVTK(p.geometry_files[i], p.input_scale, p.input_transformation,
-                  p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        if(p.geometry_files[i].find(".vtk") == (p.geometry_files[i].size()-4)){
+          surfaces.back().ReadVTK(p.geometry_files[i], p.input_scale, p.input_transformation,
+                    p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        }else if(p.geometry_files[i].find(".vtp") == (p.geometry_files[i].size()-4)){
+          surfaces.back().ReadVTP(p.geometry_files[i], p.input_scale, p.input_transformation,
+                    p.input_transformation_signs, p.change_input_parity, p.input_shift);
+        }else{
+          msg::print_error("Unknown filetype of " + p.geometry_files[i]);
+        }
+
 
         for (int h = 0; h < D; ++h) {
           grid_min[h] = std::min(grid_min[h],int(std::ceil(surfaces.back().Min[h] / p.grid_delta - p.snap_to_boundary_eps)));
@@ -1120,6 +1352,7 @@ namespace geometry {
       for(typename std::list< surface<D> >::const_iterator it= surfaces.begin(); it!=surfaces.end(); ++it){
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
       }
 
       msg::print_done();
@@ -1220,6 +1453,108 @@ namespace geometry {
       for (typename SurfacesType::const_iterator it = Surfaces.begin(); it != Surfaces.end(); ++it) {
         LevelSets.push_back(LevelSetType(grid));
         lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
+      }
+
+      msg::print_done();
+    }
+
+
+
+
+
+    /// This function takes a hull mesh, as output by ViennaTS and separates it into different
+    /// surfaces for each material, applying explicit wrapping, thus conserving thin layers.
+    /// The respective layers are then converted to level sets
+    template<int D, class GridTraitsType, class ParameterType, class LevelSetType>
+    void import_levelsets_from_hull(GridTraitsType& GridProperties, lvlset::grid_type<GridTraitsType>& grid,
+                                      ParameterType& p, std::list<LevelSetType>& LevelSets)
+    {
+
+      // Read hull surfaces from geometry file
+      surface<D> geometry;
+      std::list< surface<D> > surfaces;
+
+      std::cout << "Read geometry input file " << p.geometry_files[0];
+      msg::print_start("...");
+
+      // read surface
+      geometry.ReadVTP(p.geometry_files[0], p.input_scale, p.input_transformation,
+                p.input_transformation_signs, p.change_input_parity, p.input_shift);
+
+
+      // get information on which triangles should be removed
+      std::bitset<2 * D> remove_flags;
+      for (int i = 0; i < D; ++i) {
+        if (p.boundary_conditions[i].min == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].min == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i);
+        } else if (i == p.open_boundary && !p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i);
+        }
+        if (p.boundary_conditions[i].max == bnc::PERIODIC_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::REFLECTIVE_BOUNDARY ||
+            p.boundary_conditions[i].max == bnc::EXTENDED_BOUNDARY) {
+              remove_flags.set(i + D);
+        } else if (i == p.open_boundary && p.open_boundary_negative && p.remove_bottom) {
+              remove_flags.set(i + D);
+        }
+      }
+
+      // now get surfaces from hull mesh
+      TransformHullToSurfaces(geometry, surfaces, remove_flags, p.grid_delta * p.snap_to_boundary_eps, p.report_import_errors);
+
+
+      // EXTRACT GRID AND READ SURFACES INTO LEVELSETS
+      int grid_min[D]={ };
+      int grid_max[D]={ };
+
+      for (int h = 0; h < D; ++h) {
+        grid_min[h] = std::ceil(geometry.Min[h] / p.grid_delta - p.snap_to_boundary_eps);
+        grid_max[h] = std::floor(geometry.Max[h] / p.grid_delta + p.snap_to_boundary_eps);
+      }
+    #ifdef VERBOSE
+      std::cout << "min = " << (geometry.Min) << "   " << "max = " << (geometry.Max) << std::endl;
+      std::cout << "min = " << (geometry.Min / p.grid_delta) << "   " << "max = " << (geometry.Max / p.grid_delta) << std::endl;
+    #endif
+      msg::print_done();
+
+
+      // Determine boundary conditions for level set domain
+      lvlset::boundary_type bnc[D];
+      for (int hh = 0; hh < D; ++hh) {
+        if (p.boundary_conditions[hh].min == bnc::PERIODIC_BOUNDARY &&
+            p.boundary_conditions[hh].max == bnc::PERIODIC_BOUNDARY) {
+              bnc[hh] = lvlset::PERIODIC_BOUNDARY;
+        } else if(p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY &&
+                  p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].min == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::NEG_INFINITE_BOUNDARY;
+        } else if (p.boundary_conditions[hh].max == bnc::INFINITE_BOUNDARY) {
+              bnc[hh] = lvlset::POS_INFINITE_BOUNDARY;
+        } else {
+              bnc[hh] = lvlset::SYMMETRIC_BOUNDARY;
+        }
+      }
+
+      //Set the level set GridProperties
+      GridProperties = GridTraitsType(grid_min, grid_max, bnc, p.grid_delta);
+      //Generate the grid with the GridProperties
+      grid = lvlset::grid_type<GridTraitsType>(GridProperties);
+
+      msg::print_start("Distance transformation...");
+
+      // Initialize each level set with "lvlset::init(...) and wrap with material below"
+      for (typename std::list< surface<D> >::const_iterator it = surfaces.begin(); it != surfaces.end(); ++it) {
+        LevelSets.push_back(LevelSetType(grid));
+        lvlset::init(LevelSets.back(), *it, p.report_import_errors);
+        LevelSets.back().set_levelset_id();
+        // need to fix layer wrapping, so wrap with levelset below
+        if(it!=surfaces.begin()){
+          LevelSets.back().min(*(--(--LevelSets.end())));
+        }
       }
 
       msg::print_done();

@@ -20,6 +20,11 @@
 
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkXMLPolyDataWriter.h>
+#include <vtkPolyData.h>
+#include <vtkPoints.h>
+#include <vtkFloatArray.h>
+#include <vtkCellArray.h>
+#include <vtkPointData.h>
 
 #include "kernel.hpp"
 #include "levelset2surface.hpp"
@@ -105,6 +110,11 @@ namespace lvlset {
         public:
             int number_of_series() const {
                 return 0;
+            }
+
+            template <class PT_ID_TYPE>
+            double get_series_data_double(PT_ID_TYPE active_pt_id, int series) const {
+                return double();
             }
 
             template <class PT_ID_TYPE>
@@ -274,6 +284,126 @@ namespace lvlset {
         pwriter->SetInputData(hullMesh);
         pwriter->Write();
       }
+    }
+
+    template <class LevelSetType>
+    void write_explicit_levelset(const LevelSetType& l, const std::string& filename){
+
+      const int D=LevelSetType::dimensions;
+      const double gridDelta = l.grid().grid_delta();
+
+      // set up iterator and initialise storage
+      typename LevelSetType::template const_iterator_neighbor_filtered<typename LevelSetType::filter_value,  1> itA(l, typename LevelSetType::filter_value(2.0));
+      std::vector< vec<typename LevelSetType::value_type, D> > normals;
+
+      vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+      vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+      vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
+      vtkSmartPointer<vtkFloatArray> polyValues = vtkSmartPointer<vtkFloatArray>::New();
+      vtkSmartPointer<vtkFloatArray> polyNormals = vtkSmartPointer<vtkFloatArray>::New();
+
+      polyValues->SetNumberOfComponents(1);
+      polyValues->SetName("LSValues");
+
+      polyNormals->SetNumberOfComponents(3);
+      polyNormals->SetName("Normals");
+
+
+      while(!itA.is_finished()){
+
+        double p[3];
+        for(unsigned i=0; i<D; ++i) p[i] = gridDelta*itA.indices(i);
+        vtkIdType pointId = polyPoints->InsertNextPoint(p);
+        polyCells->InsertNextCell(1, &pointId); // insert vertex for visualisation
+        polyValues->InsertNextValue(itA.center().value());
+
+        // generate normal vector and push
+        double tmp[3] = {0.,0.,0.};
+
+        double modulus=0;
+        for(int i = 0; i < D; ++i ){
+          const double grad=itA.gradient(i);
+          modulus+=grad*grad;
+          tmp[i] = itA.gradient(i);
+        }
+
+        modulus=sqrt(modulus);
+        for(unsigned i=0; i<D; ++i){
+          tmp[i]/=modulus;
+        }
+
+        polyNormals->InsertNextTuple(tmp);
+
+        itA.next();
+      }
+
+
+      polyData->SetPoints(polyPoints);
+      polyData->SetVerts(polyCells);
+      polyData->GetPointData()->SetScalars(polyValues);
+      polyData->GetPointData()->SetNormals(polyNormals);
+
+      vtkSmartPointer<vtkXMLPolyDataWriter> pWriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+      pWriter->SetFileName(filename.c_str());
+      pWriter->SetInputData(polyData);
+      pWriter->Write();
+    }
+
+    template <class GridTraitsType, class LevelSetTraitsType, class DataType>
+    void write_explicit_surface_vtp(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, const DataType& Data, typename LevelSetTraitsType::value_type eps=0.) {
+
+      const int D=GridTraitsType::dimensions;
+      Surface<D> s;
+      typename GetActivePointType<typename LevelSetTraitsType::size_type, DataType>::result ActivePointList;
+
+      extract(l, s, eps, ActivePointList);
+
+      // fill pointlist with points from geometry
+      vtkSmartPointer<vtkPoints> polyPoints = vtkSmartPointer<vtkPoints>::New();
+      for (unsigned int i=0;i<s.Nodes.size();i++) {
+          polyPoints->InsertNextPoint(s.Nodes[i][0], s.Nodes[i][1], (D==2)?0:s.Nodes[i][2]);
+      }
+
+      vtkSmartPointer<vtkCellArray> polyCells = vtkSmartPointer<vtkCellArray>::New();
+      // fill cellarray
+      for(unsigned int i=0;i<s.Elements.size();i++) {
+          polyCells->InsertNextCell(D);
+          for (int j=0;j<D;j++){
+            polyCells->InsertCellPoint(s.Elements[i][j]);
+          }
+      }
+
+      vtkSmartPointer<vtkPolyData> polyData = vtkSmartPointer<vtkPolyData>::New();
+      polyData->SetPoints(polyPoints);
+      if(D==3){
+        polyData->SetPolys(polyCells);
+      }else{
+        polyData->SetLines(polyCells);
+      }
+
+      // for each data series create point data
+      for (int k=0;k<Data.number_of_series();++k) {
+        if (Data.get_series_output(k)) {
+          vtkSmartPointer<vtkFloatArray> pointData = vtkSmartPointer<vtkFloatArray>::New();
+          pointData->SetNumberOfComponents(1);
+          pointData->SetName(Data.get_series_label(k).c_str());
+          for (unsigned int i=0;i<s.Nodes.size();i++) {
+              pointData->InsertNextValue(Data.get_series_data_double(ActivePointList[i],k));
+          }
+          polyData->GetPointData()->AddArray(pointData);
+        }
+      }
+
+      vtkSmartPointer<vtkXMLPolyDataWriter> pwriter = vtkSmartPointer<vtkXMLPolyDataWriter>::New();
+      pwriter->SetFileName(filename.c_str());
+      pwriter->SetInputData(polyData);
+      pwriter->Write();
+    }
+
+
+    template <class GridTraitsType, class LevelSetTraitsType>
+    void write_explicit_surface_vtp(const levelset<GridTraitsType, LevelSetTraitsType>& l, const std::string& filename, typename LevelSetTraitsType::value_type eps=0.) {
+      write_explicit_surface_vtp(l, filename, DefaultDataType(), eps);
     }
 
     template <class GridTraitsType, class LevelSetTraitsType, class DataType>
@@ -648,10 +778,11 @@ namespace lvlset {
       if(!fout.is_open()) msg::print_error("Could not open the file: " + path);
 
       //type & constant redefinitions
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::size_type size_type;
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::index_type index_type;
-      typedef typename levelset<GridTraitsType, LevelSetTraitsType>::value_type value_type;
-      const unsigned int D = ls.dimensions;
+      typedef levelset<GridTraitsType, LevelSetTraitsType> LevelSetType;
+      typedef typename LevelSetType::size_type size_type;
+      typedef typename LevelSetType::index_type index_type;
+      typedef typename LevelSetType::value_type value_type;
+      static const int D=LevelSetType::grid_type2::dimensions;
 
       /************************************************   WRITE FILE HEADER   ************************************************/
       fout << "LvSt" << LVST_FILE_VERSION_NUMBER << (bigEndian() ? 1 : 0)  <<  D;
@@ -1126,6 +1257,7 @@ namespace lvlset {
       ls.finalize(2);
       //ls.prune() is called before writing the levelset file, therefore we only need to set up segmentation.
       ls.segment();
+      ls.set_levelset_id();
     }
 
 } //NAMESPACE LVLSET END

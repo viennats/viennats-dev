@@ -18,6 +18,7 @@
 #include <vector>
 #include <boost/spirit/include/classic.hpp>
 #include "../message.h"
+#include "../parser_actors.h"
 #include <iostream>
 
 using namespace std;
@@ -32,19 +33,26 @@ namespace model {
         std::vector<double> directional_rates;
         std::vector<double> constant_rates;
         std::vector<double> vector_rates;
+				bool bidirectionalRates;
 
 
 	public:
 
-        bool MaskLayer;
-        bool DirEmpty;
-        static const bool OutputFluxes=false;
-        static const bool SpatiallyEqualDistributedFlux=true;
+      bool MaskLayer;
+      bool DirEmpty;
+      static const bool OutputFluxes=false;
+      static const bool SpatiallyEqualDistributedFlux=true;
 	    static const bool ReemissionIsMaterialDependent=false;
 	    bool CalculateConnectivities;
 	    bool CalculateVisibilities;
 	    bool CalculateNormalVectors;
 	    bool IncludeVectorRates;
+
+
+			static const int CoverageStorageSize=0;
+			static const int RatesStorageSize=0;
+			static const unsigned int NumberOfParticleTypes=0;
+			unsigned int NumberOfParticleClusters[1];
 
 		class ParticleType {
 		public:
@@ -53,7 +61,10 @@ namespace model {
 		};
 
 		ConstantRates(const std::string & Parameters, bool masked=false) : CalculateConnectivities(true), CalculateVisibilities(true),CalculateNormalVectors(true),IncludeVectorRates(true) {
-		    using namespace boost::spirit::classic;
+				using namespace boost::spirit::classic;
+				using namespace parser_actors;
+
+				bidirectionalRates=false;
 
 		    bool b = parse(
                     Parameters.begin(),
@@ -63,7 +74,8 @@ namespace model {
                             (str_p("constant_rates")  >> '='  >>  '{' >> (real_p[push_back_a(constant_rates)] % ',') >> '}'  >> ';') |
                             (str_p("isotropic_rates")  >> '='  >>  '{' >> (real_p[push_back_a(isotropic_rates)] % ',') >> '}'  >> ';') |
                             (str_p("directional_rates")  >> '='  >>  '{' >> (real_p[push_back_a(directional_rates)] % ',') >> '}'  >> ';') |
-                            (str_p("vector_rates")  >> '='  >>  '{' >> (real_p[push_back_a(vector_rates)] % ',') >> '}'  >> ';')
+                            (str_p("vector_rates")  >> '='  >>  '{' >> (real_p[push_back_a(vector_rates)] % ',') >> '}'  >> ';') |
+														(str_p("bidirectional_rates")  >> '='  >> ((str_p("true") | str_p("false"))[assign_bool(bidirectionalRates)]) >> ';')
 
                     ),
                     space_p | comment_p("//") | comment_p("/*", "*/")).full;
@@ -97,11 +109,6 @@ namespace model {
 
 		}
 
-		static const int CoverageStorageSize=0;
-		static const int RatesStorageSize=0;
-		static const unsigned int NumberOfParticleTypes=0;
-//		static const unsigned int NumberOfParticleClusters[NumberOfParticleTypes];
-		static const unsigned int NumberOfParticleClusters[1];
 
 		template<class VecType>
 		void CalculateVelocity(
@@ -124,7 +131,8 @@ namespace model {
 		    if ((visible) && (directional_rate!=0)) {
 		        double dot=0.;
 		        for (int i=0;i<3;++i) dot-=StartDirection[i]*NormalVector[i];
-		        Velocity+=directional_rate*std::max(0.,dot);
+		        if(bidirectionalRates) Velocity+=directional_rate*std::abs(dot);
+						else Velocity+=directional_rate*std::max(0.,dot);
 		    }
 		}
 

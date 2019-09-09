@@ -19,6 +19,8 @@
 #include <algorithm>
 #include <bitset>
 
+#include "output.hpp"
+
 #include "vector.hpp"
 #include "kernel.hpp"
 #include "math.hpp"
@@ -368,8 +370,12 @@ namespace lvlset {
           std::string err= misc::test(l);     //check level set function
           if (err.size()) {                   //if inconsistent print out error message
             std::cout << "Initialization of level set function from triangulated surface failed!" << std::endl;
+            #ifdef VERBOSE
             std::cout << err << std::endl;
-            assert(0);
+            #endif // VERBOSE
+            write_explicit_levelset(l, "importError.vtp");
+            std::cout << "Level set points have been written to importError.vtp" << std::endl;
+            abort();
           }
         }
 

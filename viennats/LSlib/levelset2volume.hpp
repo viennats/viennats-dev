@@ -16,6 +16,7 @@
 #include <vtkAppendPolyData.h>
 #include <vtkProbeFilter.h>
 #include <vtkGeometryFilter.h>
+#include <vtkIncrementalOctreePointLocator.h>
 
 #include "vector.hpp"
 
@@ -64,20 +65,15 @@ namespace lvlset{
         gridMin = std::min(LevelSet.get_min_runbreak(i), infiniteMinimum)-1;  // choose the smaller number so that for first levelset the overall minimum can be chosen
         gridMax = std::max(LevelSet.get_max_runbreak(i), infiniteMaximum)+1;
 
-        for(int x=gridMin; x <= gridMax; ++x){
-          coords[i]->InsertNextValue(x * gridDelta);
-        }
-
         openJumpDirection=i+1;
 
       }else{
         gridMin = LevelSet.grid().min_grid_index(i)-gridExtraPoints;
         gridMax = LevelSet.grid().max_grid_index(i)+gridExtraPoints;
-        // VgridMin[i] = gridMin;
+      }
 
-        for(int x=gridMin; x<=gridMax;++x){
-          coords[i]->InsertNextValue(x * gridDelta);
-        }
+      for(int x=gridMin; x <= gridMax; ++x){
+        coords[i]->InsertNextValue(x * gridDelta);
       }
     }
 
@@ -210,9 +206,146 @@ namespace lvlset{
     return rgrid;
   }
 
+/// This function removes duplicate points and agjusts the pointIDs in the cells of a vtkUnstructuredGrid
+  void removeDuplicatePoints(vtkSmartPointer<vtkUnstructuredGrid>& ugrid, const double tolerance){
 
+    vtkSmartPointer<vtkUnstructuredGrid> newGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+    vtkSmartPointer<vtkIncrementalOctreePointLocator> ptInserter = vtkSmartPointer<vtkIncrementalOctreePointLocator>::New();
+    ptInserter->SetTolerance(tolerance);
 
+    vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
 
+    // get bounds
+    double gridBounds[6];
+    ugrid->GetBounds(gridBounds);
+
+    // start point insertion from original points
+    std::vector<vtkIdType> newPointIds;
+    newPointIds.reserve(ugrid->GetNumberOfPoints());
+    ptInserter->InitPointInsertion(newPoints, gridBounds);
+
+    // make new point list
+    for(vtkIdType pointId=0; pointId<ugrid->GetNumberOfPoints(); ++pointId){
+      vtkIdType globalPtId = 0;
+      ptInserter->InsertUniquePoint(ugrid->GetPoint(pointId), globalPtId);
+      newPointIds.push_back(globalPtId);
+    }
+
+    // now set the new points to the unstructured grid
+    newGrid->SetPoints(newPoints);
+
+    // go through all cells and change point ids to match the new ids
+    for(vtkIdType cellId=0; cellId<ugrid->GetNumberOfCells(); ++cellId){
+      vtkIdList* cellPoints = vtkIdList::New();
+      ugrid->GetCellPoints(cellId, cellPoints);
+      for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
+        cellPoints->SetId(pointId, newPointIds[cellPoints->GetId(pointId)]);
+      }
+      // insert same cell with new points
+      newGrid->InsertNextCell(ugrid->GetCell(cellId)->GetCellType(), cellPoints);
+    }
+
+    // conserve all cell data
+    // TODO transfer point data as well (do with "InsertTuples (vtkIdList *dstIds, vtkIdList *srcIds, vtkAbstractArray *source) override)" of vtkDataArray class)
+    newGrid->GetCellData()->ShallowCopy(ugrid->GetCellData());
+
+    // set ugrid to the newly created grid
+    ugrid = newGrid;
+  }
+
+  /// This function removes duplicate points and agjusts the pointIDs in the cells of a vtkPolyData
+  void removeDuplicatePoints(vtkSmartPointer<vtkPolyData>& polyData, const double tolerance){
+
+    vtkSmartPointer<vtkPolyData> newPolyData = vtkSmartPointer<vtkPolyData>::New();
+    vtkSmartPointer<vtkIncrementalOctreePointLocator> ptInserter = vtkSmartPointer<vtkIncrementalOctreePointLocator>::New();
+    ptInserter->SetTolerance(tolerance);
+
+    vtkSmartPointer<vtkPoints> newPoints = vtkSmartPointer<vtkPoints>::New();
+
+    // get bounds
+    double gridBounds[6];
+    polyData->GetBounds(gridBounds);
+
+    // start point insertion from original points
+    std::vector<vtkIdType> newPointIds;
+    newPointIds.reserve(polyData->GetNumberOfPoints());
+    ptInserter->InitPointInsertion(newPoints, gridBounds);
+
+    // make new point list
+    for(vtkIdType pointId=0; pointId<polyData->GetNumberOfPoints(); ++pointId){
+      vtkIdType globalPtId = 0;
+      ptInserter->InsertUniquePoint(polyData->GetPoint(pointId), globalPtId);
+      newPointIds.push_back(globalPtId);
+    }
+
+    // now set the new points to the unstructured grid
+    newPolyData->SetPoints(newPoints);
+
+    // go through all cells and change point ids to match the new ids
+    vtkSmartPointer<vtkCellArray> oldCells = polyData->GetPolys();
+    vtkSmartPointer<vtkCellArray> newCells = vtkSmartPointer<vtkCellArray>::New();
+
+    vtkSmartPointer<vtkIdList> cellPoints = vtkIdList::New();
+    oldCells->InitTraversal();
+    while(oldCells->GetNextCell(cellPoints)){
+      for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
+        cellPoints->SetId(pointId, newPointIds[cellPoints->GetId(pointId)]);
+      }
+      // insert same cell with new points
+      newCells->InsertNextCell(cellPoints);
+    }
+
+    newPolyData->SetPolys(newCells);
+
+    // conserve all cell data
+    // TODO transfer point data as well (do with "InsertTuples (vtkIdList *dstIds, vtkIdList *srcIds, vtkAbstractArray *source) override)" of vtkDataArray class)
+    newPolyData->GetCellData()->ShallowCopy(polyData->GetCellData());
+
+    // set ugrid to the newly created grid
+    polyData = newPolyData;
+  }
+
+  /// This function removes all cells which contain a point more than once
+  void removeDegenerateTetras(vtkSmartPointer<vtkUnstructuredGrid>& ugrid){
+    vtkSmartPointer<vtkUnstructuredGrid> newGrid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+
+    // need to copy material numbers
+    vtkSmartPointer<vtkIntArray> materialNumberArray = vtkSmartPointer<vtkIntArray>::New();
+    materialNumberArray->SetNumberOfComponents(1);
+    materialNumberArray->SetName("Material");
+
+    // see if material is defined
+    int arrayIndex;
+    vtkDataArray* matArray = ugrid->GetCellData()->GetArray("Material", arrayIndex);
+    const int& materialArrayIndex = arrayIndex;
+
+    // go through all cells and delete those with duplicate entries
+    for(vtkIdType cellId=0; cellId<ugrid->GetNumberOfCells(); ++cellId){
+      vtkIdList* cellPoints = vtkIdList::New();
+      ugrid->GetCellPoints(cellId, cellPoints);
+      bool isDuplicate=false;
+      for(vtkIdType pointId=0; pointId<cellPoints->GetNumberOfIds(); ++pointId){
+        for(vtkIdType nextId=pointId+1; nextId<cellPoints->GetNumberOfIds(); ++nextId){
+          // if they are the same, remove the cell
+          if(cellPoints->GetId(pointId) == cellPoints->GetId(nextId)) isDuplicate=true;
+        }
+      }
+      if(!isDuplicate){
+        // insert same cell if no degenerate points
+        newGrid->InsertNextCell(ugrid->GetCell(cellId)->GetCellType(), cellPoints);
+        // if material was defined before, use it now
+        if(materialArrayIndex>=0) materialNumberArray->InsertNextValue(matArray->GetTuple1(cellId));
+      }
+    }
+
+    // just take the old points and point data
+    newGrid->SetPoints(ugrid->GetPoints());
+    newGrid->GetPointData()->ShallowCopy(ugrid->GetPointData());
+    // set material cell data
+    newGrid->GetCellData()->SetScalars(materialNumberArray);
+
+    ugrid = newGrid;
+  }
 
 
 
@@ -234,11 +367,13 @@ namespace lvlset{
 
     // store volume for each material
     std::vector< vtkSmartPointer<vtkUnstructuredGrid> > materialMeshes;
+    std::vector<unsigned> materialIds;
 
 
     int totalMinimum = std::numeric_limits<int>::max();
     int totalMaximum = -std::numeric_limits<int>::max();
     for(auto it=LevelSets.begin(); it!=LevelSets.end(); ++it){
+      if(it->num_active_pts() == 0) continue;
       for(unsigned i=0; i<D; ++i){
         if(it->grid().boundary_conditions(i)==lvlset::INFINITE_BOUNDARY){
           totalMinimum = std::min(totalMinimum, it->get_min_runbreak(i));
@@ -257,10 +392,9 @@ namespace lvlset{
     clipper->Update();
 
     materialMeshes.push_back(clipper->GetOutput());
+    materialIds.push_back(LevelSets.rbegin()->get_levelset_id());
 
-    #ifdef DEBUGOUTPUT
     unsigned counter=1;
-    #endif
 
     // now cut large volume mesh with all the smaller ones
     for(typename LevelSetsType::const_reverse_iterator it=++LevelSets.rbegin(); it!=LevelSets.rend(); ++it){
@@ -270,7 +404,7 @@ namespace lvlset{
 
       // create grid of next LS with slight offset and project into current mesh
       vtkSmartPointer<vtkRectilinearGrid> rgrid = vtkSmartPointer<vtkRectilinearGrid>::New();
-      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-5, totalMinimum, totalMaximum);  // number of extra grid points outside and LSOffset
+      rgrid = LS2RectiLinearGrid<removeBottom, 1>(*it, -1e-4*counter, totalMinimum, totalMaximum);  // number of extra grid points outside and LSOffset
 
       #ifdef DEBUGOUTPUT
       {
@@ -310,15 +444,13 @@ namespace lvlset{
 
       materialMeshes.rbegin()[0] = insideClipper->GetOutput();
       materialMeshes.push_back(insideClipper->GetClippedOutput());
+      materialIds.push_back(it->get_levelset_id());
 
-      #ifdef DEBUGOUTPUT
-          ++counter;
-      #endif
+      ++counter;
     }
 
     vtkSmartPointer<vtkAppendFilter> appendFilter =
       vtkSmartPointer<vtkAppendFilter>::New();
-    appendFilter->MergePointsOn();
 
     vtkSmartPointer<vtkAppendPolyData> hullAppendFilter =
       vtkSmartPointer<vtkAppendPolyData>::New();
@@ -331,11 +463,11 @@ namespace lvlset{
       materialNumberArray->SetNumberOfComponents(1);
       materialNumberArray->SetName("Material");
       for(unsigned j=0; j<materialMeshes[materialMeshes.size()-1-i]->GetNumberOfCells(); ++j){
-        materialNumberArray->InsertNextValue(i+1);
+        materialNumberArray->InsertNextValue(materialIds[materialMeshes.size()-1-i]);
       }
       materialMeshes[materialMeshes.size()-1-i]->GetCellData()->SetScalars(materialNumberArray);
 
-      // delete all cell data, so it is not in ouput
+      // delete all point data, so it is not in ouput
       // TODO this includes signed distance information which could be conserved for debugging
       // also includes wheter a cell was vaild for cutting by the grid
       vtkSmartPointer<vtkPointData> pointData = materialMeshes[materialMeshes.size()-1-i]->GetPointData();
@@ -352,7 +484,6 @@ namespace lvlset{
         hullAppendFilter->AddInputData(geoFilter->GetOutput());
       }
 
-
       appendFilter->AddInputData(materialMeshes[materialMeshes.size()-1-i]);
     }
 
@@ -360,22 +491,56 @@ namespace lvlset{
     if(volumeMesh.GetPointer() != 0){
       appendFilter->Update();
 
+      // remove degenerate points and remove cells which collapse to zero volume then
+      volumeMesh = appendFilter->GetOutput();
+    #ifdef DEBUGOUTPUT
+      {
+        std::cout << "Before duplicate removal: " << std::endl;
+        std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
+        std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> gwriter = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        gwriter->SetFileName("before_removal.vtu");
+        gwriter->SetInputData(appendFilter->GetOutput());
+        gwriter->Update();
+      }
+    #endif
+
+      // use 1/1000th of grid spacing for contraction of two similar points, so that tetrahedralisation works correctly
+      removeDuplicatePoints(volumeMesh, 1e-3*LevelSets.front().grid().grid_delta());
+
+    #ifdef DEBUGOUTPUT
+      {
+        std::cout << "After duplicate removal: " << std::endl;
+        std::cout << "Points: " << volumeMesh->GetNumberOfPoints() << std::endl;
+        std::cout << "Cells: " << volumeMesh->GetNumberOfCells() << std::endl;
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter> gwriter = vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+        gwriter->SetFileName("after_removal.vtu");
+        gwriter->SetInputData(volumeMesh);
+        gwriter->Update();
+      }
+    #endif
+
       // change all 3D cells into tetras and all 2D cells to triangles
       vtkSmartPointer<vtkDataSetTriangleFilter> triangleFilter =
         vtkSmartPointer<vtkDataSetTriangleFilter>::New();
-      triangleFilter->SetInputConnection(appendFilter->GetOutputPort());
+      triangleFilter->SetInputData(volumeMesh);
       triangleFilter->Update();
-
       volumeMesh = triangleFilter->GetOutput();
+
+      // now that only tetras are left, remove the ones with degenerate points
+      removeDegenerateTetras(volumeMesh);
     }
 
 
     // Now make hull mesh if necessary
     if(hullMesh.GetPointer() != 0){
       hullAppendFilter->Update();
+      hullMesh = hullAppendFilter->GetOutput();
+      // use 1/1000th of grid spacing for contraction of two similar points
+      removeDuplicatePoints(hullMesh, 1e-3*LevelSets.front().grid().grid_delta());
 
       vtkSmartPointer<vtkTriangleFilter> hullTriangleFilter = vtkSmartPointer<vtkTriangleFilter>::New();
-      hullTriangleFilter->SetInputConnection(hullAppendFilter->GetOutputPort());
+      hullTriangleFilter->SetInputData(hullMesh);
       hullTriangleFilter->Update();
 
       hullMesh = hullTriangleFilter->GetOutput();

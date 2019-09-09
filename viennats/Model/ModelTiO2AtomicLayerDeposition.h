@@ -41,8 +41,8 @@ namespace model {
 
 		double StartDirection[3];
 
-		double sticking_TTIP;
-		double sticking_H2O;
+		//double sticking_TTIP;
+		//double sticking_H2O;
                 double sticking[2];
 
 	public:
@@ -88,8 +88,8 @@ namespace model {
                     						          >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
                             (str_p("reaction_order")       >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
 
-                            (str_p("sticking_TTIP")        >> '='  >> real_p[assign_a(sticking[0])]  >> ';') |
-                            (str_p("sticking_H2O")         >> '='  >> real_p[assign_a(sticking[1])]  >> ';') |
+                            //(str_p("sticking_TTIP")        >> '='  >> real_p[assign_a(sticking[0])]  >> ';') |
+                            //(str_p("sticking_H2O")         >> '='  >> real_p[assign_a(sticking[1])]  >> ';') |
                             (str_p("end_probability")      >> '='  >> real_p[assign_a(end_probability)]  >> ';') |
                             (str_p("TTIP_Flux")            >> '='  >> real_p[assign_a(FluxTTIP)]  >> ';') |
                             (str_p("H2O_Flux")             >> '='  >> real_p[assign_a(FluxH2O)]  >> ';') |
