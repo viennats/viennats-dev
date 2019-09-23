@@ -81,7 +81,7 @@ namespace model {
             const double *Coverages,
             const double *Rates,
             int Material, bool Connected, bool Visible) const {
-				if(Material<deposition_rates.size())
+				if(Material < (int) deposition_rates.size())
 		    	Velocity=deposition_rates[Material]*std::pow(Rates[0],reaction_order);
 				else Velocity = 0;
 		}
