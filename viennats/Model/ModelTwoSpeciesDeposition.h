@@ -19,10 +19,10 @@ namespace model {
                 static const double N_A;   //in /mol
                 static const double M_SiO2;     //molar mass in g/mol
 
-//		double rate_main;
-//		double rate_intermediate;
-		double flux_main;
-		double flux_intermediate;
+		double rate_main;
+		double rate_intermediate;
+		// double flux_main;
+		// double flux_intermediate;
 		double sticking_main;
 		double sticking_intermediate;
 		double reaction_order;
@@ -64,10 +64,10 @@ namespace model {
                     Parameters.end(),
                     *(
                     	    (str_p("direction")  >> '='  >> '{' >> real_p[assign_a(StartDirection[0])]  >> "," >> real_p[assign_a(StartDirection[1])] >> "," >> real_p[assign_a(StartDirection[2])] >> '}' >> ';') |
-//                            (str_p("rate_main")  >> '='  >> real_p[assign_a(rate_main)]  >> ';') |
-//                            (str_p("rate_intermediate")  >> '='  >> real_p[assign_a(rate_intermediate)]  >> ';') |
-                            (str_p("flux_main")  >> '='  >> real_p[assign_a(flux_main)]  >> ';') |
-                            (str_p("flux_intermediate")  >> '='  >> real_p[assign_a(flux_intermediate)]  >> ';') |
+                           (str_p("rate_main")  >> '='  >> real_p[assign_a(rate_main)]  >> ';') |
+                           (str_p("rate_intermediate")  >> '='  >> real_p[assign_a(rate_intermediate)]  >> ';') |
+                            // (str_p("flux_main")  >> '='  >> real_p[assign_a(flux_main)]  >> ';') |
+                            // (str_p("flux_intermediate")  >> '='  >> real_p[assign_a(flux_intermediate)]  >> ';') |
                             (str_p("sticking_main")  >> '='  >> real_p[assign_a(sticking_main)]  >> ';') |
                             (str_p("sticking_intermediate")  >> '='  >> real_p[assign_a(sticking_intermediate)]  >> ';') |
                             (str_p("reaction_order")  >> '='  >> real_p[assign_a(reaction_order)]  >> ';') |
@@ -98,7 +98,11 @@ namespace model {
 
 //		    Velocity=deposition_rate*std::pow(Rates[0],reaction_order);
 //?                    Velocity = rate_main*Rates[0] + rate_intermediate*Rates[1];
-                    Velocity = M_SiO2*(Rates[0] + Rates[1])/(rho_SiO2 * N_A);
+                    // Velocity = M_SiO2*(Rates[0] + Rates[1])/(rho_SiO2 * N_A);
+					// if(Material < (int) deposition_rates.size())
+			    	Velocity = rate_main*std::pow(Rates[0], reaction_order) +
+							rate_intermediate*std::pow(Rates[1], reaction_order);
+					// else Velocity = 0;
 		}
 
 		template<class VecType>
@@ -121,14 +125,14 @@ namespace model {
                             case 0: {       //main
                                 my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
                                 p.Probability=1.;
-                                p.Flux=flux_main;//1.;
+                                p.Flux=1.; //flux_main;//1.;
                                 p.Type=0;
                                 break;
                             }
                             case 1: {           //intermediate
                                 my::stat::CosineNDistributedRandomDirection(1.,StartDirection,p.Direction);
                                 p.Probability=1.;
-                                p.Flux=flux_intermediate;//1.;
+                                p.Flux=1.; //flux_intermediate;//1.;
                                 p.Type=1;
                                 break;
                             }
